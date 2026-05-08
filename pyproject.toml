@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autobots"
+version = "0.1.0"
+description = "Hierarchical multi-cluster coding swarm CLI"
+requires-python = ">=3.11"
+dependencies = [
+  "openai>=1.0.0",
+  "python-dotenv>=1.0.0",
+  "rich>=13.0.0",
+]
+
+[project.scripts]
+autobots = "autobots.cli:main"
+
+[tool.setuptools]
+packages = ["autobots"]
+
