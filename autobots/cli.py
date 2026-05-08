@@ -5,10 +5,12 @@ import sys
 from pathlib import Path
 
 from dotenv import dotenv_values
-from rich.console import Console
+from rich.console import Console, Group
+from rich.live import Live
 from rich.panel import Panel
-from rich.prompt import Confirm, Prompt
+from rich.prompt import Prompt
 from rich.table import Table
+from rich.text import Text
 
 from .router import AutobotRouter, ExecutionResult, PhaseRecord
 from .workspace import TargetProjectWorkspace
@@ -17,6 +19,7 @@ from .workspace import TargetProjectWorkspace
 ENGINE_ROOT = Path(__file__).resolve().parent.parent
 ENGINE_ENV_PATH = ENGINE_ROOT / ".env"
 SAFETY_BRANCH = "autobots-safety"
+ROLLOUT_MESSAGE = "Autobots, Roll out!"
 
 
 def _detect_git_branch(target_root: Path) -> str | None:
@@ -46,21 +49,141 @@ def _find_sibling_projects() -> list[Path]:
     )
 
 
+def _read_menu_key() -> str:
+    try:
+        import msvcrt
+    except ImportError:
+        import termios
+        import tty
+
+        fd = sys.stdin.fileno()
+        original = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            first = sys.stdin.read(1)
+            if first == "\x1b":
+                second = sys.stdin.read(1)
+                third = sys.stdin.read(1)
+                if second == "[" and third == "A":
+                    return "up"
+                if second == "[" and third == "B":
+                    return "down"
+            if first in {"\r", "\n"}:
+                return "enter"
+            if first == "\x03":
+                raise KeyboardInterrupt
+            return ""
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, original)
+
+    first = msvcrt.getwch()
+    if first in {"\x00", "\xe0"}:
+        second = msvcrt.getwch()
+        if second == "H":
+            return "up"
+        if second == "P":
+            return "down"
+        return ""
+    if first == "\r":
+        return "enter"
+    if first == "\x03":
+        raise KeyboardInterrupt
+    return ""
+
+
+def _render_menu(message: str, choices: list[str], selected_index: int) -> Group:
+    items: list[Text] = [Text(message, style="bold blue"), Text("")]
+    for index, choice in enumerate(choices):
+        prefix = "› " if index == selected_index else "  "
+        style = "bold red" if index == selected_index else ""
+        items.append(Text(f"{prefix}{choice}", style=style))
+    items.append(Text(""))
+    items.append(Text("Use ↑/↓ to choose and Enter to confirm.", style="dim"))
+    return Group(*items)
+
+
+def _select(
+    console: Console,
+    message: str,
+    choices: list[str],
+    default: str | None = None,
+) -> str:
+    if not choices:
+        raise ValueError("Selection choices cannot be empty.")
+
+    selected_index = choices.index(default) if default in choices else 0
+    with Live(
+        _render_menu(message, choices, selected_index),
+        console=console,
+        refresh_per_second=20,
+        transient=True,
+    ) as live:
+        while True:
+            key = _read_menu_key()
+            if key == "up":
+                selected_index = (selected_index - 1) % len(choices)
+                live.update(_render_menu(message, choices, selected_index))
+            elif key == "down":
+                selected_index = (selected_index + 1) % len(choices)
+                live.update(_render_menu(message, choices, selected_index))
+            elif key == "enter":
+                choice = choices[selected_index]
+                console.print(f"{message}\n[cyan]{choice}[/cyan]")
+                return choice
+
+
+def _text(message: str, default: str | None = None) -> str:
+    if default is None:
+        return Prompt.ask(message).strip()
+    return Prompt.ask(message, default=default).strip()
+
+
+def _password(message: str) -> str:
+    return Prompt.ask(message, password=True).strip()
+
+
+def _graceful_interrupt(console: Console) -> int:
+    console.print(
+        Panel.fit(
+            ROLLOUT_MESSAGE,
+            title="Shutdown",
+            border_style="yellow",
+        )
+    )
+    return 130
+
+
 def _resolve_target_project(console: Console) -> Path:
     sibling_projects = _find_sibling_projects()
     sibling_hint = ", ".join(project.name for project in sibling_projects) or "none detected"
 
-    is_sibling = Confirm.ask(
-        f"Is the target project a sibling directory? Detected siblings: {sibling_hint}",
-        default=bool(sibling_projects),
+    location_mode = _select(
+        console,
+        f"Where is the target project located? Detected siblings: {sibling_hint}",
+        choices=[
+            "Sibling directory of autobots",
+            "Parent folder of autobots",
+            "Custom absolute path",
+        ],
+        default="Sibling directory of autobots" if sibling_projects else "Parent folder of autobots",
     )
 
-    if is_sibling:
-        project_name = Prompt.ask("Enter the sibling directory name")
+    if location_mode == "Sibling directory of autobots":
+        if sibling_projects:
+            project_name = _select(
+                console,
+                "Choose the sibling target project",
+                choices=[project.name for project in sibling_projects],
+                default=sibling_projects[0].name,
+            )
+        else:
+            project_name = _text("Enter the sibling directory name")
         target_root = (ENGINE_ROOT.parent / project_name).expanduser().resolve()
+    elif location_mode == "Parent folder of autobots":
+        target_root = ENGINE_ROOT.parent.resolve()
     else:
         target_root = Path(
-            Prompt.ask("Enter the absolute path to the target project")
+            _text("Enter the absolute path to the target project")
         ).expanduser().resolve()
 
     if not target_root.exists() or not target_root.is_dir():
@@ -80,10 +203,16 @@ def _require_safety_branch(console: Console, target_root: Path) -> None:
     current_branch = _detect_git_branch(target_root)
     detected = current_branch or "unknown"
 
-    confirmed = Confirm.ask(
-        f"Is the target project on the safety branch '{SAFETY_BRANCH}'? Detected current branch: {detected}",
-        default=current_branch == SAFETY_BRANCH,
+    branch_choice = _select(
+        console,
+        f"Safety branch check for '{SAFETY_BRANCH}'. Detected current branch: {detected}",
+        choices=[
+            "Yes, continue",
+            "No, stop here",
+        ],
+        default="Yes, continue" if current_branch == SAFETY_BRANCH else "No, stop here",
     )
+    confirmed = branch_choice == "Yes, continue"
 
     if not confirmed or current_branch != SAFETY_BRANCH:
         console.print(
@@ -104,7 +233,7 @@ def _ensure_api_key(console: Console) -> None:
     if existing_key:
         return
 
-    api_key = Prompt.ask("Enter your NVIDIA_API_KEY", password=True).strip()
+    api_key = _password("Enter your NVIDIA_API_KEY").strip()
     if not api_key:
         raise SystemExit("NVIDIA_API_KEY is required to engage the swarm.")
 
@@ -132,10 +261,16 @@ def _check_six_file_architecture(console: Console, target_root: Path) -> None:
     context_files = [path for path in context_dir.iterdir()] if context_dir.exists() else []
     file_count = len([path for path in context_files if path.is_file()])
 
-    confirmed = Confirm.ask(
-        f"Does the target include the 6-File Architecture in {context_dir}? Detected {file_count} files",
-        default=file_count >= 6,
+    architecture_choice = _select(
+        console,
+        f"6-File Architecture check in {context_dir}. Detected {file_count} files",
+        choices=[
+            "Yes, continue",
+            "No, continue anyway",
+        ],
+        default="Yes, continue" if file_count >= 6 else "No, continue anyway",
     )
+    confirmed = architecture_choice == "Yes, continue"
     if not confirmed:
         console.print(
             Panel.fit(
@@ -191,13 +326,18 @@ def _approval_loop(
 
     while True:
         _render_phase_panel(console, result)
-        decision = Prompt.ask(
-            "Are you satisfied with this phase output? (y/n/feedback)",
-            default="y",
-        ).strip()
+        decision = _select(
+            console,
+            "How would you like to handle this phase output?",
+            choices=[
+                "Approve and continue",
+                "Request a revision",
+                "Give revision feedback",
+            ],
+            default="Approve and continue",
+        )
 
-        lowered = decision.lower()
-        if lowered == "y":
+        if decision == "Approve and continue":
             updated_progress = router.mark_phase_complete(progress_text, phase)
             workspace.write_context_file("progress-tracker.md", updated_progress)
             console.print(
@@ -209,7 +349,9 @@ def _approval_loop(
             )
             return
 
-        feedback = "" if lowered == "n" else decision
+        feedback = ""
+        if decision == "Give revision feedback":
+            feedback = _text("Enter revision feedback").strip()
         result = router.refine_with_ratchet(
             workspace=workspace,
             phase=phase,
@@ -276,6 +418,9 @@ def main(argv: list[str] | None = None) -> int:
         Console().print("Usage: autobots engage")
         return 1
 
-    run_engage()
+    console = Console()
+    try:
+        run_engage()
+    except (KeyboardInterrupt, EOFError):
+        return _graceful_interrupt(console)
     return 0
-
