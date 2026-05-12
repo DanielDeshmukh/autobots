@@ -180,13 +180,49 @@ Project phases and milestone tracking.
 The “Jazz” Design System and Tailwind rules.
 
 ## `progress-tracker.md`
-Real-time write-locks for active tasks.
+Real-time task state, lock ownership, and completion updates.
 
 ## `project-briefing.md`
 Core business logic and intent.
 
 ## `security-auth.md`
 Encryption, authentication flows, and safety benchmarks.
+
+---
+
+#  Coordination Strategy For 100+ NIMs
+
+For large swarms, a hybrid coordination strategy keeps throughput high without letting file contention become chaos.
+
+## Critical Context Files Use Pessimistic Locks
+
+Use explicit write locks for low-churn, high-impact files such as:
+
+- `architecture.md`
+- `security-auth.md`
+
+These documents define shared truth for the entire swarm, so brief waiting is preferable to conflicting edits.
+
+## `progress-tracker.md` Uses A Coordinator
+
+Do not let every large model compete to write status updates.
+Instead, assign a lightweight Optimus model such as `step-3.5-flash` to act as the swarm's "Secretary":
+
+- receives status changes from worker clusters
+- serializes updates to `progress-tracker.md`
+- handles lock bookkeeping and completion markers
+- keeps larger reasoning models focused on planning and implementation
+
+This reduces file I/O contention while preserving a single source of truth for execution state.
+
+## Prevent Deadlocks With Lock Expiration
+
+Every lock should carry an expiration time.
+Recommended default:
+
+- lock TTL: `60 seconds`
+
+If a lock exceeds its TTL, treat it as stale and reclaim it automatically before retrying the write. This prevents two models from waiting on abandoned locks forever.
 
 ---
 

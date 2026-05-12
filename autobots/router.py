@@ -4,6 +4,7 @@ import json
 import os
 import re
 from dataclasses import dataclass
+from typing import Callable
 
 from dotenv import load_dotenv
 
@@ -17,6 +18,14 @@ load_dotenv()
 STATUS_PRIORITY = ("IN_PROGRESS", "PENDING")
 STATUS_PATTERN = re.compile(r"\b(PENDING|IN_PROGRESS|COMPLETE)\b")
 CHECKBOX_PATTERN = re.compile(r"\[( |x|~)\]")
+PROGRESS_TRACKER_FILE = "progress-tracker.md"
+PROTECTED_PROGRESS_FILES = {PROGRESS_TRACKER_FILE}
+COORDINATION_LAWS = """Autobots Coordination Laws:
+1. Use pessimistic locks for critical context files: architecture.md and security-auth.md.
+2. Never write progress-tracker.md from a specialist, reviewer, or repair cluster.
+3. A lightweight Optimus secretary model owns progress-tracker.md updates.
+4. If a lock is stale for more than 60 seconds, reclaim it and continue.
+5. Report task completion back to Optimus instead of editing shared progress state directly."""
 
 
 @dataclass
@@ -42,6 +51,7 @@ class ClusterPlan:
     primary_support: list[ModelSpec]
     command_lead: ModelSpec
     command_reviewer: ModelSpec
+    secretary_lead: ModelSpec
     safety_lead: ModelSpec
     repair_lead: ModelSpec
 
@@ -54,6 +64,9 @@ class ExecutionResult:
     files_written: list[str]
     journal: list[ClusterMessage]
     plan: ClusterPlan
+
+
+EventHandler = Callable[[str], None]
 
 
 class AutobotRouter:
@@ -79,14 +92,18 @@ class AutobotRouter:
         return None
 
     def mark_phase_complete(self, progress_text: str, phase: PhaseRecord) -> str:
+        return self._update_phase_status(progress_text, phase, "COMPLETE")
+
+    def _update_phase_status(self, progress_text: str, phase: PhaseRecord, status: str) -> str:
         lines = progress_text.splitlines()
         original = lines[phase.line_index]
-        updated = STATUS_PATTERN.sub("COMPLETE", original, count=1)
+        updated = STATUS_PATTERN.sub(status, original, count=1)
 
         if updated == original:
-            updated = CHECKBOX_PATTERN.sub("[x]", original, count=1)
+            checkbox = {"PENDING": "[ ]", "IN_PROGRESS": "[~]", "COMPLETE": "[x]"}[status]
+            updated = CHECKBOX_PATTERN.sub(checkbox, original, count=1)
         if updated == original:
-            updated = f"{original} COMPLETE"
+            updated = f"{original} {status}"
 
         lines[phase.line_index] = updated
         return "\n".join(lines) + ("\n" if progress_text.endswith("\n") else "")
@@ -96,6 +113,7 @@ class AutobotRouter:
         primary_cluster = self.catalog.route(signal)
         primary_lead, primary_reviewer, primary_support = self.catalog.select_models(primary_cluster, signal)
         command_lead, command_reviewer, _ = self.catalog.select_models("Optimus", signal)
+        secretary_lead = self._select_secretary_model()
         safety_lead, _, _ = self.catalog.select_models("RedAlert", signal)
         repair_lead, _, _ = self.catalog.select_models("Ratchet", signal)
         return ClusterPlan(
@@ -105,6 +123,7 @@ class AutobotRouter:
             primary_support=primary_support,
             command_lead=command_lead,
             command_reviewer=command_reviewer,
+            secretary_lead=secretary_lead,
             safety_lead=safety_lead,
             repair_lead=repair_lead,
         )
@@ -115,9 +134,23 @@ class AutobotRouter:
         phase: PhaseRecord,
         roadmap_text: str,
         progress_text: str,
+        event_handler: EventHandler | None = None,
     ) -> ExecutionResult:
         plan = self.build_cluster_plan(phase, roadmap_text)
+        progress_text = self.begin_phase(workspace, phase, progress_text, plan, event_handler=event_handler)
+        self._emit(
+            event_handler,
+            f"Optimus planning {phase.title} with {plan.command_lead.model_id}.",
+        )
+        self._emit(
+            event_handler,
+            f"Optimus routing '{phase.title}' to {plan.primary_cluster} with {plan.primary_lead.model_id}.",
+        )
         command_payload, command_raw = self._run_command_stage(plan, phase, roadmap_text, progress_text)
+        self._emit(
+            event_handler,
+            f"{plan.primary_cluster} working on {phase.title}.",
+        )
         specialist_payload, specialist_raw = self._run_specialist_stage(
             plan,
             workspace,
@@ -126,11 +159,19 @@ class AutobotRouter:
             progress_text,
             command_payload,
         )
+        self._emit(
+            event_handler,
+            f"{plan.primary_cluster} completed {phase.title} and updated status to Optimus.",
+        )
         review_payload, review_raw = self._run_safety_stage(
             plan,
             phase,
             specialist_payload,
             command_payload,
+        )
+        self._emit(
+            event_handler,
+            f"RedAlert reviewed {phase.title}. Verdict: {(review_payload.get('status') or 'pass').upper()}",
         )
 
         raw_parts = [command_raw, specialist_raw, review_raw]
@@ -153,6 +194,7 @@ class AutobotRouter:
         ]
 
         final_payload = specialist_payload
+        final_lock_owner = f"{plan.primary_cluster}/{plan.primary_lead.model_id}"
         if (review_payload.get("status") or "").lower() == "revise":
             repair_payload, repair_raw = self._run_repair_stage(
                 plan,
@@ -172,9 +214,18 @@ class AutobotRouter:
                     summary=(repair_payload.get("summary") or "Applied repairs after review.").strip(),
                 )
             )
+            self._emit(
+                event_handler,
+                f"Ratchet repaired {phase.title} and returned the update to Optimus.",
+            )
             final_payload = repair_payload
+            final_lock_owner = f"Ratchet/{plan.repair_lead.model_id}"
 
-        files_written = workspace.apply_generated_files(final_payload.get("files", []))
+        safe_files = self._enforce_generated_file_laws(final_payload.get("files", []))
+        files_written = workspace.apply_generated_files(
+            safe_files,
+            lock_owner=final_lock_owner,
+        )
         summary = (final_payload.get("summary") or "Phase executed.").strip()
         return ExecutionResult(
             cluster_name=plan.primary_cluster,
@@ -193,7 +244,12 @@ class AutobotRouter:
         progress_text: str,
         previous_result: ExecutionResult,
         feedback: str,
+        event_handler: EventHandler | None = None,
     ) -> ExecutionResult:
+        self._emit(
+            event_handler,
+            f"Ratchet revising {phase.title} with feedback from Optimus.",
+        )
         repair_payload, repair_raw = self._run_repair_stage(
             previous_result.plan,
             workspace,
@@ -211,7 +267,11 @@ class AutobotRouter:
                 "issues": [feedback or "User requested another pass."],
             },
         )
-        files_written = workspace.apply_generated_files(repair_payload.get("files", []))
+        safe_files = self._enforce_generated_file_laws(repair_payload.get("files", []))
+        files_written = workspace.apply_generated_files(
+            safe_files,
+            lock_owner=f"Ratchet/{previous_result.plan.repair_lead.model_id}",
+        )
         journal = previous_result.journal + [
             ClusterMessage(
                 speaker=f"Ratchet/{previous_result.plan.repair_lead.model_id}",
@@ -219,6 +279,10 @@ class AutobotRouter:
                 summary=(repair_payload.get("summary") or "Applied user feedback.").strip(),
             )
         ]
+        self._emit(
+            event_handler,
+            f"Ratchet completed the revision for {phase.title} and returned it to Optimus.",
+        )
         return ExecutionResult(
             cluster_name="Ratchet",
             summary=(repair_payload.get("summary") or "Phase refined.").strip(),
@@ -227,6 +291,51 @@ class AutobotRouter:
             journal=journal,
             plan=previous_result.plan,
         )
+
+    def begin_phase(
+        self,
+        workspace: TargetProjectWorkspace,
+        phase: PhaseRecord,
+        progress_text: str,
+        plan: ClusterPlan,
+        *,
+        event_handler: EventHandler | None = None,
+    ) -> str:
+        if phase.status == "IN_PROGRESS":
+            return progress_text
+
+        self._emit(
+            event_handler,
+            f"Optimus secretary {plan.secretary_lead.model_id} updating progress-tracker.md for {phase.title}.",
+        )
+        updated_progress = self._update_phase_status(progress_text, phase, "IN_PROGRESS")
+        workspace.write_context_file(
+            PROGRESS_TRACKER_FILE,
+            updated_progress,
+            lock_owner=f"Optimus/{plan.secretary_lead.model_id}",
+        )
+        return updated_progress
+
+    def complete_phase(
+        self,
+        workspace: TargetProjectWorkspace,
+        phase: PhaseRecord,
+        progress_text: str,
+        plan: ClusterPlan,
+        *,
+        event_handler: EventHandler | None = None,
+    ) -> str:
+        self._emit(
+            event_handler,
+            f"Optimus secretary {plan.secretary_lead.model_id} updating progress-tracker.md to COMPLETE for {phase.title}.",
+        )
+        updated_progress = self._update_phase_status(progress_text, phase, "COMPLETE")
+        workspace.write_context_file(
+            PROGRESS_TRACKER_FILE,
+            updated_progress,
+            lock_owner=f"Optimus/{plan.secretary_lead.model_id}",
+        )
+        return updated_progress
 
     def _run_command_stage(
         self,
@@ -238,6 +347,9 @@ class AutobotRouter:
         prompt = f"""
 You are the command tier of the Autobots swarm.
 Use hierarchical reasoning to prepare a concise execution brief for the specialist cluster.
+Treat the coordination rules below as hard laws.
+
+{COORDINATION_LAWS}
 
 Current phase:
 {phase.raw_line}
@@ -278,11 +390,15 @@ Return strict JSON:
 You are the {plan.primary_cluster} implementation cluster.
 The command tier and support models have already coordinated your mission.
 Act as a collaborative cluster: the lead writes, the reviewer critiques, and support models fill gaps.
+Treat the coordination rules below as hard laws.
+
+{COORDINATION_LAWS}
 
 Workspace constraints:
 1. Write only under src/ or context/.
 2. Never write in the Autobots engine repository.
 3. Return full file contents, not diffs.
+4. Never write `progress-tracker.md`; report progress back to Optimus instead.
 
 Target roots:
 - src root: {workspace.src_root}
@@ -333,6 +449,9 @@ Return strict JSON:
     ) -> tuple[dict, str]:
         prompt = f"""
 You are Red Alert reviewing the specialist cluster output for correctness, safety, and maintainability.
+Treat the coordination rules below as hard laws.
+
+{COORDINATION_LAWS}
 
 Phase:
 {phase.raw_line}
@@ -370,11 +489,15 @@ Return strict JSON:
         prompt = f"""
 You are Ratchet, the repair cluster.
 Revise the implementation after autonomous review and feedback from the swarm.
+Treat the coordination rules below as hard laws.
+
+{COORDINATION_LAWS}
 
 Workspace constraints:
 1. Write only under src/ or context/.
 2. Never write in the Autobots engine repository.
 3. Return full file contents, not diffs.
+4. Never write `progress-tracker.md`; report progress back to Optimus instead.
 
 Target roots:
 - src root: {workspace.src_root}
@@ -427,6 +550,9 @@ Return strict JSON:
                     "role": "system",
                     "content": (
                         "You are part of a hierarchical Autobots coding swarm. "
+                        "Autobots Coordination Laws are mandatory. "
+                        "Never write progress-tracker.md unless you are the Optimus secretary. "
+                        "Use pessimistic locks for architecture.md and security-auth.md with a 60 second stale-lock reclaim rule. "
                         "Reply with strict JSON only."
                     ),
                 },
@@ -444,6 +570,27 @@ Return strict JSON:
             base_url="https://integrate.api.nvidia.com/v1",
             api_key=self.api_key,
         )
+
+    def _select_secretary_model(self) -> ModelSpec:
+        optimus = self.catalog.get_cluster("Optimus")
+        for model in optimus.models:
+            if model.model_id == "step-3.5-flash":
+                return model
+        return optimus.models[0]
+
+    def _enforce_generated_file_laws(self, files: list[dict]) -> list[dict]:
+        safe_files: list[dict] = []
+        for file_spec in files:
+            root_name = (file_spec.get("root") or "src").strip().lower()
+            relative_path = (file_spec.get("path") or "").strip().replace("\\", "/")
+            if root_name == "context" and relative_path in PROTECTED_PROGRESS_FILES:
+                continue
+            safe_files.append(file_spec)
+        return safe_files
+
+    def _emit(self, event_handler: EventHandler | None, message: str) -> None:
+        if event_handler is not None:
+            event_handler(message)
 
     def _parse_phase_line(self, index: int, line: str) -> PhaseRecord | None:
         status_match = STATUS_PATTERN.search(line)

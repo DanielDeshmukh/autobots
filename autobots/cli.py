@@ -289,10 +289,15 @@ def _render_plan(console: Console, result: ExecutionResult) -> None:
     table.add_column("Lead Model")
 
     table.add_row("Command", "Optimus", result.plan.command_lead.model_id)
+    table.add_row("Secretary", "Optimus", result.plan.secretary_lead.model_id)
     table.add_row("Primary", result.plan.primary_cluster, result.plan.primary_lead.model_id)
     table.add_row("Review", "RedAlert", result.plan.safety_lead.model_id)
     table.add_row("Repair", "Ratchet", result.plan.repair_lead.model_id)
     console.print(table)
+
+
+def _render_stage_event(console: Console, message: str) -> None:
+    console.print(f"[bold cyan]Swarm[/bold cyan] {message}")
 
 
 def _render_phase_panel(console: Console, result: ExecutionResult) -> None:
@@ -321,7 +326,13 @@ def _approval_loop(
     roadmap_text: str,
     progress_text: str,
 ) -> None:
-    result = router.execute_phase(workspace, phase, roadmap_text, progress_text)
+    result = router.execute_phase(
+        workspace,
+        phase,
+        roadmap_text,
+        progress_text,
+        event_handler=lambda message: _render_stage_event(console, message),
+    )
     _render_plan(console, result)
 
     while True:
@@ -338,8 +349,13 @@ def _approval_loop(
         )
 
         if decision == "Approve and continue":
-            updated_progress = router.mark_phase_complete(progress_text, phase)
-            workspace.write_context_file("progress-tracker.md", updated_progress)
+            updated_progress = router.complete_phase(
+                workspace,
+                phase,
+                progress_text,
+                result.plan,
+                event_handler=lambda message: _render_stage_event(console, message),
+            )
             console.print(
                 Panel.fit(
                     f"Marked '{phase.title}' as COMPLETE.",
@@ -359,6 +375,7 @@ def _approval_loop(
             progress_text=progress_text,
             previous_result=result,
             feedback=feedback,
+            event_handler=lambda message: _render_stage_event(console, message),
         )
 
 
