@@ -12,6 +12,8 @@ class WorkspaceIOError(ValueError):
 class TargetProjectWorkspace:
     CRITICAL_CONTEXT_FILES = {"architecture.md", "security-auth.md"}
     LOCK_TTL_SECONDS = 60
+    LOCK_RETRY_DELAY_SECONDS = 2
+    LOCK_RETRY_ATTEMPTS = 3
 
     def __init__(self, target_root: str | Path):
         self.target_root = Path(target_root).expanduser().resolve()
@@ -79,6 +81,9 @@ class TargetProjectWorkspace:
             written_paths.append(str(written))
 
         return written_paths
+
+    def is_critical_context_file(self, relative_path: str) -> bool:
+        return relative_path.replace("\\", "/") in self.CRITICAL_CONTEXT_FILES
 
     def acquire_context_lock(
         self,

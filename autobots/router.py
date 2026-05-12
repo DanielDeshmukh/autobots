@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 from dataclasses import dataclass
 from typing import Callable
 
@@ -20,6 +21,7 @@ STATUS_PATTERN = re.compile(r"\b(PENDING|IN_PROGRESS|COMPLETE)\b")
 CHECKBOX_PATTERN = re.compile(r"\[( |x|~)\]")
 PROGRESS_TRACKER_FILE = "progress-tracker.md"
 PROTECTED_PROGRESS_FILES = {PROGRESS_TRACKER_FILE}
+SECRETARY_SNIPPET_CLUSTERS = {"UltraMagnus", "Jazz"}
 COORDINATION_LAWS = """Autobots Coordination Laws:
 1. Use pessimistic locks for critical context files: architecture.md and security-auth.md.
 2. Never write progress-tracker.md from a specialist, reviewer, or repair cluster.
@@ -158,6 +160,7 @@ class AutobotRouter:
             roadmap_text,
             progress_text,
             command_payload,
+            event_handler=event_handler,
         )
         self._emit(
             event_handler,
@@ -205,6 +208,7 @@ class AutobotRouter:
                 command_payload,
                 specialist_payload,
                 review_payload,
+                event_handler=event_handler,
             )
             raw_parts.append(repair_raw)
             journal.append(
@@ -222,9 +226,11 @@ class AutobotRouter:
             final_lock_owner = f"Ratchet/{plan.repair_lead.model_id}"
 
         safe_files = self._enforce_generated_file_laws(final_payload.get("files", []))
-        files_written = workspace.apply_generated_files(
+        files_written = self._persist_generated_files(
+            workspace,
             safe_files,
             lock_owner=final_lock_owner,
+            event_handler=event_handler,
         )
         summary = (final_payload.get("summary") or "Phase executed.").strip()
         return ExecutionResult(
@@ -266,11 +272,14 @@ class AutobotRouter:
                 "summary": feedback or "User requested another pass.",
                 "issues": [feedback or "User requested another pass."],
             },
+            event_handler=event_handler,
         )
         safe_files = self._enforce_generated_file_laws(repair_payload.get("files", []))
-        files_written = workspace.apply_generated_files(
+        files_written = self._persist_generated_files(
+            workspace,
             safe_files,
             lock_owner=f"Ratchet/{previous_result.plan.repair_lead.model_id}",
+            event_handler=event_handler,
         )
         journal = previous_result.journal + [
             ClusterMessage(
@@ -385,7 +394,20 @@ Return strict JSON:
         roadmap_text: str,
         progress_text: str,
         command_payload: dict,
+        event_handler: EventHandler | None = None,
     ) -> tuple[dict, str]:
+        progress_context_label = "Progress tracker"
+        progress_context = progress_text
+        if plan.primary_cluster in SECRETARY_SNIPPET_CLUSTERS:
+            progress_context_label = (
+                f"Optimus secretary timeline snippet from {PROGRESS_TRACKER_FILE}"
+            )
+            progress_context = self._build_progress_tracker_snippet(phase, progress_text)
+            self._emit(
+                event_handler,
+                f"Optimus secretary {plan.secretary_lead.model_id} injected a timeline snippet for {plan.primary_cluster}.",
+            )
+
         prompt = f"""
 You are the {plan.primary_cluster} implementation cluster.
 The command tier and support models have already coordinated your mission.
@@ -410,8 +432,8 @@ Phase:
 Roadmap:
 {roadmap_text}
 
-Progress tracker:
-{progress_text}
+{progress_context_label}:
+{progress_context}
 
 Execution brief:
 {json.dumps(command_payload, indent=2)}
@@ -485,6 +507,7 @@ Return strict JSON:
         command_payload: dict,
         specialist_payload: dict,
         review_payload: dict,
+        event_handler: EventHandler | None = None,
     ) -> tuple[dict, str]:
         prompt = f"""
 You are Ratchet, the repair cluster.
@@ -578,6 +601,19 @@ Return strict JSON:
                 return model
         return optimus.models[0]
 
+    def _build_progress_tracker_snippet(self, phase: PhaseRecord, progress_text: str) -> str:
+        lines = progress_text.splitlines()
+        if not lines:
+            return phase.raw_line
+
+        start = max(0, phase.line_index - 2)
+        end = min(len(lines), phase.line_index + 3)
+        snippet_lines: list[str] = []
+        for index in range(start, end):
+            prefix = ">>" if index == phase.line_index else "  "
+            snippet_lines.append(f"{prefix} line {index + 1}: {lines[index]}")
+        return "\n".join(snippet_lines)
+
     def _enforce_generated_file_laws(self, files: list[dict]) -> list[dict]:
         safe_files: list[dict] = []
         for file_spec in files:
@@ -587,6 +623,46 @@ Return strict JSON:
                 continue
             safe_files.append(file_spec)
         return safe_files
+
+    def _persist_generated_files(
+        self,
+        workspace: TargetProjectWorkspace,
+        files: list[dict],
+        *,
+        lock_owner: str,
+        event_handler: EventHandler | None = None,
+    ) -> list[str]:
+        attempts = workspace.LOCK_RETRY_ATTEMPTS
+        delay = workspace.LOCK_RETRY_DELAY_SECONDS
+
+        for attempt in range(1, attempts + 1):
+            try:
+                return workspace.apply_generated_files(files, lock_owner=lock_owner)
+            except Exception as exc:
+                if not self._is_lock_collision_error(exc):
+                    raise
+                if not self._files_include_critical_context(files):
+                    raise
+                if attempt >= attempts:
+                    raise
+                self._emit(
+                    event_handler,
+                    f"{lock_owner} waiting on a critical file lock. Sleep/retry {attempt}/{attempts - 1}.",
+                )
+                time.sleep(delay)
+
+        return []
+
+    def _files_include_critical_context(self, files: list[dict]) -> bool:
+        for file_spec in files:
+            root_name = (file_spec.get("root") or "src").strip().lower()
+            relative_path = (file_spec.get("path") or "").strip().replace("\\", "/")
+            if root_name == "context" and relative_path in TargetProjectWorkspace.CRITICAL_CONTEXT_FILES:
+                return True
+        return False
+
+    def _is_lock_collision_error(self, exc: Exception) -> bool:
+        return "Context lock for" in str(exc)
 
     def _emit(self, event_handler: EventHandler | None, message: str) -> None:
         if event_handler is not None:
