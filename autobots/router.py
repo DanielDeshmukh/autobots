@@ -10,6 +10,7 @@ from typing import Callable
 from dotenv import load_dotenv
 
 from .catalog import ClusterCatalog, ModelSpec
+from .executor import PhaseExecutor, WorkPacket
 from .workspace import TargetProjectWorkspace
 
 
@@ -80,6 +81,7 @@ class AutobotRouter:
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
         self.client = self._build_client() if self.api_key else None
         self.catalog = catalog or ClusterCatalog(api_key=self.api_key)
+        self.executor = PhaseExecutor(api_key=self.api_key)
 
     def read_phase_documents(self, workspace: TargetProjectWorkspace) -> tuple[str, str]:
         roadmap = workspace.read_context_file("roadmap.md")
@@ -133,6 +135,86 @@ class AutobotRouter:
             safety_lead=safety_lead,
             repair_lead=repair_lead,
         )
+
+    def build_work_packet_from_phase(
+        self,
+        phase: PhaseRecord,
+        roadmap_text: str,
+    ) -> WorkPacket:
+        """Extract phase information and build a structured work packet."""
+        # Parse relevant information from the roadmap
+        phase_id = self._extract_phase_id(phase.title)
+        constraints = self._extract_constraints(roadmap_text, phase_id)
+        validation_commands = self._extract_validation_commands(roadmap_text, phase_id)
+        acceptance_checks = self._extract_acceptance_checks(roadmap_text, phase_id)
+        relevant_paths = self._extract_relevant_paths(roadmap_text, phase_id)
+
+        return WorkPacket(
+            phase_id=phase_id,
+            title=phase.title,
+            goal=self._extract_phase_goal(roadmap_text, phase_id),
+            relevant_files=relevant_paths,
+            constraints=constraints,
+            validation_commands=validation_commands,
+            acceptance_checks=acceptance_checks,
+        )
+
+    def _extract_phase_id(self, title: str) -> str:
+        """Extract phase ID (P1, P2, P3, etc.) from title."""
+        match = re.search(r"\b(P\d+)\b", title)
+        return match.group(1) if match else "P0"
+
+    def _extract_phase_goal(self, roadmap_text: str, phase_id: str) -> str:
+        """Extract the goal for a phase from roadmap."""
+        pattern = rf"## {phase_id}.*?\n\n.*?(?=##|\Z)"
+        match = re.search(pattern, roadmap_text, re.DOTALL | re.IGNORECASE)
+        if match:
+            text = match.group(0)
+            lines = text.split("\n")
+            for line in lines:
+                if "goal:" in line.lower():
+                    return line.split(":", 1)[1].strip()
+        return f"Execute {phase_id}"
+
+    def _extract_relevant_paths(self, roadmap_text: str, phase_id: str) -> list[str]:
+        """Extract relevant file paths for a phase."""
+        pattern = rf"## {phase_id}.*?[Rr]elevant\s+(?:paths|files):\s*(.+?)(?:\n\n|\Z)"
+        match = re.search(pattern, roadmap_text, re.DOTALL)
+        if match:
+            paths_text = match.group(1).strip()
+            paths = [p.strip() for p in re.split(r"[,;]", paths_text) if p.strip()]
+            return paths[:20]  # Limit to first 20
+        return []
+
+    def _extract_validation_commands(self, roadmap_text: str, phase_id: str) -> list[str]:
+        """Extract validation commands for a phase."""
+        pattern = rf"## {phase_id}.*?[Vv]alidation.*?:\s*(.+?)(?:\n\n|\Z)"
+        match = re.search(pattern, roadmap_text, re.DOTALL)
+        if match:
+            commands_text = match.group(1).strip()
+            commands = [c.strip() for c in re.split(r"[,;]", commands_text) if c.strip()]
+            return commands[:5]  # Limit to first 5
+        return []
+
+    def _extract_constraints(self, roadmap_text: str, phase_id: str) -> list[str]:
+        """Extract constraints for a phase."""
+        pattern = rf"## {phase_id}.*?[Cc]onstraints?:\s*(.+?)(?:\n\n|\Z)"
+        match = re.search(pattern, roadmap_text, re.DOTALL)
+        if match:
+            constraints_text = match.group(1).strip()
+            constraints = [c.strip() for c in re.split(r"[,;]", constraints_text) if c.strip()]
+            return constraints[:5]
+        return []
+
+    def _extract_acceptance_checks(self, roadmap_text: str, phase_id: str) -> list[str]:
+        """Extract acceptance checks for a phase."""
+        pattern = rf"## {phase_id}.*?[Aa]ccept(?:ance)?.*?:\s*(.+?)(?:\n\n|\Z)"
+        match = re.search(pattern, roadmap_text, re.DOTALL)
+        if match:
+            checks_text = match.group(1).strip()
+            checks = [c.strip() for c in re.split(r"[,;]", checks_text) if c.strip()]
+            return checks[:5]
+        return []
 
     def execute_phase(
         self,
@@ -422,13 +504,19 @@ Treat the coordination rules below as hard laws.
 {COORDINATION_LAWS}
 
 Workspace constraints:
-1. Write only under src/ or context/.
-2. Never write in the Autobots engine repository.
-3. Return full file contents, not diffs.
-4. Never write `progress-tracker.md`; report progress back to Optimus instead.
+1. Write to appropriate project roots: src/, app/, lib/, tests/, docs/, scripts/, or context/.
+2. Choose the root that matches the file type and project structure.
+3. Never write in the Autobots engine repository itself.
+4. Return full file contents, not diffs.
+5. Never write `progress-tracker.md`; report progress back to Optimus instead.
 
-Target roots:
+Target roots available:
 - src root: {workspace.src_root}
+- app root: {workspace.target_root / "app"}
+- lib root: {workspace.target_root / "lib"}
+- tests root: {workspace.target_root / "tests"}
+- docs root: {workspace.target_root / "docs"}
+- scripts root: {workspace.target_root / "scripts"}
 - context root: {workspace.context_root}
 
 Phase:
@@ -524,13 +612,19 @@ Treat the coordination rules below as hard laws.
 {COORDINATION_LAWS}
 
 Workspace constraints:
-1. Write only under src/ or context/.
-2. Never write in the Autobots engine repository.
-3. Return full file contents, not diffs.
-4. Never write `progress-tracker.md`; report progress back to Optimus instead.
+1. Write to appropriate project roots: src/, app/, lib/, tests/, docs/, scripts/, or context/.
+2. Choose the root that matches the file type and project structure.
+3. Never write in the Autobots engine repository itself.
+4. Return full file contents, not diffs.
+5. Never write `progress-tracker.md`; report progress back to Optimus instead.
 
-Target roots:
+Target roots available:
 - src root: {workspace.src_root}
+- app root: {workspace.target_root / "app"}
+- lib root: {workspace.target_root / "lib"}
+- tests root: {workspace.target_root / "tests"}
+- docs root: {workspace.target_root / "docs"}
+- scripts root: {workspace.target_root / "scripts"}
 - context root: {workspace.context_root}
 
 Phase:
@@ -621,6 +715,20 @@ Return strict JSON:
             prefix = ">>" if index == phase.line_index else "  "
             snippet_lines.append(f"{prefix} line {index + 1}: {lines[index]}")
         return "\n".join(snippet_lines)
+
+    def run_validation_commands(
+        self,
+        workspace: TargetProjectWorkspace,
+        work_packet: WorkPacket,
+        event_handler: EventHandler | None = None,
+    ) -> tuple[bool, str]:
+        """Run validation commands for a work packet using the execution engine."""
+        if not work_packet.validation_commands:
+            return True, "No validation commands specified."
+
+        all_passed, results = self.executor.validate_phase(workspace, work_packet, event_handler=event_handler)
+        validation_report = self.executor.format_validation_results(results)
+        return all_passed, validation_report
 
     def _enforce_generated_file_laws(self, files: list[dict]) -> list[dict]:
         safe_files: list[dict] = []

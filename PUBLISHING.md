@@ -1,5 +1,13 @@
 # Publishing Autobots
 
+Current package version:
+
+- `0.1.1`
+
+Package metadata source:
+
+- [setup.cfg](/d:/Vs%20Code/VS%20code/autobots/setup.cfg)
+
 ## Install locally in editable mode
 
 ```powershell
@@ -7,6 +15,17 @@ python -m pip install --upgrade pip setuptools wheel build twine
 python -m pip install -e . --no-build-isolation
 autobots
 ```
+
+Verify metadata:
+
+```powershell
+python -m pip show autobot-swarm
+```
+
+Expected author fields:
+
+- `Author: Daniel Deshmukh`
+- `Author-email: deshmukhdaniel2005@gmail.com`
 
 ## Build distributable packages
 
@@ -35,6 +54,12 @@ python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-ur
 
 ```powershell
 python -m twine upload dist/*
+```
+
+Optional sanity check before upload:
+
+```powershell
+python -m twine check dist/*
 ```
 
 ## Result
