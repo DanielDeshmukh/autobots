@@ -79,7 +79,7 @@ class AutobotRouter:
     def __init__(self, api_key: str | None = None, catalog: ClusterCatalog | None = None):
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
         self.client = self._build_client() if self.api_key else None
-        self.catalog = catalog or ClusterCatalog()
+        self.catalog = catalog or ClusterCatalog(api_key=self.api_key)
 
     def read_phase_documents(self, workspace: TargetProjectWorkspace) -> tuple[str, str]:
         roadmap = workspace.read_context_file("roadmap.md")
@@ -605,7 +605,7 @@ Return strict JSON:
     def _select_secretary_model(self) -> ModelSpec:
         optimus = self.catalog.get_cluster("Optimus")
         for model in optimus.models:
-            if model.model_id == "step-3.5-flash":
+            if model.model_id.lower().endswith("step-3.5-flash"):
                 return model
         return optimus.models[0]
 

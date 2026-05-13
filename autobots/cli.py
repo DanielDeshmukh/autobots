@@ -14,6 +14,9 @@ from rich.prompt import Prompt
 from rich.table import Table
 from rich.text import Text
 
+from .bootstrap import CORE_CONTEXT_FILES, detect_repo_profile, initialize_context
+from .catalog import ClusterCatalog
+from .planning import write_plan
 from .router import AutobotRouter, ExecutionResult, PhaseRecord
 from .workspace import TargetProjectWorkspace
 
@@ -201,6 +204,22 @@ def _resolve_target_project(console: Console) -> Path:
     return target_root
 
 
+def _resolve_target_project_from_args(console: Console, args: list[str]) -> Path:
+    if len(args) > 1:
+        target_root = Path(args[1]).expanduser().resolve()
+        if not target_root.exists() or not target_root.is_dir():
+            raise FileNotFoundError(f"Target project not found: {target_root}")
+        console.print(
+            Panel.fit(
+                f"Target workspace mapped to:\n{target_root}",
+                title="Workspace",
+                border_style="cyan",
+            )
+        )
+        return target_root
+    return _resolve_target_project(console)
+
+
 def _require_safety_branch(console: Console, target_root: Path) -> None:
     current_branch = _detect_git_branch(target_root)
     detected = current_branch or "unknown"
@@ -298,6 +317,29 @@ def _render_plan(console: Console, result: ExecutionResult) -> None:
     console.print(table)
 
 
+def _render_registry_summary(console: Console, catalog: ClusterCatalog) -> None:
+    source_label = "Live NVIDIA registry" if catalog.using_live_catalog else "Bundled fallback registry"
+    summary_lines = [f"{source_label}: {catalog.available_model_count or catalog.model_count} models"]
+    if catalog.discovery_error:
+        summary_lines.append(f"Discovery fallback: {catalog.discovery_error}")
+
+    console.print(
+        Panel.fit(
+            "\n".join(summary_lines),
+            title="Swarm Registry",
+            border_style="cyan",
+        )
+    )
+
+    table = Table(title="Functional Category Inventory")
+    table.add_column("Cluster")
+    table.add_column("Role")
+    table.add_column("Models")
+    for cluster_name, role, count in catalog.cluster_model_counts():
+        table.add_row(cluster_name, role, str(count))
+    console.print(table)
+
+
 def _render_stage_event(console: Console, message: str) -> None:
     console.print(f"[bold cyan]Swarm[/bold cyan] {message}")
 
@@ -383,7 +425,6 @@ def _approval_loop(
 
 def run_engage() -> None:
     console = Console()
-    router = AutobotRouter()
     console.print(
         Panel.fit(
             "Autobots Engage uses a package-based CLI, a scalable cluster registry, "
@@ -392,18 +433,12 @@ def run_engage() -> None:
             border_style="blue",
         )
     )
-    console.print(
-        Panel.fit(
-            f"Built-in clustered models: {router.catalog.model_count}\n"
-            "Add more models with AUTOBOTS_MODEL_REGISTRY to scale beyond the bundled catalog.",
-            title="Swarm Registry",
-            border_style="cyan",
-        )
-    )
 
     target_root = _resolve_target_project(console)
     _require_safety_branch(console, target_root)
     _ensure_api_key(console)
+    router = AutobotRouter()
+    _render_registry_summary(console, router.catalog)
     _check_six_file_architecture(console, target_root)
 
     workspace = TargetProjectWorkspace(target_root)
@@ -431,6 +466,59 @@ def run_engage() -> None:
         _approval_loop(console, router, workspace, phase, roadmap_text, progress_text)
 
 
+def run_init(args: list[str]) -> None:
+    console = Console()
+    target_root = _resolve_target_project_from_args(console, args)
+    workspace = TargetProjectWorkspace(target_root)
+    profile = detect_repo_profile(target_root)
+    written_paths = initialize_context(workspace, profile)
+
+    table = Table(title="Autobots Init Summary")
+    table.add_column("Detected")
+    table.add_column("Value")
+    table.add_row("Project", profile.project_name)
+    table.add_row("Languages", ", ".join(profile.languages))
+    table.add_row("Package Managers", ", ".join(profile.package_managers))
+    table.add_row("Test Tools", ", ".join(profile.test_tools))
+    table.add_row("Source Roots", ", ".join(profile.source_roots))
+    console.print(table)
+
+    file_list = "\n".join(f"- {path.name}" for path in written_paths)
+    console.print(
+        Panel.fit(
+            f"Created or refreshed {len(CORE_CONTEXT_FILES)} context files.\n\n{file_list}",
+            title="Context Initialized",
+            border_style="green",
+        )
+    )
+
+
+def run_plan(args: list[str]) -> None:
+    console = Console()
+    target_root = _resolve_target_project_from_args(console, args)
+    workspace = TargetProjectWorkspace(target_root)
+    goal = " ".join(args[2:]).strip() if len(args) > 2 else ""
+    profile, scan = write_plan(workspace, goal=goal or None)
+
+    table = Table(title="Autobots Plan Summary")
+    table.add_column("Detected")
+    table.add_column("Value")
+    table.add_row("Project", profile.project_name)
+    table.add_row("Goal", goal or "Prepare the next implementation-ready plan")
+    table.add_row("Source Roots", ", ".join(scan.source_roots))
+    table.add_row("Test Roots", ", ".join(scan.test_roots) or "None detected")
+    table.add_row("Build Files", ", ".join(scan.build_files) or "None detected")
+    table.add_row("Env Files", ", ".join(scan.env_files) or "None detected")
+    console.print(table)
+    console.print(
+        Panel.fit(
+            "Updated context/roadmap.md and context/progress-tracker.md for Phase 3 planning.",
+            title="Plan Generated",
+            border_style="green",
+        )
+    )
+
+
 def _create_model_validation_workspace() -> TargetProjectWorkspace:
     temp_root = Path(tempfile.mkdtemp(prefix="autobots-model-validation-"))
     context_root = temp_root / "context"
@@ -452,6 +540,7 @@ def run_validate_models() -> None:
     console = Console()
     _ensure_api_key(console)
     router = AutobotRouter()
+    _render_registry_summary(console, router.catalog)
     workspace = _create_model_validation_workspace()
     roadmap_text, progress_text = router.read_phase_documents(workspace)
     phase = router.find_next_phase(progress_text)
@@ -569,18 +658,26 @@ def run_validate_models() -> None:
 def main(argv: list[str] | None = None) -> int:
     args = argv or sys.argv[1:]
     if not args:
-        Console().print("Usage: autobots <engage|validate-models>")
+        Console().print("Usage: autobots <init|plan|engage|validate-models> [target_path]")
         return 1
 
     console = Console()
     try:
-        if args[0] == "engage":
+        if args[0] == "init":
+            run_init(args)
+        elif args[0] == "plan":
+            run_plan(args)
+        elif args[0] == "engage":
             run_engage()
         elif args[0] == "validate-models":
             run_validate_models()
         else:
-            Console().print("Usage: autobots <engage|validate-models>")
+            Console().print("Usage: autobots <init|plan|engage|validate-models> [target_path]")
             return 1
     except (KeyboardInterrupt, EOFError):
         return _graceful_interrupt(console)
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

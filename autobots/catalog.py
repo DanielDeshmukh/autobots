@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from types import ModuleType
 
 
 @dataclass(frozen=True)
@@ -34,15 +36,15 @@ CLUSTER_DEFINITIONS = {
             "requirements",
         ),
         "models": [
-            "nemotron-3-super-120b-a12b",
-            "llama-3.3-nemotron-super-49b-v1.5",
-            "mistral-large-3-675b-instruct-2512",
-            "kimi-k2-thinking",
-            "step-3.5-flash",
-            "gpt-oss-120b",
-            "glm-5.1",
-            "llama-4-maverick-17b-128e-instruct",
-            "stockmark-2-100b-instruct",
+            "nvidia/nemotron-3-super-120b-a12b",
+            "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+            "nvidia/mistral-large-3-675b-instruct-2512",
+            "nvidia/kimi-k2-thinking",
+            "nvidia/step-3.5-flash",
+            "nvidia/gpt-oss-120b",
+            "nvidia/glm-5.1",
+            "nvidia/llama-4-maverick-17b-128e-instruct",
+            "nvidia/stockmark-2-100b-instruct",
         ],
     },
     "UltraMagnus": {
@@ -58,18 +60,18 @@ CLUSTER_DEFINITIONS = {
             "python",
         ),
         "models": [
-            "kimi-k2.6",
-            "deepseek-v4-pro",
-            "qwen3.5-397b-a17b",
-            "mistral-medium-3.5-128b",
-            "gemma-4-31b-it",
-            "qwen3-next-80b-a3b-thinking",
-            "dracarys-llama-3.1-70b-instruct",
-            "mixtral-8x22b-instruct-v0.1",
-            "evo2-40b",
-            "boltz-2",
-            "alphafold2-multimer",
-            "msa-search",
+            "nvidia/kimi-k2.6",
+            "nvidia/deepseek-v4-pro",
+            "nvidia/qwen3.5-397b-a17b",
+            "nvidia/mistral-medium-3.5-128b",
+            "nvidia/gemma-4-31b-it",
+            "nvidia/qwen3-next-80b-a3b-thinking",
+            "nvidia/dracarys-llama-3.1-70b-instruct",
+            "nvidia/mixtral-8x22b-instruct-v0.1",
+            "nvidia/evo2-40b",
+            "nvidia/boltz-2",
+            "nvidia/alphafold2-multimer",
+            "nvidia/msa-search",
         ],
     },
     "RedAlert": {
@@ -84,16 +86,16 @@ CLUSTER_DEFINITIONS = {
             "validation",
         ),
         "models": [
-            "nemotron-3-content-safety",
-            "llama-3.1-nemotron-safety-guard-8b-v3",
-            "gliner-pii",
-            "llama-guard-4-12b",
-            "nemoguard-jailbreak-detect",
-            "llama-3.1-nemoguard-8b-topic-control",
-            "llama-3.1-nemoguard-8b-content-safety",
-            "nemotron-content-safety-reasoning-4b",
-            "synthetic-video-detector",
-            "usdvalidate",
+            "nvidia/llama-3.1-nemotron-70b-instruct",
+            "nvidia/nemotron-4-340b-instruct",
+            "deepseek-ai/deepseek-v4-pro",
+            "nvidia/llama-3.1-nemotron-51b-instruct",
+            "meta/llama-3.1-405b-instruct",
+            "deepseek-ai/deepseek-v4-flash",
+            "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+            "nvidia/mistral-large-3-675b-instruct-2512",
+            "nvidia/qwen3.5-397b-a17b",
+            "nvidia/mistral-medium-3.5-128b",
         ],
     },
     "Jazz": {
@@ -109,17 +111,17 @@ CLUSTER_DEFINITIONS = {
             "component",
         ),
         "models": [
-            "qwen-image-edit",
-            "qwen-image",
-            "flux.2-klein-4b",
-            "flux.1-dev",
-            "flux.1-schnell",
-            "stable-diffusion-3.5-large",
-            "FLUX.1-Kontext-dev",
-            "phi-4-multimodal-instruct",
-            "NVIDIA AI for Media Relighting",
-            "TRELLIS",
-            "vista-3d",
+            "nvidia/qwen-image-edit",
+            "nvidia/qwen-image",
+            "nvidia/flux.2-klein-4b",
+            "nvidia/flux.1-dev",
+            "nvidia/flux.1-schnell",
+            "nvidia/stable-diffusion-3.5-large",
+            "nvidia/FLUX.1-Kontext-dev",
+            "nvidia/phi-4-multimodal-instruct",
+            "nvidia/NVIDIA AI for Media Relighting",
+            "nvidia/TRELLIS",
+            "nvidia/vista-3d",
         ],
     },
     "Ratchet": {
@@ -134,16 +136,16 @@ CLUSTER_DEFINITIONS = {
             "stability",
         ),
         "models": [
-            "deepseek-v4-flash",
-            "qwen3.5-coder-480b-a35b-instruct",
-            "qwen2.5-coder-32b-instruct",
-            "mistral-small-4-119b-2603",
-            "devstral-2-123b-instruct-2512",
-            "magistral-small-2506",
-            "phi-4-mini-instruct",
-            "llama-3.2-3b-instruct",
-            "llama-3.2-1b-instruct",
-            "nemotron-mini-4b-instruct",
+            "nvidia/deepseek-v4-flash",
+            "nvidia/qwen3.5-coder-480b-a35b-instruct",
+            "nvidia/qwen2.5-coder-32b-instruct",
+            "nvidia/mistral-small-4-119b-2603",
+            "nvidia/devstral-2-123b-instruct-2512",
+            "nvidia/magistral-small-2506",
+            "nvidia/phi-4-mini-instruct",
+            "nvidia/llama-3.2-3b-instruct",
+            "nvidia/llama-3.2-1b-instruct",
+            "nvidia/nemotron-mini-4b-instruct",
         ],
     },
     "Perceptor": {
@@ -158,18 +160,18 @@ CLUSTER_DEFINITIONS = {
             "parse",
         ),
         "models": [
-            "nemotron-ocr-v1",
-            "nemotron-parse",
-            "paddleocr",
-            "nemotron-table-structure-v1",
-            "nemotron-page-elements-v3",
-            "nemotron-graphic-elements-v1",
-            "llama-3.2-nemoretriever-300m-embed-v2",
-            "llama-3.2-nv-embedqa-1b-v2",
-            "llama-3.2-nv-rerankqa-1b-v2",
-            "nv-embedcode-7b-v1",
-            "bge-m3",
-            "rerank-qa-mistral-4b",
+            "nvidia/nemotron-ocr-v1",
+            "nvidia/nemotron-parse",
+            "nvidia/paddleocr",
+            "nvidia/nemotron-table-structure-v1",
+            "nvidia/nemotron-page-elements-v3",
+            "nvidia/nemotron-graphic-elements-v1",
+            "nvidia/llama-3.2-nemoretriever-300m-embed-v2",
+            "nvidia/llama-3.2-nv-embedqa-1b-v2",
+            "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+            "nvidia/nv-embedcode-7b-v1",
+            "nvidia/bge-m3",
+            "nvidia/rerank-qa-mistral-4b",
         ],
     },
     "Bumblebee": {
@@ -184,15 +186,15 @@ CLUSTER_DEFINITIONS = {
             "audio",
         ),
         "models": [
-            "whisper-large-v3",
-            "canary-1b-asr",
-            "riva-translate-4b-instruct-v1_1",
-            "magpie-tts-zeroshot",
-            "nemotron-voicechat",
-            "LipSync",
-            "Background Noise Removal",
-            "Active Speaker Detection",
-            "parakeet-1.1b-rnnt-multilingual-asr",
+            "nvidia/whisper-large-v3",
+            "nvidia/canary-1b-asr",
+            "nvidia/riva-translate-4b-instruct-v1_1",
+            "nvidia/magpie-tts-zeroshot",
+            "nvidia/nemotron-voicechat",
+            "nvidia/LipSync",
+            "nvidia/Background Noise Removal",
+            "nvidia/Active Speaker Detection",
+            "nvidia/parakeet-1.1b-rnnt-multilingual-asr",
         ],
     },
     "Ironhide": {
@@ -206,14 +208,14 @@ CLUSTER_DEFINITIONS = {
             "prediction",
         ),
         "models": [
-            "cosmos-reason2-8b",
-            "cosmos-transfer2.5-2b",
-            "cosmos-predict1-5b",
-            "streampetr",
-            "sparsedrive",
-            "bevformer",
-            "fourcastnet",
-            "cuopt",
+            "nvidia/cosmos-reason2-8b",
+            "nvidia/cosmos-transfer2.5-2b",
+            "nvidia/cosmos-predict1-5b",
+            "nvidia/streampetr",
+            "nvidia/sparsedrive",
+            "nvidia/bevformer",
+            "nvidia/fourcastnet",
+            "nvidia/cuopt",
         ],
     },
     "Wheeljack": {
@@ -227,29 +229,91 @@ CLUSTER_DEFINITIONS = {
             "research",
         ),
         "models": [
-            "ising-calibration-1-35b-a3b",
-            "genmol",
-            "molmim",
-            "rfdiffusion",
-            "proteinmpnn",
-            "esm2-650m",
-            "openfold3",
+            "nvidia/ising-calibration-1-35b-a3b",
+            "nvidia/genmol",
+            "nvidia/molmim",
+            "nvidia/rfdiffusion",
+            "nvidia/proteinmpnn",
+            "nvidia/esm2-650m",
+            "nvidia/openfold3",
         ],
     },
 }
 
+ENGINE_ROOT = Path(__file__).resolve().parent.parent
+ENDPOINT_DISCOVERY_PATH = ENGINE_ROOT / "find_endpoints.py"
+GENERAL_TEXT_MODEL_TOKENS = (
+    "assistant",
+    "chat",
+    "coder",
+    "deepseek",
+    "flash",
+    "gemma",
+    "glm",
+    "gpt",
+    "instruct",
+    "kimi",
+    "llama",
+    "magistral",
+    "mistral",
+    "nemotron",
+    "qwen",
+    "reason",
+    "small",
+    "step",
+    "super",
+    "think",
+)
+CLUSTER_MATCH_TOKENS = {
+    "Optimus": ("command", "glm", "gpt", "kimi", "maverick", "nemotron", "reason", "step", "stockmark", "super", "think"),
+    "UltraMagnus": ("alphafold", "backend", "boltz", "code", "coder", "deepseek", "gemma", "kimi", "mixtral", "mistral", "qwen"),
+    "RedAlert": ("content-safety", "guard", "jailbreak", "moderation", "nemoguard", "pii", "safety", "topic-control", "usdvalidate", "validate"),
+    "Jazz": ("diffusion", "edit", "flux", "image", "kontext", "multimodal", "relighting", "sd3", "trellis", "vista"),
+    "Ratchet": ("coder", "debug", "devstral", "fix", "flash", "mini", "patch", "phi", "repair", "small"),
+    "Perceptor": ("bge", "document", "embed", "graphic", "ocr", "page", "parse", "paddleocr", "rerank", "retriever", "table"),
+    "Bumblebee": ("asr", "audio", "canary", "lipsync", "noise", "parakeet", "speaker", "speech", "translate", "tts", "voice", "whisper"),
+    "Ironhide": ("autonomous", "bevformer", "cosmos", "cuopt", "fourcastnet", "physics", "predict", "simulation", "sparsedrive", "streampetr", "transfer"),
+    "Wheeljack": ("alphafold", "biology", "esm", "evo", "fold", "genmol", "ising", "mol", "molecule", "msa", "protein", "rfdiffusion"),
+}
+DISCOVERY_MODULE: ModuleType | None = None
+
 
 class ClusterCatalog:
-    def __init__(self, extra_registry_path: str | None = None):
+    def __init__(
+        self,
+        extra_registry_path: str | None = None,
+        *,
+        api_key: str | None = None,
+        refresh_live: bool | None = None,
+        available_model_ids: list[str] | None = None,
+    ):
         self.extra_registry_path = extra_registry_path or os.getenv("AUTOBOTS_MODEL_REGISTRY")
+        self.api_key = (api_key or os.getenv("NVIDIA_API_KEY") or "").strip() or None
+        self._manual_available_model_ids = tuple(dict.fromkeys(available_model_ids or ()))
+        self.refresh_live = refresh_live if refresh_live is not None else bool(
+            self.api_key and os.getenv("AUTOBOTS_DISABLE_LIVE_CATALOG", "0") != "1"
+        )
+        self.discovery_error: str | None = None
+        self.using_live_catalog = False
+        self.available_model_ids = self._resolve_available_model_ids()
         self.clusters = self._build_clusters()
 
     @property
     def model_count(self) -> int:
         return sum(len(cluster.models) for cluster in self.clusters.values())
 
+    @property
+    def available_model_count(self) -> int:
+        return len(self.available_model_ids)
+
     def cluster_names(self) -> list[str]:
         return list(self.clusters.keys())
+
+    def cluster_model_counts(self) -> list[tuple[str, str, int]]:
+        return [
+            (cluster.name, cluster.role, len(cluster.models))
+            for cluster in self.clusters.values()
+        ]
 
     def route(self, task_signal: str) -> str:
         normalized = task_signal.lower()
@@ -284,10 +348,12 @@ class ClusterCatalog:
         return sum(1 for tag in model.tags if tag in normalized)
 
     def _build_clusters(self) -> dict[str, ClusterSpec]:
+        live_cluster_models = self._build_live_cluster_models()
         clusters: dict[str, ClusterSpec] = {}
         for cluster_name, spec in CLUSTER_DEFINITIONS.items():
             tags = spec["keywords"]
-            models = tuple(ModelSpec(model_id=model_id, cluster=cluster_name, tags=tags) for model_id in spec["models"])
+            model_ids = live_cluster_models.get(cluster_name) or spec["models"]
+            models = tuple(ModelSpec(model_id=model_id, cluster=cluster_name, tags=tags) for model_id in model_ids)
             clusters[cluster_name] = ClusterSpec(
                 name=cluster_name,
                 role=spec["role"],
@@ -343,3 +409,87 @@ class ClusterCatalog:
                 extra[cluster_name] = [str(model_id) for model_id in model_ids]
         return extra
 
+    def _resolve_available_model_ids(self) -> tuple[str, ...]:
+        if self._manual_available_model_ids:
+            self.using_live_catalog = True
+            return self._manual_available_model_ids
+
+        if not self.refresh_live or not self.api_key:
+            return ()
+
+        try:
+            discovery = self._load_discovery_module()
+            model_ids = discovery.fetch_available_nim_model_ids(self.api_key)
+        except Exception as exc:
+            self.discovery_error = str(exc)
+            return ()
+
+        self.using_live_catalog = True
+        return tuple(dict.fromkeys(model_ids))
+
+    def _build_live_cluster_models(self) -> dict[str, list[str]]:
+        if not self.available_model_ids:
+            return {}
+
+        available_ids = list(self.available_model_ids)
+        available_by_lower = {model_id.lower(): model_id for model_id in available_ids}
+        available_by_name = {self._canonical_model_name(model_id): model_id for model_id in available_ids}
+        cluster_models = {cluster_name: [] for cluster_name in CLUSTER_DEFINITIONS}
+
+        for cluster_name, spec in CLUSTER_DEFINITIONS.items():
+            for seed_model_id in spec["models"]:
+                matched = available_by_lower.get(seed_model_id.lower())
+                if matched is None:
+                    matched = available_by_name.get(self._canonical_model_name(seed_model_id))
+                if matched and matched not in cluster_models[cluster_name]:
+                    cluster_models[cluster_name].append(matched)
+
+        for model_id in available_ids:
+            for cluster_name in self._matching_clusters(model_id):
+                if model_id not in cluster_models[cluster_name]:
+                    cluster_models[cluster_name].append(model_id)
+
+        general_pool = [model_id for model_id in available_ids if self._looks_like_general_text_model(model_id)]
+        fallback_pool = general_pool or available_ids
+        for cluster_name in CLUSTER_DEFINITIONS:
+            if cluster_models[cluster_name]:
+                continue
+            cluster_models[cluster_name] = fallback_pool[: min(3, len(fallback_pool))]
+
+        return cluster_models
+
+    def _matching_clusters(self, model_id: str) -> list[str]:
+        normalized = model_id.lower()
+        matches: list[str] = []
+        for cluster_name, tokens in CLUSTER_MATCH_TOKENS.items():
+            if any(token in normalized for token in tokens):
+                matches.append(cluster_name)
+
+        if not matches and self._looks_like_general_text_model(model_id):
+            matches.extend(["Optimus", "UltraMagnus", "Ratchet"])
+
+        if not matches:
+            matches.append("Optimus")
+        return matches
+
+    def _looks_like_general_text_model(self, model_id: str) -> bool:
+        normalized = model_id.lower()
+        return any(token in normalized for token in GENERAL_TEXT_MODEL_TOKENS)
+
+    def _canonical_model_name(self, model_id: str) -> str:
+        return model_id.lower().split("/", 1)[-1]
+
+    def _load_discovery_module(self):
+        global DISCOVERY_MODULE
+
+        if DISCOVERY_MODULE is not None:
+            return DISCOVERY_MODULE
+
+        spec = importlib.util.spec_from_file_location("autobots_find_endpoints", ENDPOINT_DISCOVERY_PATH)
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"Unable to load endpoint discovery script at {ENDPOINT_DISCOVERY_PATH}")
+
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        DISCOVERY_MODULE = module
+        return module

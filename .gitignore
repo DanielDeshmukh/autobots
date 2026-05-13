@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Autobots local artifacts
+model-validation-report.json
+output.log
+debug_*.py
+list_instruct_models.py
+test_api.py
+.sixth/
+context/.autobots-locks/
