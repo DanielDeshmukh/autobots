@@ -16,7 +16,7 @@ from rich.text import Text
 
 from .bootstrap import CORE_CONTEXT_FILES, detect_repo_profile, initialize_context
 from .catalog import ClusterCatalog
-from .planning import write_plan
+from .planning import PlanArtifacts, write_plan
 from .router import AutobotRouter, ExecutionResult, PhaseRecord
 from .workspace import TargetProjectWorkspace
 
@@ -495,24 +495,38 @@ def run_init(args: list[str]) -> None:
 
 def run_plan(args: list[str]) -> None:
     console = Console()
-    target_root = _resolve_target_project_from_args(console, args)
+    target_root, goal, append, insert_after, dry_run = _parse_plan_args(args)
+    target_root = _resolve_target_project_from_args(console, ["plan", target_root] if target_root else ["plan"])
     workspace = TargetProjectWorkspace(target_root)
-    goal = " ".join(args[2:]).strip() if len(args) > 2 else ""
-    profile, scan = write_plan(workspace, goal=goal or None)
+    profile, scan, artifacts = write_plan(
+        workspace,
+        goal=goal or None,
+        append=append,
+        insert_after=insert_after,
+        dry_run=dry_run,
+    )
 
     table = Table(title="Autobots Plan Summary")
     table.add_column("Detected")
     table.add_column("Value")
     table.add_row("Project", profile.project_name)
     table.add_row("Goal", goal or "Prepare the next implementation-ready plan")
+    table.add_row("Mode", "Append" if append else "Replace")
+    table.add_row("Insert After", insert_after or "End of plan")
     table.add_row("Source Roots", ", ".join(scan.source_roots))
     table.add_row("Test Roots", ", ".join(scan.test_roots) or "None detected")
     table.add_row("Build Files", ", ".join(scan.build_files) or "None detected")
     table.add_row("Env Files", ", ".join(scan.env_files) or "None detected")
+    table.add_row("Frameworks", ", ".join(scan.frameworks) or "None detected")
+    table.add_row("Phases", str(len(artifacts.phases)))
     console.print(table)
     console.print(
         Panel.fit(
-            "Updated context/roadmap.md and context/progress-tracker.md for Phase 3 planning.",
+            (
+                "Generated a planning preview without writing files."
+                if dry_run
+                else "Updated context/roadmap.md and context/progress-tracker.md for Phase 3 planning."
+            ),
             title="Plan Generated",
             border_style="green",
         )
@@ -653,6 +667,44 @@ def run_validate_models() -> None:
             )
         )
         raise SystemExit(1) from exc
+
+
+def _parse_plan_args(args: list[str]) -> tuple[str | None, str, bool, str | None, bool]:
+    target_path: str | None = args[1] if len(args) > 1 and not args[1].startswith("--") else None
+    tokens = args[2:] if target_path is not None else args[1:]
+    goal_parts: list[str] = []
+    append = False
+    insert_after: str | None = None
+    dry_run = False
+
+    index = 0
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "--append":
+            append = True
+            index += 1
+            continue
+        if token == "--dry-run":
+            dry_run = True
+            index += 1
+            continue
+        if token == "--insert-after":
+            if index + 1 >= len(tokens):
+                raise SystemExit("Missing value for --insert-after")
+            insert_after = tokens[index + 1].strip()
+            append = True
+            index += 2
+            continue
+        if token == "--goal":
+            if index + 1 >= len(tokens):
+                raise SystemExit("Missing value for --goal")
+            goal_parts.append(tokens[index + 1].strip())
+            index += 2
+            continue
+        goal_parts.append(token)
+        index += 1
+
+    return target_path, " ".join(part for part in goal_parts if part).strip(), append, insert_after, dry_run
 
 
 def main(argv: list[str] | None = None) -> int:
