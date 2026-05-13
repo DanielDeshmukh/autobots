@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -429,15 +431,156 @@ def run_engage() -> None:
         _approval_loop(console, router, workspace, phase, roadmap_text, progress_text)
 
 
+def _create_model_validation_workspace() -> TargetProjectWorkspace:
+    temp_root = Path(tempfile.mkdtemp(prefix="autobots-model-validation-"))
+    context_root = temp_root / "context"
+    src_root = temp_root / "src"
+    context_root.mkdir(parents=True, exist_ok=True)
+    src_root.mkdir(parents=True, exist_ok=True)
+    (context_root / "roadmap.md").write_text(
+        "# Validation Roadmap\n\n- Create a tiny implementation artifact.\n",
+        encoding="utf-8",
+    )
+    (context_root / "progress-tracker.md").write_text(
+        "- [ ] Build a validation artifact\n",
+        encoding="utf-8",
+    )
+    return TargetProjectWorkspace(temp_root)
+
+
+def run_validate_models() -> None:
+    console = Console()
+    _ensure_api_key(console)
+    router = AutobotRouter()
+    workspace = _create_model_validation_workspace()
+    roadmap_text, progress_text = router.read_phase_documents(workspace)
+    phase = router.find_next_phase(progress_text)
+    if phase is None:
+        raise RuntimeError("Validation workspace did not produce a runnable phase.")
+
+    plan = router.build_cluster_plan(phase, roadmap_text)
+    console.print(
+        Panel.fit(
+            f"Testing model contracts for phase: {phase.title}",
+            title="Model Validation",
+            border_style="blue",
+        )
+    )
+    report_path = ENGINE_ROOT / "model-validation-report.json"
+
+    try:
+        command_payload, command_raw = router._run_command_stage(plan, phase, roadmap_text, progress_text)
+        specialist_payload, specialist_raw = router._run_specialist_stage(
+            plan,
+            workspace,
+            phase,
+            roadmap_text,
+            progress_text,
+            command_payload,
+        )
+        review_payload, review_raw = router._run_safety_stage(
+            plan,
+            phase,
+            specialist_payload,
+            command_payload,
+        )
+
+        rows = [
+            ("Command", plan.command_lead.model_id, command_payload),
+            ("Specialist", plan.primary_lead.model_id, specialist_payload),
+            ("Review", plan.safety_lead.model_id, review_payload),
+        ]
+
+        if (review_payload.get("status") or "").lower() == "revise":
+            repair_payload, repair_raw = router._run_repair_stage(
+                plan,
+                workspace,
+                phase,
+                roadmap_text,
+                progress_text,
+                command_payload,
+                specialist_payload,
+                review_payload,
+            )
+            rows.append(("Repair", plan.repair_lead.model_id, repair_payload))
+        else:
+            repair_raw = ""
+
+        table = Table(title="Model Contract Validation")
+        table.add_column("Stage")
+        table.add_column("Model")
+        table.add_column("Validated Fields")
+        for stage_name, model_id, payload in rows:
+            table.add_row(stage_name, model_id, ", ".join(sorted(payload.keys())))
+        console.print(table)
+
+        transcript = {
+            "status": "success",
+            "plan": {
+                "command_lead": plan.command_lead.model_id,
+                "primary_cluster": plan.primary_cluster,
+                "primary_lead": plan.primary_lead.model_id,
+                "safety_lead": plan.safety_lead.model_id,
+                "repair_lead": plan.repair_lead.model_id,
+            },
+            "responses": {
+                "command": {"raw": command_raw, "payload": command_payload},
+                "specialist": {"raw": specialist_raw, "payload": specialist_payload},
+                "review": {"raw": review_raw, "payload": review_payload},
+            },
+        }
+        if repair_raw:
+            transcript["responses"]["repair"] = {"raw": repair_raw, "payload": repair_payload}
+
+        report_path.write_text(json.dumps(transcript, indent=2), encoding="utf-8")
+        console.print(
+            Panel.fit(
+                f"Validated live model responses successfully.\nSaved report to:\n{report_path}",
+                title="Validation Complete",
+                border_style="green",
+            )
+        )
+    except Exception as exc:
+        failure_report = {
+            "status": "failed",
+            "plan": {
+                "command_lead": plan.command_lead.model_id,
+                "primary_cluster": plan.primary_cluster,
+                "primary_lead": plan.primary_lead.model_id,
+                "safety_lead": plan.safety_lead.model_id,
+                "repair_lead": plan.repair_lead.model_id,
+            },
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+        }
+        report_path.write_text(json.dumps(failure_report, indent=2), encoding="utf-8")
+        console.print(
+            Panel.fit(
+                f"Live model validation failed at runtime.\n"
+                f"Likely cause: invalid or unavailable model IDs for the configured endpoint.\n"
+                f"Saved failure report to:\n{report_path}",
+                title="Validation Failed",
+                border_style="red",
+            )
+        )
+        raise SystemExit(1) from exc
+
+
 def main(argv: list[str] | None = None) -> int:
     args = argv or sys.argv[1:]
-    if not args or args[0] != "engage":
-        Console().print("Usage: autobots engage")
+    if not args:
+        Console().print("Usage: autobots <engage|validate-models>")
         return 1
 
     console = Console()
     try:
-        run_engage()
+        if args[0] == "engage":
+            run_engage()
+        elif args[0] == "validate-models":
+            run_validate_models()
+        else:
+            Console().print("Usage: autobots <engage|validate-models>")
+            return 1
     except (KeyboardInterrupt, EOFError):
         return _graceful_interrupt(console)
     return 0

@@ -71,6 +71,10 @@ class ExecutionResult:
 EventHandler = Callable[[str], None]
 
 
+class ModelContractError(ValueError):
+    pass
+
+
 class AutobotRouter:
     def __init__(self, api_key: str | None = None, catalog: ClusterCatalog | None = None):
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
@@ -384,6 +388,7 @@ Return strict JSON:
 """.strip()
         raw = self._complete(plan.command_lead.model_id, prompt)
         payload = self._parse_json(raw)
+        self.validate_command_payload(payload)
         return payload, raw
 
     def _run_specialist_stage(
@@ -460,6 +465,7 @@ Return strict JSON:
         payload = self._parse_json(raw)
         if "files" not in payload:
             payload["files"] = []
+        self.validate_specialist_payload(payload)
         return payload, raw
 
     def _run_safety_stage(
@@ -495,6 +501,7 @@ Return strict JSON:
         payload = self._parse_json(raw)
         payload.setdefault("issues", [])
         payload.setdefault("status", "pass")
+        self.validate_review_payload(payload)
         return payload, raw
 
     def _run_repair_stage(
@@ -560,6 +567,7 @@ Return strict JSON:
         payload = self._parse_json(raw)
         if "files" not in payload:
             payload["files"] = []
+        self.validate_repair_payload(payload)
         return payload, raw
 
     def _complete(self, model_id: str, prompt: str) -> str:
@@ -706,6 +714,73 @@ Return strict JSON:
         if not isinstance(payload, dict):
             raise ValueError("Model response must be a JSON object.")
         return payload
+
+    def validate_command_payload(self, payload: dict) -> None:
+        self._require_string(payload, "summary", "command payload")
+        self._require_string_list(payload, "implementation_goals", "command payload")
+        self._require_string_list(payload, "risks", "command payload")
+        self._require_string_list(payload, "acceptance_checks", "command payload")
+
+    def validate_specialist_payload(self, payload: dict) -> None:
+        self._require_string(payload, "summary", "specialist payload")
+        self._require_string_list(payload, "implementation_notes", "specialist payload")
+        self._require_file_list(payload, "specialist payload")
+
+    def validate_review_payload(self, payload: dict) -> None:
+        status = self._require_string(payload, "status", "review payload").lower()
+        if status not in {"pass", "revise"}:
+            raise ModelContractError(
+                f"review payload field 'status' must be 'pass' or 'revise', got '{payload.get('status')}'."
+            )
+        self._require_string(payload, "summary", "review payload")
+        self._require_string_list(payload, "issues", "review payload")
+
+    def validate_repair_payload(self, payload: dict) -> None:
+        self._require_string(payload, "summary", "repair payload")
+        self._require_file_list(payload, "repair payload")
+
+    def _require_string(self, payload: dict, field: str, payload_name: str) -> str:
+        value = payload.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise ModelContractError(
+                f"{payload_name} field '{field}' must be a non-empty string."
+            )
+        return value
+
+    def _require_string_list(self, payload: dict, field: str, payload_name: str) -> list[str]:
+        value = payload.get(field)
+        if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+            raise ModelContractError(
+                f"{payload_name} field '{field}' must be a list of strings."
+            )
+        return value
+
+    def _require_file_list(self, payload: dict, payload_name: str) -> list[dict]:
+        files = payload.get("files")
+        if not isinstance(files, list):
+            raise ModelContractError(f"{payload_name} field 'files' must be a list.")
+
+        for index, file_spec in enumerate(files):
+            if not isinstance(file_spec, dict):
+                raise ModelContractError(
+                    f"{payload_name} files[{index}] must be an object."
+                )
+            root_name = file_spec.get("root")
+            relative_path = file_spec.get("path")
+            content = file_spec.get("content")
+            if root_name not in {"src", "context"}:
+                raise ModelContractError(
+                    f"{payload_name} files[{index}].root must be 'src' or 'context'."
+                )
+            if not isinstance(relative_path, str) or not relative_path.strip():
+                raise ModelContractError(
+                    f"{payload_name} files[{index}].path must be a non-empty string."
+                )
+            if not isinstance(content, str):
+                raise ModelContractError(
+                    f"{payload_name} files[{index}].content must be a string."
+                )
+        return files
 
     def _file_entries_from_paths(
         self,
