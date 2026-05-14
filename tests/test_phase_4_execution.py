@@ -2,9 +2,11 @@
 
 import tempfile
 import unittest
+import json
 from pathlib import Path
 
 from autobots.executor import PhaseExecutor, WorkPacket
+from autobots.catalog import ModelSpec
 from autobots.router import AutobotRouter
 from autobots.workspace import TargetProjectWorkspace
 
@@ -231,6 +233,17 @@ class Phase4ExecutorTests(unittest.TestCase):
         executor._check_command_policy("pylint src/")
         executor._check_command_policy("mypy src/")
 
+    def test_command_policy_requires_explicit_migration_opt_in(self) -> None:
+        """Test that migration commands need explicit approval."""
+        from autobots.executor import CommandPolicyViolation
+
+        executor = PhaseExecutor()
+
+        with self.assertRaises(CommandPolicyViolation):
+            executor._check_command_policy("python manage.py migrate")
+
+        executor._check_command_policy("python manage.py migrate", allow_migrations=True)
+
     def test_format_validation_results(self) -> None:
         """Test formatting validation results."""
         from autobots.executor import ValidationResult
@@ -263,6 +276,73 @@ class Phase4ExecutorTests(unittest.TestCase):
 
 class Phase4RouterTests(unittest.TestCase):
     """Test Phase 4 router extensions."""
+
+    class Phase5LoopRouter(AutobotRouter):
+        def __init__(self) -> None:
+            super().__init__(api_key="test-key")
+            self.repair_calls = 0
+
+        def build_cluster_plan(self, phase, roadmap_text):  # type: ignore[override]
+            spec = ModelSpec(model_id="test/model", cluster="Optimus", tags=())
+            from autobots.router import ClusterPlan
+
+            return ClusterPlan(
+                primary_cluster="UltraMagnus",
+                primary_lead=spec,
+                primary_reviewer=spec,
+                primary_support=[],
+                command_lead=spec,
+                command_reviewer=spec,
+                secretary_lead=spec,
+                safety_lead=spec,
+                repair_lead=spec,
+            )
+
+        def _run_command_stage(self, plan, phase, roadmap_text, progress_text):  # type: ignore[override]
+            payload = {
+                "summary": "Prepared the execution brief.",
+                "implementation_goals": ["Create the implementation and validate it."],
+                "risks": ["Validation may fail on the first attempt."],
+                "acceptance_checks": ["Target repo tests pass."],
+            }
+            return payload, json.dumps(payload)
+
+        def _run_specialist_stage(self, plan, workspace, phase, roadmap_text, progress_text, command_payload, event_handler=None):  # type: ignore[override]
+            test_content = (
+                "from pathlib import Path\n\n"
+                "import unittest\n\n"
+                "class GeneratedValidationTests(unittest.TestCase):\n"
+                "    def test_generated_file_is_fixed(self):\n"
+                "        value = Path('src/check.txt').read_text(encoding='utf-8').strip()\n"
+                "        self.assertEqual(value, 'fixed')\n\n"
+                "if __name__ == '__main__':\n"
+                "    unittest.main()\n"
+            )
+            payload = {
+                "summary": "Created the initial implementation.",
+                "implementation_notes": ["Wrote a draft file and its validation test."],
+                "files": [
+                    {"root": "src", "path": "check.txt", "content": "broken\n"},
+                    {"root": "tests", "path": "test_generated.py", "content": test_content},
+                ],
+            }
+            return payload, json.dumps(payload)
+
+        def _run_safety_stage(self, plan, phase, specialist_payload, command_payload):  # type: ignore[override]
+            payload = {"status": "pass", "summary": "Safety review passed.", "issues": []}
+            return payload, json.dumps(payload)
+
+        def _run_repair_stage(self, plan, workspace, phase, roadmap_text, progress_text, command_payload, specialist_payload, review_payload, event_handler=None):  # type: ignore[override]
+            self.repair_calls += 1
+            test_content = specialist_payload["files"][1]["content"]
+            payload = {
+                "summary": "Repaired the implementation after validation failure.",
+                "files": [
+                    {"root": "src", "path": "check.txt", "content": "fixed\n"},
+                    {"root": "tests", "path": "test_generated.py", "content": test_content},
+                ],
+            }
+            return payload, json.dumps(payload)
 
     def test_build_work_packet_from_phase(self) -> None:
         """Test building a work packet from phase information."""
@@ -329,6 +409,41 @@ Acceptance: All code is understood
 
             self.assertTrue(passed)
             self.assertIn("ok", report)
+
+    def test_execute_phase_runs_automatic_verify_repair_loop(self) -> None:
+        """Test that failed validation triggers an automatic repair cycle."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "src").mkdir()
+            (root / "tests").mkdir()
+            workspace = TargetProjectWorkspace(root)
+            router = self.Phase5LoopRouter()
+
+            from autobots.router import PhaseRecord
+
+            phase = PhaseRecord(
+                line_index=0,
+                raw_line="- [ ] P1 | Demo phase",
+                title="P1 | Demo phase",
+                status="PENDING",
+            )
+            roadmap = (
+                "# Roadmap\n\n"
+                "## P1 | Demo phase\n"
+                "Goal: Deliver a verified implementation\n"
+                "Relevant paths: src/check.txt, tests/test_generated.py\n"
+                "Validation: python -m unittest discover -s tests -q\n"
+                "Acceptance: Target repo tests pass\n"
+            )
+            progress = "# Progress Tracker\n\n- [ ] P1 | Demo phase | depends on: none | validation: python -m unittest discover -s tests -q | acceptance: Target repo tests pass\n"
+
+            result = router.execute_phase(workspace, phase, roadmap, progress)
+
+            self.assertTrue(result.validation_passed)
+            self.assertEqual(result.verification_attempts, 2)
+            self.assertEqual(router.repair_calls, 1)
+            self.assertIn("PASS", result.validation_report)
+            self.assertEqual((root / "src" / "check.txt").read_text(encoding="utf-8").strip(), "fixed")
 
 
 if __name__ == "__main__":

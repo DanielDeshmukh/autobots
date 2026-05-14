@@ -1,13 +1,8 @@
-"""Phase 4: Execution Engine For Real Project Work
-
-Provides structured work packets and iterative execution loops for autonomous
-phase execution. Supports file inspection, generation, application, and
-validation within safety constraints.
-"""
+"""Phase 5: execution and verification engine for real project work."""
 
 from __future__ import annotations
 
-import json
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,6 +17,7 @@ EventHandler = Callable[[str], None]
 @dataclass(frozen=True)
 class WorkPacket:
     """Structured work packet for phase execution."""
+
     phase_id: str
     title: str
     goal: str
@@ -34,9 +30,10 @@ class WorkPacket:
 @dataclass(frozen=True)
 class ExecutionStep:
     """A single step in the execution loop."""
-    step_type: str  # "inspect", "generate", "apply", "validate", "evaluate"
+
+    step_type: str
     description: str
-    status: str  # "pending", "in-progress", "complete", "failed"
+    status: str
     result: str
     output: str
 
@@ -44,35 +41,38 @@ class ExecutionStep:
 @dataclass(frozen=True)
 class ValidationResult:
     """Result of running validation commands."""
+
     command: str
     exit_code: int
     stdout: str
     stderr: str
     passed: bool
+    category: str = "validation"
 
 
 class CommandExecutionError(Exception):
     """Raised when command execution fails."""
-    pass
 
 
 class CommandPolicyViolation(Exception):
     """Raised when a command violates the safety policy."""
-    pass
 
 
 class PhaseExecutor:
     """Orchestrates the execution of a phase with structured work packets."""
 
-    # Safe command patterns for validation
     SAFE_COMMAND_PATTERNS = {
-        "pytest": r"pytest",
-        "test": r"python.*-m\s+pytest|npm\s+test|cargo\s+test",
-        "lint": r"pylint|flake8|eslint|clippy",
-        "format": r"black|autopep8|prettier",
-        "type": r"mypy|pyright|tsc",
-        "build": r"python.*-m\s+build|npm\s+run\s+build|cargo\s+build",
+        "test": r"(^|\s)(pytest\b|python(?:\S+)?\s+-m\s+(?:pytest|unittest)\b|npm\s+test\b|npx\s+(?:vitest|jest)\b|cargo\s+test\b)",
+        "lint": r"(^|\s)(pylint\b|flake8\b|eslint\b|clippy\b|ruff\s+check\b)",
+        "format": r"(^|\s)(black\b|autopep8\b|prettier\b|ruff\s+format\b)",
+        "type": r"(^|\s)(mypy\b|pyright\b|tsc\b)",
+        "build": r"(^|\s)(python(?:\S+)?\s+-m\s+build\b|npm\s+run\s+build\b|cargo\s+build\b)",
+        "utility": r"(^|\s)(echo\b|python(?:\S+)?\s+-c\b)",
     }
+    MIGRATION_PATTERNS = (
+        r"(^|\s)python(?:\S+)?\s+manage\.py\s+migrate\b",
+        r"(^|\s)alembic\s+upgrade\b",
+    )
 
     def __init__(self, api_key: str | None = None):
         self.api_key = api_key
@@ -88,7 +88,6 @@ class PhaseExecutor:
         validation_commands: list[str],
         acceptance_checks: list[str],
     ) -> WorkPacket:
-        """Create a structured work packet for phase execution."""
         return WorkPacket(
             phase_id=phase_id,
             title=title,
@@ -105,7 +104,6 @@ class PhaseExecutor:
         work_packet: WorkPacket,
         event_handler: EventHandler | None = None,
     ) -> str:
-        """Inspect relevant files for the work packet."""
         self._emit(event_handler, f"Inspecting {len(work_packet.relevant_files)} files for {work_packet.phase_id}...")
 
         inspection_report = [f"# File Inspection Report for {work_packet.phase_id}\n"]
@@ -113,17 +111,15 @@ class PhaseExecutor:
         inspection_report.append(f"**Goal**: {work_packet.goal}\n")
         inspection_report.append("## Inspected Files\n")
 
-        for file_path in work_packet.relevant_files[:20]:  # Limit to first 20
+        for file_path in work_packet.relevant_files[:20]:
             try:
-                # Try to read from different potential roots
                 content = None
                 for root in ["src", "app", "lib", "tests", "docs", "scripts"]:
                     try:
                         content = workspace.read_file(root, file_path)
                         inspection_report.append(f"\n### {root}/{file_path}\n")
                         inspection_report.append("```\n")
-                        lines = content.split("\n")[:30]  # First 30 lines
-                        inspection_report.append("\n".join(lines))
+                        inspection_report.append("\n".join(content.split("\n")[:30]))
                         inspection_report.append("\n```\n")
                         break
                     except WorkspaceIOError:
@@ -132,9 +128,9 @@ class PhaseExecutor:
                 if content is None:
                     inspection_report.append(f"\n### {file_path}\n")
                     inspection_report.append("[File not found in any project root]\n")
-            except Exception as e:
+            except Exception as exc:
                 inspection_report.append(f"\n### {file_path}\n")
-                inspection_report.append(f"[Error reading file: {str(e)}]\n")
+                inspection_report.append(f"[Error reading file: {exc}]\n")
 
         return "\n".join(inspection_report)
 
@@ -146,10 +142,9 @@ class PhaseExecutor:
         lock_owner: str,
         event_handler: EventHandler | None = None,
     ) -> list[str]:
-        """Apply generated file changes to the workspace."""
         self._emit(event_handler, f"Applying {len(generated_files)} file changes for {work_packet.phase_id}...")
 
-        written_paths = []
+        written_paths: list[str] = []
         for file_spec in generated_files:
             root_name = (file_spec.get("root") or "src").strip().lower()
             relative_path = (file_spec.get("path") or "").strip()
@@ -158,9 +153,9 @@ class PhaseExecutor:
             try:
                 written = workspace.write_file(root_name, relative_path, content)
                 written_paths.append(str(written))
-                self._emit(event_handler, f"  ✓ Wrote {root_name}/{relative_path}")
-            except WorkspaceIOError as e:
-                self._emit(event_handler, f"  ✗ Failed to write {root_name}/{relative_path}: {e}")
+                self._emit(event_handler, f"  Wrote {root_name}/{relative_path}")
+            except WorkspaceIOError as exc:
+                self._emit(event_handler, f"  Failed to write {root_name}/{relative_path}: {exc}")
                 raise
 
         return written_paths
@@ -171,29 +166,54 @@ class PhaseExecutor:
         work_packet: WorkPacket,
         event_handler: EventHandler | None = None,
     ) -> tuple[bool, list[ValidationResult]]:
-        """Run validation commands for the phase."""
         if not work_packet.validation_commands:
             self._emit(event_handler, "No validation commands specified.")
             return True, []
 
         results: list[ValidationResult] = []
         all_passed = True
+        allow_migrations = self._work_packet_allows_migrations(work_packet)
 
         for command in work_packet.validation_commands:
             self._emit(event_handler, f"Running validation: {command}")
             try:
-                result = self.execute_command(command, workspace.target_root, event_handler=event_handler)
+                result = self.execute_command(
+                    command,
+                    workspace.target_root,
+                    allow_migrations=allow_migrations,
+                    event_handler=event_handler,
+                )
                 results.append(result)
                 if result.passed:
-                    self._emit(event_handler, f"  ✓ Passed")
+                    self._emit(event_handler, f"  PASS ({result.category})")
                 else:
-                    self._emit(event_handler, f"  ✗ Failed")
+                    self._emit(event_handler, f"  FAIL ({result.category})")
                     all_passed = False
-            except CommandPolicyViolation as e:
-                self._emit(event_handler, f"  ⚠ Policy violation: {e}")
+            except CommandPolicyViolation as exc:
+                results.append(
+                    ValidationResult(
+                        command=command,
+                        exit_code=-1,
+                        stdout="",
+                        stderr=str(exc),
+                        passed=False,
+                        category=self._categorize_command(command),
+                    )
+                )
+                self._emit(event_handler, f"  Policy violation: {exc}")
                 all_passed = False
-            except Exception as e:
-                self._emit(event_handler, f"  ✗ Error: {e}")
+            except Exception as exc:
+                results.append(
+                    ValidationResult(
+                        command=command,
+                        exit_code=-1,
+                        stdout="",
+                        stderr=str(exc),
+                        passed=False,
+                        category=self._categorize_command(command),
+                    )
+                )
+                self._emit(event_handler, f"  Error: {exc}")
                 all_passed = False
 
         return all_passed, results
@@ -203,10 +223,11 @@ class PhaseExecutor:
         command: str,
         working_dir: str | Path,
         timeout_seconds: int = 30,
+        allow_migrations: bool = False,
         event_handler: EventHandler | None = None,
     ) -> ValidationResult:
-        """Execute a shell command with safety policy enforcement."""
-        self._check_command_policy(command)
+        self._check_command_policy(command, allow_migrations=allow_migrations)
+        category = self._categorize_command(command)
 
         try:
             result = subprocess.run(
@@ -217,24 +238,21 @@ class PhaseExecutor:
                 text=True,
                 timeout=timeout_seconds,
             )
-
             return ValidationResult(
                 command=command,
                 exit_code=result.returncode,
                 stdout=result.stdout,
                 stderr=result.stderr,
                 passed=result.returncode == 0,
+                category=category,
             )
         except subprocess.TimeoutExpired:
             raise CommandExecutionError(f"Command timed out after {timeout_seconds}s: {command}")
-        except Exception as e:
-            raise CommandExecutionError(f"Command execution failed: {e}")
+        except Exception as exc:
+            raise CommandExecutionError(f"Command execution failed: {exc}")
 
-    def _check_command_policy(self, command: str) -> None:
-        """Enforce safety policy for command execution."""
+    def _check_command_policy(self, command: str, *, allow_migrations: bool = False) -> None:
         command_lower = command.lower()
-
-        # Block dangerous commands
         dangerous_patterns = [
             r"rm\s+-rf",
             r"sudo",
@@ -246,41 +264,95 @@ class PhaseExecutor:
         ]
 
         for pattern in dangerous_patterns:
-            import re
             if re.search(pattern, command_lower):
                 raise CommandPolicyViolation(f"Dangerous command pattern detected: {command}")
 
-        # Validate against whitelist patterns
+        if self._is_migration_command(command):
+            if not allow_migrations:
+                raise CommandPolicyViolation(
+                    f"Migration commands require explicit allow-migrations approval: {command}"
+                )
+            return
+
         is_safe = any(
-            __import__("re").search(pattern, command_lower, __import__("re").IGNORECASE)
+            re.search(pattern, command_lower, re.IGNORECASE)
             for pattern in self.SAFE_COMMAND_PATTERNS.values()
         )
-
-        if not is_safe and not any(cmd in command_lower for cmd in ["echo", "python", "npm", "cargo"]):
+        if not is_safe:
             raise CommandPolicyViolation(f"Command not in safety whitelist: {command}")
 
     def format_validation_results(self, results: list[ValidationResult]) -> str:
-        """Format validation results into a readable report."""
         report_lines = ["# Validation Report\n"]
-
         for result in results:
-            status = "✓ PASS" if result.passed else "✗ FAIL"
+            status = "PASS" if result.passed else "FAIL"
             report_lines.append(f"## {status}: {result.command}")
+            report_lines.append(f"Category: {result.category}")
             report_lines.append(f"Exit Code: {result.exit_code}\n")
 
             if result.stdout:
                 report_lines.append("### Output")
                 report_lines.append("```")
-                report_lines.append(result.stdout[:500])  # First 500 chars
+                report_lines.append(result.stdout[:500])
                 report_lines.append("```\n")
 
             if result.stderr:
                 report_lines.append("### Errors")
                 report_lines.append("```")
-                report_lines.append(result.stderr[:500])  # First 500 chars
+                report_lines.append(result.stderr[:500])
                 report_lines.append("```\n")
 
         return "\n".join(report_lines)
+
+    def build_validation_feedback(
+        self,
+        work_packet: WorkPacket,
+        results: list[ValidationResult],
+    ) -> dict:
+        failed = [result for result in results if not result.passed]
+        issues: list[str] = []
+        for result in failed:
+            excerpt = (result.stderr or result.stdout or "Validation failed.").strip().splitlines()
+            detail = excerpt[0] if excerpt else "Validation failed."
+            issues.append(f"{result.category} failed for `{result.command}`: {detail}")
+
+        return {
+            "status": "revise",
+            "summary": (
+                f"Validation failed for {len(failed)} command(s). "
+                "Repair the implementation so the project passes the target toolchain checks."
+            ),
+            "issues": issues,
+            "acceptance_checks": list(work_packet.acceptance_checks),
+            "validation_report": self.format_validation_results(results),
+        }
+
+    def summarize_validation_results(self, results: list[ValidationResult]) -> str:
+        if not results:
+            return "No validation commands were configured."
+
+        failed = [result for result in results if not result.passed]
+        if not failed:
+            return f"Validation passed for {len(results)} command(s)."
+
+        failed_labels = ", ".join(result.category for result in failed)
+        return f"Validation failed for {len(failed)} of {len(results)} command(s): {failed_labels}."
+
+    def _categorize_command(self, command: str) -> str:
+        command_lower = command.lower()
+        if self._is_migration_command(command):
+            return "migration"
+        for category, pattern in self.SAFE_COMMAND_PATTERNS.items():
+            if re.search(pattern, command_lower, re.IGNORECASE):
+                return category
+        return "validation"
+
+    def _is_migration_command(self, command: str) -> bool:
+        command_lower = command.lower()
+        return any(re.search(pattern, command_lower, re.IGNORECASE) for pattern in self.MIGRATION_PATTERNS)
+
+    def _work_packet_allows_migrations(self, work_packet: WorkPacket) -> bool:
+        tokens = " ".join(work_packet.constraints).lower()
+        return "allow migration" in tokens or "allow migrations" in tokens or "migrations allowed" in tokens
 
     def _emit(self, event_handler: EventHandler | None, message: str) -> None:
         if event_handler:

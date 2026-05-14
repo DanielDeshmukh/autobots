@@ -353,9 +353,18 @@ def _render_phase_panel(console: Console, result: ExecutionResult) -> None:
     transcript = "\n".join(
         f"[{entry.speaker}] {entry.summary}" for entry in result.journal
     )
+    validation_block = ""
+    if result.validation_report:
+        verdict = "PASS" if result.validation_passed else "FAIL"
+        validation_block = (
+            f"\n\n[bold]Validation[/bold]\n"
+            f"Verdict: {verdict}\n"
+            f"Attempts: {result.verification_attempts}\n"
+            f"{result.validation_report}"
+        )
     console.print(
         Panel(
-            f"{result.summary}\n\n[bold]Cluster journal[/bold]\n{transcript}\n\n[bold]Files changed[/bold]\n{changes}",
+            f"{result.summary}\n\n[bold]Cluster journal[/bold]\n{transcript}\n\n[bold]Files changed[/bold]\n{changes}{validation_block}",
             title=f"Phase Output - {result.cluster_name}",
             border_style="magenta",
         )

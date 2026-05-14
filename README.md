@@ -4,8 +4,8 @@ Autobots is a Python CLI for running a structured, approval-gated coding swarm a
 
 ## Current Status
 
-- Phases 1-4 in [completion-roadmap.md](/d:/Vs%20Code/VS%20code/autobots/completion-roadmap.md) are implemented.
-- Phase 5 is partially started: validation commands can run through the execution engine, but fully automated verify-repair loops and broader approval policy work are still incomplete.
+- Phases 1-5 in [completion-roadmap.md](/d:/Vs%20Code/VS%20code/autobots/completion-roadmap.md) are implemented.
+- Phase 5 now includes automatic verify-repair cycles, structured validation reports, and explicit migration opt-in through phase constraints.
 - The shipped CLI surface today is `autobots init`, `autobots plan`, `autobots engage`, and `autobots validate-models`.
 
 ## What Works Today
@@ -14,7 +14,7 @@ Autobots is a Python CLI for running a structured, approval-gated coding swarm a
 - Scan a repository and generate ordered implementation phases with dependencies and acceptance checks.
 - Execute the next phase through a routed cluster workflow with review and optional repair.
 - Write generated files across common repo roots: `src/`, `app/`, `lib/`, `tests/`, `docs/`, `scripts/`, and `context/`.
-- Run validation commands through the Phase 4/5 execution layer.
+- Run validation commands through the execution layer and feed failures into automatic repair passes.
 - Use a live NVIDIA model registry when available, with fallback model metadata bundled in the repo.
 
 ## Project Layout
@@ -86,4 +86,5 @@ python -m unittest discover -s tests -v
 ## Notes
 
 - `engage` is the current execution command. The roadmap still targets future commands like `run`, `resume`, `status`, and `review`, but those are not implemented yet.
+- Migration commands require an explicit phase constraint such as `allow migrations` before Autobots will execute them.
 - The codebase is currently aligned around the real shipped prototype rather than the earlier "100+ NIM" marketing description.

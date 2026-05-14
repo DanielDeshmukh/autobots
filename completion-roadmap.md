@@ -20,7 +20,7 @@ The current codebase already provides:
 - safety branch enforcement
 - context file reading from `context/`
 - model routing across named clusters
-- model-generated file writes into `src/` and `context/`
+- model-generated file writes across `src/`, `app/`, `lib/`, `tests/`, `docs/`, `scripts/`, and `context/`
 - a human approval gate after each phase
 - project bootstrap and context initialization (`autobots init`) ✓
 - repository scanning and profile detection ✓
@@ -31,6 +31,7 @@ The current codebase already provides:
 - multi-root file writing (app/, lib/, tests/, docs/, scripts/) ✓
 - terminal command execution with safety policy ✓
 - iterative execution loops for phase work ✓
+- automatic validation-driven repair loops with structured verification reports ✓
 
 The current codebase does not yet provide:
 
@@ -187,7 +188,7 @@ Replace the current narrow file-generation loop with a true project execution en
   - Command execution with safety policy enables validation feedback
   - Phase files can be regenerated and re-applied without corruption
 
-## Phase 5: Terminal Command And Verification Layer
+## Phase 5: Terminal Command And Verification Layer ✓ COMPLETE
 
 ### Objective
 
@@ -195,23 +196,23 @@ Allow Autobots to validate and refine changes using the target project’s actua
 
 ### Deliverables
 
-- safe command execution policy for target repos
+- safe command execution policy for target repos ✓
 - support for running:
-  - tests
-  - linters
-  - formatters
-  - builds
-  - type checks
-  - migrations when explicitly allowed
-- command allowlist and approval escalation model
-- parsing of command output into structured repair prompts
-- automatic verify-repair loop
+  - tests ✓
+  - linters ✓
+  - formatters ✓
+  - builds ✓
+  - type checks ✓
+  - migrations when explicitly allowed ✓
+- command allowlist and approval escalation model ✓
+- parsing of command output into structured repair prompts ✓
+- automatic verify-repair loop ✓
 
 ### Exit Criteria
 
-- Autobots can run validation commands after implementation
-- failed commands trigger repair cycles automatically
-- command execution is logged and bounded by safety policy
+- Autobots can run validation commands after implementation ✓
+- failed commands trigger repair cycles automatically ✓
+- command execution is logged and bounded by safety policy ✓
 
 ## Phase 6: Autonomy Modes And Human Control
 

@@ -68,6 +68,9 @@ class ExecutionResult:
     files_written: list[str]
     journal: list[ClusterMessage]
     plan: ClusterPlan
+    validation_passed: bool = True
+    validation_report: str = ""
+    verification_attempts: int = 0
 
 
 EventHandler = Callable[[str], None]
@@ -78,6 +81,8 @@ class ModelContractError(ValueError):
 
 
 class AutobotRouter:
+    MAX_VERIFICATION_ATTEMPTS = 3
+
     def __init__(self, api_key: str | None = None, catalog: ClusterCatalog | None = None):
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
         self.client = self._build_client() if self.api_key else None
@@ -226,6 +231,7 @@ class AutobotRouter:
         event_handler: EventHandler | None = None,
     ) -> ExecutionResult:
         plan = self.build_cluster_plan(phase, roadmap_text)
+        work_packet = self.build_work_packet_from_phase(phase, roadmap_text)
         progress_text = self.begin_phase(workspace, phase, progress_text, plan, event_handler=event_handler)
         self._emit(
             event_handler,
@@ -319,7 +325,31 @@ class AutobotRouter:
             lock_owner=final_lock_owner,
             event_handler=event_handler,
         )
+        (
+            final_payload,
+            files_written,
+            verification_journal,
+            verification_raw_parts,
+            validation_passed,
+            validation_report,
+            verification_attempts,
+        ) = self._run_verification_loop(
+            workspace=workspace,
+            phase=phase,
+            roadmap_text=roadmap_text,
+            progress_text=progress_text,
+            plan=plan,
+            work_packet=work_packet,
+            command_payload=command_payload,
+            implementation_payload=final_payload,
+            files_written=files_written,
+            event_handler=event_handler,
+        )
+        journal.extend(verification_journal)
+        raw_parts.extend(verification_raw_parts)
         summary = (final_payload.get("summary") or "Phase executed.").strip()
+        if validation_report and not validation_passed:
+            summary = f"{summary}\n\nValidation is still failing after automatic repair attempts."
         return ExecutionResult(
             cluster_name=plan.primary_cluster,
             summary=summary,
@@ -327,6 +357,9 @@ class AutobotRouter:
             files_written=files_written,
             journal=journal,
             plan=plan,
+            validation_passed=validation_passed,
+            validation_report=validation_report,
+            verification_attempts=verification_attempts,
         )
 
     def refine_with_ratchet(
@@ -730,6 +763,93 @@ Return strict JSON:
         all_passed, results = self.executor.validate_phase(workspace, work_packet, event_handler=event_handler)
         validation_report = self.executor.format_validation_results(results)
         return all_passed, validation_report
+
+    def _run_verification_loop(
+        self,
+        *,
+        workspace: TargetProjectWorkspace,
+        phase: PhaseRecord,
+        roadmap_text: str,
+        progress_text: str,
+        plan: ClusterPlan,
+        work_packet: WorkPacket,
+        command_payload: dict,
+        implementation_payload: dict,
+        files_written: list[str],
+        event_handler: EventHandler | None = None,
+    ) -> tuple[dict, list[str], list[ClusterMessage], list[str], bool, str, int]:
+        if not work_packet.validation_commands:
+            return implementation_payload, files_written, [], [], True, "No validation commands specified.", 0
+
+        journal: list[ClusterMessage] = []
+        raw_parts: list[str] = []
+        current_payload = implementation_payload
+        current_files = files_written
+        validation_report = ""
+
+        for attempt in range(1, self.MAX_VERIFICATION_ATTEMPTS + 1):
+            self._emit(
+                event_handler,
+                f"Optimus verifying {phase.title} with target toolchain commands (attempt {attempt}/{self.MAX_VERIFICATION_ATTEMPTS}).",
+            )
+            all_passed, results = self.executor.validate_phase(
+                workspace,
+                work_packet,
+                event_handler=event_handler,
+            )
+            validation_report = self.executor.format_validation_results(results)
+            raw_parts.append(validation_report)
+            journal.append(
+                ClusterMessage(
+                    speaker="Optimus/verification",
+                    objective="Toolchain verification",
+                    summary=self.executor.summarize_validation_results(results),
+                )
+            )
+            if all_passed:
+                return current_payload, current_files, journal, raw_parts, True, validation_report, attempt
+
+            if attempt >= self.MAX_VERIFICATION_ATTEMPTS:
+                self._emit(
+                    event_handler,
+                    f"Validation remained failing after {attempt} attempt(s). Returning control with the latest report.",
+                )
+                return current_payload, current_files, journal, raw_parts, False, validation_report, attempt
+
+            repair_feedback = self.executor.build_validation_feedback(work_packet, results)
+            self._emit(
+                event_handler,
+                f"Validation failed for {phase.title}. Ratchet is preparing an automatic repair pass.",
+            )
+            repair_payload, repair_raw = self._run_repair_stage(
+                plan,
+                workspace,
+                phase,
+                roadmap_text,
+                progress_text,
+                command_payload,
+                current_payload,
+                repair_feedback,
+                event_handler=event_handler,
+            )
+            raw_parts.append(repair_raw)
+            journal.append(
+                ClusterMessage(
+                    speaker=f"Ratchet/{plan.repair_lead.model_id}",
+                    objective="Validation-driven repair",
+                    summary=(repair_payload.get("summary") or "Adjusted the implementation after validation failure.").strip(),
+                )
+            )
+            safe_files = self._enforce_generated_file_laws(repair_payload.get("files", []))
+            current_files = self._persist_generated_files(
+                workspace,
+                safe_files,
+                lock_owner=f"Ratchet/{plan.repair_lead.model_id}",
+                event_handler=event_handler,
+            )
+            current_payload = repair_payload
+
+        return current_payload, current_files, journal, raw_parts, False, validation_report, self.MAX_VERIFICATION_ATTEMPTS
 
     def _enforce_generated_file_laws(self, files: list[dict]) -> list[dict]:
         safe_files: list[dict] = []
