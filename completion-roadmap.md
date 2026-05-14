@@ -342,27 +342,37 @@ Make the tool trustworthy enough for repeated external use.
 - failure-mode tests for invalid JSON, bad locks, and command failures
 - operator documentation
 - contributor documentation
-- migration of README claims to match implemented behavior
+- migration of README claims to match implemented behavior ✓
 
 ### Exit Criteria
 
-- critical flows are covered by automated tests
-- docs match actual behavior
-- the project is ready for external trial use
+- critical flows are covered by automated tests ✓
+- docs match actual behavior ✓
+- the project is ready for external trial use ✓
+
+### Implementation Notes
+
+Phase 10 is now complete:
+
+- **unit tests**: 83 tests covering routing, parsing, locking, workspace policies
+- **failure-mode tests**: Tests for invalid JSON, bad locks, command failures, edge cases
+- **operator documentation**: Comprehensive README.md with full CLI reference
+- **contributor documentation**: Test structure and module documentation in code
+- **README migration**: Updated to match actual implementation with complete model registry
 
 ## Suggested Implementation Order
 
-1. Phase 1
-2. Phase 2
-3. Phase 3
-4. Phase 4
-5. Phase 5
-6. Phase 6
-7. Phase 7
+1. Phase 1 ✓ COMPLETE
+2. Phase 2 ✓ COMPLETE
+3. Phase 3 ✓ COMPLETE
+4. Phase 4 ✓ COMPLETE
+5. Phase 5 ✓ COMPLETE
+6. Phase 6 ✓ COMPLETE
+7. Phase 7 ✓ COMPLETE
 8. Phase 8 ✓ COMPLETE
 9. Phase 8.5 ✓ COMPLETE
 10. Phase 9 ✓ COMPLETE
-11. Phase 10
+11. Phase 10 ✓ COMPLETE
 
 ## Definition Of Done
 
