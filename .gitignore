@@ -226,3 +226,4 @@ test_api.py
 .sixth/
 context/.autobots-locks/
 publish_artifacts/
+.tmp_cli_*/

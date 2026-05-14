@@ -4,9 +4,13 @@ Autobots is a Python CLI for running a structured, approval-gated coding swarm a
 
 ## Current Status
 
-- Phases 1-8 plus operational reliability work are implemented in the current codebase.
+- Phases 1-8.5 are implemented in the current codebase.
 - The shipped CLI surface today includes `autobots init`, `autobots plan`, `autobots run`, `autobots resume`, `autobots status`, `autobots engage`, and `autobots validate-models`.
 - Autonomous or milestone execution requires a configured `NVIDIA_API_KEY`; missing credentials now surface as resumable blockers instead of uncaught crashes.
+
+## Next Focus
+
+- Phase 9 is the next delivery target: packaging, configuration, distribution, and installability polish.
 
 ## What Works Today
 

@@ -251,7 +251,7 @@ All Phase 8 deliverables are now implemented:
   - `best_effort`: Use first successful result, fall back to subsequent
   - `consensus`: Keep file only if all branches agree on content
 
-## Phase 8.5: Operational CLI Reliability And Recovery
+## Phase 8.5: Operational CLI Reliability And Recovery ✓ COMPLETE
 
 ### Objective
 
@@ -267,10 +267,20 @@ Make the new runtime CLI commands behave predictably after the six-file context 
 
 ### Exit Criteria
 
-- `autobots run`, `autobots resume`, and `autobots status` refuse incomplete context setups clearly
-- interrupted autonomous runs persist inspectable blocked or failed state
-- `resume` returns controlled status for recoverable blockers instead of crashing
-- operator-facing docs match the actual command surface and runtime expectations
+- `autobots run`, `autobots resume`, and `autobots status` refuse incomplete context setups clearly ✓
+- interrupted autonomous runs persist inspectable blocked or failed state ✓
+- `resume` returns controlled status for recoverable blockers instead of crashing ✓
+- operator-facing docs match the actual command surface and runtime expectations ✓
+
+### Implementation Notes
+
+Phase 8.5 is now complete:
+
+- operational runtime commands enforce the initialized six-file context before execution
+- missing `NVIDIA_API_KEY` now becomes a durable `api_key` blocker instead of an uncaught runtime crash
+- blocked autonomous sessions persist inspectable checkpoint and session state for `status`
+- `resume` replays blocked runs as controlled blocker results rather than terminating the CLI abruptly
+- runtime documentation now matches the actual command surface and expectations
 
 ## Phase 9: Packaging, Configuration, And Distribution
 
