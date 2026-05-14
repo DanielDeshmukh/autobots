@@ -1,6 +1,15 @@
 """Cluster routing and execution orchestration."""
 
-from .models import EventHandler, PhaseRecord, ClusterMessage, ClusterPlan, ExecutionResult
+from .models import (
+    EventHandler,
+    PhaseRecord,
+    ClusterMessage,
+    ClusterPlan,
+    ClusterRoleAssignment,
+    ExecutionResult,
+    ParallelWorkstream,
+    RoutingScore,
+)
 from .phases import PhaseReader
 from .planning import ClusterPlanner
 from .stages import StageExecutor
@@ -12,9 +21,12 @@ __all__ = [
     "PhaseRecord",
     "ClusterMessage",
     "ClusterPlan",
+    "ClusterRoleAssignment",
     "ExecutionResult",
+    "ParallelWorkstream",
     "PhaseReader",
     "ClusterPlanner",
+    "RoutingScore",
     "StageExecutor",
     "PayloadValidator",
     "FileEntryHelper",

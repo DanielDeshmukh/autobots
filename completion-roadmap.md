@@ -194,7 +194,7 @@ New modules:
 - `autobots/executor/modes.py` - ExecutionMode, Blocker, ExecutionModeManager
 - `autobots/executor/autonomy.py` - AutonomyEngine, AutonomousResult
 
-## Phase 7: State Management, Locking, And Recovery
+## Phase 7: State Management, Locking, And Recovery ✓ COMPLETE
 
 ### Objective
 
@@ -235,6 +235,16 @@ Bring the code closer to the swarm model described in the README.
 - orchestration behavior is measurable and predictable
 - routing quality is improved for diverse tasks
 - parallel execution is used only where safe and beneficial
+
+### Implementation Notes
+
+Initial scaffolding is now in place:
+
+- explicit planner, implementer, reviewer, and repair role assignments are attached to cluster plans
+- routing now records scored rationale instead of relying on an opaque keyword result alone
+- model selection now supports simple speed/quality/balanced preferences
+- prompt templates are separated by stage so orchestration prompts are easier to evolve safely
+- optional parallel workstreams can be planned and merged sequentially when enabled, but full parallel execution is still pending
 
 ## Phase 9: Packaging, Configuration, And Distribution
 

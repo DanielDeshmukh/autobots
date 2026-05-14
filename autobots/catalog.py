@@ -13,6 +13,17 @@ class ModelSpec:
     model_id: str
     cluster: str
     tags: tuple[str, ...]
+    capabilities: tuple[str, ...] = ()
+    cost_tier: str = "balanced"
+    latency_tier: str = "balanced"
+
+
+@dataclass(frozen=True)
+class RouteDecision:
+    cluster_name: str
+    score: int
+    reasons: tuple[str, ...] = ()
+    scored_clusters: tuple[tuple[str, int], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -295,6 +306,7 @@ class ClusterCatalog:
         )
         self.discovery_error: str | None = None
         self.using_live_catalog = False
+        self.selection_profile = (os.getenv("AUTOBOTS_MODEL_SELECTION_PROFILE", "balanced").strip().lower() or "balanced")
         self.available_model_ids = self._resolve_available_model_ids()
         self.clusters = self._build_clusters()
 
@@ -316,17 +328,30 @@ class ClusterCatalog:
         ]
 
     def route(self, task_signal: str) -> str:
-        normalized = task_signal.lower()
-        scored: list[tuple[int, str]] = []
-        for cluster in self.clusters.values():
-            score = sum(1 for keyword in cluster.keywords if keyword in normalized)
-            scored.append((score, cluster.name))
+        return self.route_with_reasoning(task_signal).cluster_name
 
-        scored.sort(key=lambda item: item[0], reverse=True)
-        best_score, best_cluster = scored[0]
-        if best_score == 0:
-            return "UltraMagnus"
-        return best_cluster
+    def route_with_reasoning(self, task_signal: str) -> RouteDecision:
+        normalized = task_signal.lower()
+        scored: list[tuple[int, str, list[str]]] = []
+        for cluster in self.clusters.values():
+            score, reasons = self._score_cluster_route(cluster, normalized)
+            scored.append((score, cluster.name, reasons))
+
+        scored.sort(key=lambda item: (item[0], item[1] == "UltraMagnus"), reverse=True)
+        best_score, best_cluster, best_reasons = scored[0]
+        if best_score <= 0:
+            return RouteDecision(
+                cluster_name="UltraMagnus",
+                score=0,
+                reasons=("No strong routing signal found; defaulted to UltraMagnus.",),
+                scored_clusters=tuple((cluster_name, score) for score, cluster_name, _ in scored),
+            )
+        return RouteDecision(
+            cluster_name=best_cluster,
+            score=best_score,
+            reasons=tuple(best_reasons),
+            scored_clusters=tuple((cluster_name, score) for score, cluster_name, _ in scored),
+        )
 
     def get_cluster(self, name: str) -> ClusterSpec:
         return self.clusters[name]
@@ -345,7 +370,18 @@ class ClusterCatalog:
 
     def _score_model(self, model: ModelSpec, task_signal: str) -> int:
         normalized = task_signal.lower()
-        return sum(1 for tag in model.tags if tag in normalized)
+        score = sum(1 for tag in model.tags if tag in normalized)
+        score += sum(2 for capability in model.capabilities if capability in normalized)
+        if self.selection_profile == "quality":
+            score += {"premium": 3, "balanced": 1, "economy": 0}.get(model.cost_tier, 0)
+            score += {"slow": 2, "balanced": 1, "fast": 0}.get(model.latency_tier, 0)
+        elif self.selection_profile == "speed":
+            score += {"fast": 3, "balanced": 1, "slow": 0}.get(model.latency_tier, 0)
+            score += {"economy": 2, "balanced": 1, "premium": 0}.get(model.cost_tier, 0)
+        else:
+            score += {"balanced": 2, "premium": 1, "economy": 1}.get(model.cost_tier, 0)
+            score += {"balanced": 2, "fast": 1, "slow": 1}.get(model.latency_tier, 0)
+        return score
 
     def _build_clusters(self) -> dict[str, ClusterSpec]:
         live_cluster_models = self._build_live_cluster_models()
@@ -353,7 +389,17 @@ class ClusterCatalog:
         for cluster_name, spec in CLUSTER_DEFINITIONS.items():
             tags = spec["keywords"]
             model_ids = live_cluster_models.get(cluster_name) or spec["models"]
-            models = tuple(ModelSpec(model_id=model_id, cluster=cluster_name, tags=tags) for model_id in model_ids)
+            models = tuple(
+                ModelSpec(
+                    model_id=model_id,
+                    cluster=cluster_name,
+                    tags=tags,
+                    capabilities=self._infer_model_capabilities(model_id, cluster_name, tags),
+                    cost_tier=self._infer_cost_tier(model_id),
+                    latency_tier=self._infer_latency_tier(model_id),
+                )
+                for model_id in model_ids
+            )
             clusters[cluster_name] = ClusterSpec(
                 name=cluster_name,
                 role=spec["role"],
@@ -367,7 +413,17 @@ class ClusterCatalog:
                     name=cluster_name,
                     role="custom",
                     keywords=(),
-                    models=tuple(ModelSpec(model_id=model_id, cluster=cluster_name, tags=()) for model_id in model_ids),
+                    models=tuple(
+                        ModelSpec(
+                            model_id=model_id,
+                            cluster=cluster_name,
+                            tags=(),
+                            capabilities=self._infer_model_capabilities(model_id, cluster_name, ()),
+                            cost_tier=self._infer_cost_tier(model_id),
+                            latency_tier=self._infer_latency_tier(model_id),
+                        )
+                        for model_id in model_ids
+                    ),
                 )
                 continue
 
@@ -380,6 +436,9 @@ class ClusterCatalog:
                             model_id=model_id,
                             cluster=cluster_name,
                             tags=clusters[cluster_name].keywords,
+                            capabilities=self._infer_model_capabilities(model_id, cluster_name, clusters[cluster_name].keywords),
+                            cost_tier=self._infer_cost_tier(model_id),
+                            latency_tier=self._infer_latency_tier(model_id),
                         )
                     )
             clusters[cluster_name] = ClusterSpec(
@@ -478,6 +537,70 @@ class ClusterCatalog:
 
     def _canonical_model_name(self, model_id: str) -> str:
         return model_id.lower().split("/", 1)[-1]
+
+    def _score_cluster_route(self, cluster: ClusterSpec, normalized_signal: str) -> tuple[int, list[str]]:
+        score = 0
+        reasons: list[str] = []
+
+        keyword_hits = [keyword for keyword in cluster.keywords if keyword in normalized_signal]
+        if keyword_hits:
+            score += len(keyword_hits) * 3
+            reasons.append(f"keyword hits: {', '.join(keyword_hits[:4])}")
+
+        extension_signals = {
+            "Jazz": (".tsx", ".jsx", ".css", ".scss", ".png", ".svg"),
+            "UltraMagnus": (".py", ".sql", ".yaml", ".yml", "api", "service"),
+            "Ratchet": ("test", "failure", "fix", "repair", ".spec", ".snap"),
+            "RedAlert": ("auth", "security", "policy", "guard", "permission"),
+            "Perceptor": ("docs/", "document", "parse", "extract"),
+        }
+        for signal in extension_signals.get(cluster.name, ()):
+            if signal in normalized_signal:
+                score += 2
+                reasons.append(f"artifact signal: {signal}")
+
+        role_bias = {
+            "Optimus": ("plan", "roadmap", "milestone", "phase"),
+            "Ratchet": ("validation", "failing", "repair", "debug"),
+            "RedAlert": ("review", "risk", "safety", "security"),
+        }
+        for signal in role_bias.get(cluster.name, ()):
+            if signal in normalized_signal:
+                score += 2
+                reasons.append(f"role bias: {signal}")
+
+        return score, reasons
+
+    def _infer_model_capabilities(self, model_id: str, cluster_name: str, tags: tuple[str, ...]) -> tuple[str, ...]:
+        normalized = model_id.lower()
+        capabilities = set(tags)
+        if "coder" in normalized or "code" in normalized:
+            capabilities.add("code")
+        if "image" in normalized or "diffusion" in normalized or "flux" in normalized:
+            capabilities.add("image")
+        if "safety" in normalized or "guard" in normalized:
+            capabilities.add("safety")
+        if "reason" in normalized or "think" in normalized:
+            capabilities.add("reasoning")
+        if cluster_name == "Ratchet":
+            capabilities.update({"debug", "repair"})
+        return tuple(sorted(capabilities))
+
+    def _infer_cost_tier(self, model_id: str) -> str:
+        normalized = model_id.lower()
+        if any(token in normalized for token in ("405b", "397b", "340b", "675b", "480b", "120b")):
+            return "premium"
+        if any(token in normalized for token in ("1b", "3b", "4b", "7b", "8b", "mini", "small", "flash")):
+            return "economy"
+        return "balanced"
+
+    def _infer_latency_tier(self, model_id: str) -> str:
+        normalized = model_id.lower()
+        if any(token in normalized for token in ("flash", "mini", "small", "1b", "3b", "4b", "7b", "8b")):
+            return "fast"
+        if any(token in normalized for token in ("405b", "397b", "340b", "675b", "480b")):
+            return "slow"
+        return "balanced"
 
     def _load_discovery_module(self):
         global DISCOVERY_MODULE

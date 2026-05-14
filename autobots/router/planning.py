@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import re
 from typing import TYPE_CHECKING
 
 from ..catalog import ClusterCatalog, ModelSpec
-from .models import ClusterPlan, PhaseRecord
+from .models import ClusterPlan, ClusterRoleAssignment, ParallelWorkstream, PhaseRecord, RoutingScore
 from ..executor import WorkPacket
 
 if TYPE_CHECKING:
@@ -18,16 +19,48 @@ class ClusterPlanner:
 
     def __init__(self, catalog: ClusterCatalog | None = None, api_key: str | None = None):
         self.catalog = catalog or ClusterCatalog(api_key=api_key)
+        self.parallel_planning_enabled = os.getenv("AUTOBOTS_ENABLE_PARALLEL_PLANNING", "0") == "1"
 
     def build_cluster_plan(self, phase: PhaseRecord, roadmap_text: str) -> ClusterPlan:
         """Build a cluster plan for a phase."""
         signal = f"{phase.title}\n{roadmap_text}"
-        primary_cluster = self.catalog.route(signal)
+        route_decision = self.catalog.route_with_reasoning(signal)
+        primary_cluster = route_decision.cluster_name
         primary_lead, primary_reviewer, primary_support = self.catalog.select_models(primary_cluster, signal)
         command_lead, command_reviewer, _ = self.catalog.select_models("Optimus", signal)
         secretary_lead = self._select_secretary_model()
         safety_lead, _, _ = self.catalog.select_models("RedAlert", signal)
         repair_lead, _, _ = self.catalog.select_models("Ratchet", signal)
+        role_assignments = [
+            ClusterRoleAssignment(
+                role_name="planner",
+                cluster_name="Optimus",
+                lead=command_lead,
+                reviewer=command_reviewer,
+                objective="Break the phase into an executable mission brief.",
+            ),
+            ClusterRoleAssignment(
+                role_name="implementer",
+                cluster_name=primary_cluster,
+                lead=primary_lead,
+                reviewer=primary_reviewer,
+                support=primary_support,
+                objective="Produce the main implementation artifacts for the phase.",
+            ),
+            ClusterRoleAssignment(
+                role_name="reviewer",
+                cluster_name="RedAlert",
+                lead=safety_lead,
+                objective="Review correctness, safety, and maintainability before completion.",
+            ),
+            ClusterRoleAssignment(
+                role_name="repair",
+                cluster_name="Ratchet",
+                lead=repair_lead,
+                objective="Repair validation or review failures without losing intent.",
+            ),
+        ]
+        workstreams = self._plan_parallel_workstreams(phase, roadmap_text)
         return ClusterPlan(
             primary_cluster=primary_cluster,
             primary_lead=primary_lead,
@@ -38,6 +71,14 @@ class ClusterPlanner:
             secretary_lead=secretary_lead,
             safety_lead=safety_lead,
             repair_lead=repair_lead,
+            routing_scores=[
+                RoutingScore(cluster_name=name, score=score)
+                for name, score in route_decision.scored_clusters
+            ],
+            routing_rationale=list(route_decision.reasons),
+            role_assignments=role_assignments,
+            parallel_workstreams=workstreams,
+            merge_strategy="sequential_apply" if workstreams else "single_branch",
         )
 
     def build_work_packet_from_phase(
@@ -126,3 +167,46 @@ class ClusterPlanner:
             if model.model_id.lower().endswith("step-3.5-flash"):
                 return model
         return optimus.models[0]
+
+    def _plan_parallel_workstreams(self, phase: PhaseRecord, roadmap_text: str) -> list[ParallelWorkstream]:
+        """Identify independent path groups that could run in parallel in a future phase."""
+        if not self.parallel_planning_enabled:
+            return []
+
+        phase_id = self._extract_phase_id(phase.title)
+        relevant_paths = self._extract_relevant_paths(roadmap_text, phase_id)
+        if len(relevant_paths) < 2:
+            return []
+
+        grouped: dict[str, list[str]] = {}
+        for path in relevant_paths:
+            normalized = path.strip().replace("\\", "/")
+            root = normalized.split("/", 1)[0] if "/" in normalized else normalized
+            grouped.setdefault(root, []).append(normalized)
+
+        workstreams: list[ParallelWorkstream] = []
+        for index, (root, paths) in enumerate(sorted(grouped.items()), start=1):
+            if len(paths) == 0:
+                continue
+            assigned_cluster = self._cluster_for_path_root(root)
+            workstreams.append(
+                ParallelWorkstream(
+                    branch_id=f"{phase_id}-B{index}",
+                    title=f"{phase.title} [{root}]",
+                    focus_paths=paths[:5],
+                    assigned_cluster=assigned_cluster,
+                    merge_strategy="sequential_apply",
+                )
+            )
+
+        return workstreams[:3] if len(workstreams) > 1 else []
+
+    def _cluster_for_path_root(self, root: str) -> str:
+        normalized = root.lower()
+        if normalized in {"app", "ui", "frontend", "styles"}:
+            return "Jazz"
+        if normalized in {"tests", "specs"}:
+            return "Ratchet"
+        if normalized in {"docs", "context"}:
+            return "Optimus"
+        return "UltraMagnus"

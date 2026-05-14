@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
 
 from ..catalog import ModelSpec
@@ -31,6 +31,38 @@ class ClusterMessage:
 
 
 @dataclass
+class RoutingScore:
+    """Scored routing evidence for a candidate cluster."""
+
+    cluster_name: str
+    score: int
+    reasons: list[str] = field(default_factory=list)
+
+
+@dataclass
+class ClusterRoleAssignment:
+    """Explicit role assignment for a cluster participant."""
+
+    role_name: str
+    cluster_name: str
+    lead: ModelSpec
+    reviewer: ModelSpec | None = None
+    support: list[ModelSpec] = field(default_factory=list)
+    objective: str = ""
+
+
+@dataclass
+class ParallelWorkstream:
+    """Optional independent workstream planned for future parallel execution."""
+
+    branch_id: str
+    title: str
+    focus_paths: list[str] = field(default_factory=list)
+    assigned_cluster: str = "UltraMagnus"
+    merge_strategy: str = "sequential_apply"
+
+
+@dataclass
 class ClusterPlan:
     """Execution plan assigning models to cluster roles."""
 
@@ -43,6 +75,11 @@ class ClusterPlan:
     secretary_lead: ModelSpec
     safety_lead: ModelSpec
     repair_lead: ModelSpec
+    routing_scores: list[RoutingScore] = field(default_factory=list)
+    routing_rationale: list[str] = field(default_factory=list)
+    role_assignments: list[ClusterRoleAssignment] = field(default_factory=list)
+    parallel_workstreams: list[ParallelWorkstream] = field(default_factory=list)
+    merge_strategy: str = "sequential_apply"
 
 
 @dataclass

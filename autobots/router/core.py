@@ -67,15 +67,23 @@ class AutobotRouter:
         self._emit(event_handler, f"Optimus planning {phase.title} with {plan.command_lead.model_id}.")
         self._emit(event_handler, f"Optimus routing '{phase.title}' to {plan.primary_cluster} with {plan.primary_lead.model_id}.")
 
-        command_payload, command_raw = self.stage_executor.run_command_stage(plan, phase, roadmap_text, progress_text)
+        if plan.routing_rationale:
+            self._emit(event_handler, f"Routing rationale: {'; '.join(plan.routing_rationale[:3])}")
+        if plan.parallel_workstreams:
+            self._emit(
+                event_handler,
+                f"Parallel planning identified {len(plan.parallel_workstreams)} independent workstream candidate(s); merge strategy is {plan.merge_strategy}.",
+            )
+
+        command_payload, command_raw = self._run_command_stage(plan, phase, roadmap_text, progress_text)
         self._emit(event_handler, f"{plan.primary_cluster} working on {phase.title}.")
 
-        specialist_payload, specialist_raw = self.stage_executor.run_specialist_stage(
+        specialist_payload, specialist_raw = self._run_specialist_stage(
             plan, workspace, phase, roadmap_text, progress_text, command_payload, event_handler=event_handler
         )
         self._emit(event_handler, f"{plan.primary_cluster} completed {phase.title} and updated status to Optimus.")
 
-        review_payload, review_raw = self.stage_executor.run_safety_stage(plan, phase, specialist_payload, command_payload)
+        review_payload, review_raw = self._run_safety_stage(plan, phase, specialist_payload, command_payload)
         self._emit(event_handler, f"RedAlert reviewed {phase.title}. Verdict: {(review_payload.get('status') or 'pass').upper()}")
 
         raw_parts = [command_raw, specialist_raw, review_raw]
@@ -100,7 +108,7 @@ class AutobotRouter:
         final_payload = specialist_payload
         final_lock_owner = f"{plan.primary_cluster}/{plan.primary_lead.model_id}"
         if (review_payload.get("status") or "").lower() == "revise":
-            repair_payload, repair_raw = self.stage_executor.run_repair_stage(
+            repair_payload, repair_raw = self._run_repair_stage(
                 plan, workspace, phase, roadmap_text, progress_text, command_payload, specialist_payload, review_payload
             )
             raw_parts.append(repair_raw)
@@ -240,7 +248,7 @@ class AutobotRouter:
 
             repair_feedback = self.executor.build_validation_feedback(work_packet, results)
             self._emit(event_handler, f"Validation failed for {phase.title}. Ratchet is preparing an automatic repair pass.")
-            repair_payload, repair_raw = self.stage_executor.run_repair_stage(
+            repair_payload, repair_raw = self._run_repair_stage(
                 plan, workspace, phase, roadmap_text, progress_text, command_payload, current_payload, repair_feedback
             )
             raw_parts.append(repair_raw)
@@ -356,3 +364,23 @@ class AutobotRouter:
     def _emit(self, event_handler: EventHandler | None, message: str) -> None:
         if event_handler is not None:
             event_handler(message)
+
+    def _run_command_stage(self, plan, phase, roadmap_text, progress_text):
+        """Compatibility wrapper for test doubles and future orchestration hooks."""
+        return self.stage_executor.run_command_stage(plan, phase, roadmap_text, progress_text)
+
+    def _run_specialist_stage(self, plan, workspace, phase, roadmap_text, progress_text, command_payload, event_handler=None):
+        """Compatibility wrapper for implementation stage."""
+        return self.stage_executor.run_specialist_stage(
+            plan, workspace, phase, roadmap_text, progress_text, command_payload, event_handler=event_handler
+        )
+
+    def _run_safety_stage(self, plan, phase, specialist_payload, command_payload):
+        """Compatibility wrapper for review stage."""
+        return self.stage_executor.run_safety_stage(plan, phase, specialist_payload, command_payload)
+
+    def _run_repair_stage(self, plan, workspace, phase, roadmap_text, progress_text, command_payload, specialist_payload, review_payload, event_handler=None):
+        """Compatibility wrapper for repair stage."""
+        return self.stage_executor.run_repair_stage(
+            plan, workspace, phase, roadmap_text, progress_text, command_payload, specialist_payload, review_payload
+        )

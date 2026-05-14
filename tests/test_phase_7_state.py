@@ -5,11 +5,13 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from autobots.executor import (
     AutonomyEngine,
     ExecutionMode,
     ExecutionModeManager,
+    ExecutionState,
     PhaseSnapshot,
     StateManager,
     StaleLockRecovery,
@@ -179,6 +181,67 @@ class Phase7AutonomyTests(unittest.TestCase):
             self.assertEqual(checkpoint.current_phase_title, "P1 | Demo phase")
             self.assertIsNotNone(session)
             self.assertEqual(session.state, "paused")
+
+    def test_resume_reuses_last_checkpoint_and_completes_remaining_phase(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "src").mkdir()
+            (root / "context").mkdir()
+            (root / "context" / "roadmap.md").write_text("# Roadmap\n", encoding="utf-8")
+            (root / "context" / "progress-tracker.md").write_text("- [x] P1 | Finished\n- [ ] P2 | Remaining\n", encoding="utf-8")
+
+            manager = ExecutionModeManager()
+            manager.save_checkpoint(
+                target_root=root,
+                session_id="sess-2",
+                mode=ExecutionMode.AUTONOMOUS,
+                phase_index=1,
+                phase_title="P2 | Remaining",
+                phases_completed=["P1 | Finished"],
+                state=ExecutionState.RUNNING,
+            )
+
+            state_manager = StateManager(root)
+            session = state_manager.create_session("sess-2", str(root), "autonomous")
+            session.phases_completed = ["P1 | Finished"]
+            session.current_phase = "P2 | Remaining"
+            state_manager.update_session(session)
+
+            engine = AutonomyEngine()
+            engine._router = self.DummyRouter()
+
+            result = engine.resume(TargetProjectWorkspace(root))
+            resumed_session = state_manager.get_session()
+
+            self.assertEqual(result.status, "completed")
+            self.assertEqual(result.session_id, "sess-2")
+            self.assertEqual(result.phases_completed, ["P1 | Finished", "P2 | Remaining"])
+            self.assertIsNotNone(resumed_session)
+            self.assertEqual(resumed_session.state, "completed")
+
+    @patch("autobots.cli.Console")
+    def test_status_can_surface_prior_run_session_details(self, console_cls) -> None:
+        from autobots.cli import run_status
+
+        console = console_cls.return_value
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "src").mkdir()
+            (root / "context").mkdir()
+            (root / "context" / "roadmap.md").write_text("# Roadmap\n", encoding="utf-8")
+            (root / "context" / "progress-tracker.md").write_text("- [x] P1 | Finished\n", encoding="utf-8")
+
+            state_manager = StateManager(root)
+            session = state_manager.create_session("sess-3", str(root), "autonomous")
+            session.state = "completed"
+            session.phases_completed = ["P1 | Finished"]
+            session.total_files_changed = 2
+            state_manager.update_session(session)
+
+            with patch("autobots.cli._resolve_target_project_from_args", return_value=root):
+                run_status(["status", str(root)])
+
+            self.assertTrue(console.print.called)
 
 
 if __name__ == "__main__":

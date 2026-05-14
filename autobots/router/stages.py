@@ -21,6 +21,12 @@ COORDINATION_LAWS = """Autobots Coordination Laws:
 
 SECRETARY_SNIPPET_CLUSTERS = {"UltraMagnus", "Jazz"}
 PROTECTED_PROGRESS_FILES = {"progress-tracker.md"}
+ROLE_PROMPT_HEADERS = {
+    "planner": "You are the command tier of the Autobots swarm.",
+    "implementer": "You are the implementation cluster for this phase.",
+    "reviewer": "You are Red Alert reviewing the specialist cluster output for correctness, safety, and maintainability.",
+    "repair": "You are Ratchet, the repair cluster.",
+}
 
 
 class StageExecutor:
@@ -38,35 +44,7 @@ class StageExecutor:
         progress_text: str,
     ) -> tuple[dict, str]:
         """Run command/planning stage."""
-        prompt = f"""
-You are the command tier of the Autobots swarm.
-Use hierarchical reasoning to prepare a concise execution brief for the specialist cluster.
-Treat the coordination rules below as hard laws.
-
-{COORDINATION_LAWS}
-
-Current phase:
-{phase.raw_line}
-
-Roadmap:
-{roadmap_text}
-
-Progress tracker:
-{progress_text}
-
-Selected primary cluster: {plan.primary_cluster}
-Primary lead model: {plan.primary_lead.model_id}
-Primary reviewer model: {plan.primary_reviewer.model_id}
-Support models: {", ".join(model.model_id for model in plan.primary_support) or "None"}
-
-Return strict JSON:
-{{
-  "summary": "one paragraph mission brief",
-  "implementation_goals": ["goal 1", "goal 2"],
-  "risks": ["risk 1"],
-  "acceptance_checks": ["check 1", "check 2"]
-}}
-""".strip()
+        prompt = self._build_command_prompt(plan, phase, roadmap_text, progress_text)
         raw = self._complete(plan.command_lead.model_id, prompt)
         payload = PayloadValidator.parse_json(raw)
         PayloadValidator.validate_command_payload(payload)
@@ -93,60 +71,15 @@ Return strict JSON:
                     f"Optimus secretary {plan.secretary_lead.model_id} injected a timeline snippet for {plan.primary_cluster}."
                 )
 
-        prompt = f"""
-You are the {plan.primary_cluster} implementation cluster.
-The command tier and support models have already coordinated your mission.
-Act as a collaborative cluster: the lead writes, the reviewer critiques, and support models fill gaps.
-Treat the coordination rules below as hard laws.
-
-{COORDINATION_LAWS}
-
-Workspace constraints:
-1. Write to appropriate project roots: src/, app/, lib/, tests/, docs/, scripts/, or context/.
-2. Choose the root that matches the file type and project structure.
-3. Never write in the Autobots engine repository itself.
-4. Return full file contents, not diffs.
-5. Never write `progress-tracker.md`; report progress back to Optimus instead.
-
-Target roots available:
-- src root: {workspace.src_root}
-- app root: {workspace.target_root / "app"}
-- lib root: {workspace.target_root / "lib"}
-- tests root: {workspace.target_root / "tests"}
-- docs root: {workspace.target_root / "docs"}
-- scripts root: {workspace.target_root / "scripts"}
-- context root: {workspace.context_root}
-
-Phase:
-{phase.raw_line}
-
-Roadmap:
-{roadmap_text}
-
-{progress_context_label}:
-{progress_context}
-
-Execution brief:
-{json.dumps(command_payload, indent=2)}
-
-Cluster composition:
-- Lead: {plan.primary_lead.model_id}
-- Reviewer: {plan.primary_reviewer.model_id}
-- Support: {", ".join(model.model_id for model in plan.primary_support) or "None"}
-
-Return strict JSON:
-{{
-  "summary": "what the cluster changed",
-  "implementation_notes": ["note 1", "note 2"],
-  "files": [
-    {{
-      "root": "src",
-      "path": "relative/path.ext",
-      "content": "full file content"
-    }}
-  ]
-}}
-""".strip()
+        prompt = self._build_specialist_prompt(
+            plan,
+            workspace,
+            phase,
+            roadmap_text,
+            progress_context_label,
+            progress_context,
+            command_payload,
+        )
         raw = self._complete(plan.primary_lead.model_id, prompt)
         payload = PayloadValidator.parse_json(raw)
         if "files" not in payload:
@@ -162,28 +95,7 @@ Return strict JSON:
         command_payload: dict,
     ) -> tuple[dict, str]:
         """Run safety review stage."""
-        prompt = f"""
-You are Red Alert reviewing the specialist cluster output for correctness, safety, and maintainability.
-Treat the coordination rules below as hard laws.
-
-{COORDINATION_LAWS}
-
-Phase:
-{phase.raw_line}
-
-Command brief:
-{json.dumps(command_payload, indent=2)}
-
-Specialist output:
-{json.dumps(specialist_payload, indent=2)}
-
-Return strict JSON:
-{{
-  "status": "pass" or "revise",
-  "summary": "review verdict",
-  "issues": ["issue 1", "issue 2"]
-}}
-""".strip()
+        prompt = self._build_review_prompt(plan, phase, specialist_payload, command_payload)
         raw = self._complete(plan.safety_lead.model_id, prompt)
         payload = PayloadValidator.parse_json(raw)
         payload.setdefault("issues", [])
@@ -203,59 +115,16 @@ Return strict JSON:
         review_payload: dict,
     ) -> tuple[dict, str]:
         """Run repair/refinement stage."""
-        prompt = f"""
-You are Ratchet, the repair cluster.
-Revise the implementation after autonomous review and feedback from the swarm.
-Treat the coordination rules below as hard laws.
-
-{COORDINATION_LAWS}
-
-Workspace constraints:
-1. Write to appropriate project roots: src/, app/, lib/, tests/, docs/, scripts/, or context/.
-2. Choose the root that matches the file type and project structure.
-3. Never write in the Autobots engine repository itself.
-4. Return full file contents, not diffs.
-5. Never write `progress-tracker.md`; report progress back to Optimus instead.
-
-Target roots available:
-- src root: {workspace.src_root}
-- app root: {workspace.target_root / "app"}
-- lib root: {workspace.target_root / "lib"}
-- tests root: {workspace.target_root / "tests"}
-- docs root: {workspace.target_root / "docs"}
-- scripts root: {workspace.target_root / "scripts"}
-- context root: {workspace.context_root}
-
-Phase:
-{phase.raw_line}
-
-Roadmap:
-{roadmap_text}
-
-Progress tracker:
-{progress_text}
-
-Command brief:
-{json.dumps(command_payload, indent=2)}
-
-Previous implementation:
-{json.dumps(specialist_payload, indent=2)}
-
-Repair instructions:
-{json.dumps(review_payload, indent=2)}
-
-Return strict JSON:
-{{
-  "summary": "what Ratchet improved",
-  "files": [
-    {{
-      "root": "src",
-      "path": "relative/path.ext",
-      "content": "full file content"
-    }}
-  ]
-}}
-""".strip()
+        prompt = self._build_repair_prompt(
+            plan,
+            workspace,
+            phase,
+            roadmap_text,
+            progress_text,
+            command_payload,
+            specialist_payload,
+            review_payload,
+        )
         raw = self._complete(plan.repair_lead.model_id, prompt)
         payload = PayloadValidator.parse_json(raw)
         if "files" not in payload:
@@ -309,3 +178,217 @@ Return strict JSON:
             prefix = ">>" if index == phase.line_index else "  "
             snippet_lines.append(f"{prefix} line {index + 1}: {lines[index]}")
         return "\n".join(snippet_lines)
+
+    def _build_command_prompt(self, plan: ClusterPlan, phase: PhaseRecord, roadmap_text: str, progress_text: str) -> str:
+        routing_block = "\n".join(f"- {reason}" for reason in plan.routing_rationale) or "- No routing rationale recorded."
+        role_block = self._format_role_assignments(plan)
+        parallel_block = self._format_parallel_workstreams(plan)
+        return f"""
+{ROLE_PROMPT_HEADERS["planner"]}
+Use hierarchical reasoning to prepare a concise execution brief for the specialist cluster.
+Treat the coordination rules below as hard laws.
+
+{COORDINATION_LAWS}
+
+Current phase:
+{phase.raw_line}
+
+Roadmap:
+{roadmap_text}
+
+Progress tracker:
+{progress_text}
+
+Selected primary cluster: {plan.primary_cluster}
+Primary lead model: {plan.primary_lead.model_id}
+Primary reviewer model: {plan.primary_reviewer.model_id}
+Support models: {", ".join(model.model_id for model in plan.primary_support) or "None"}
+
+Routing rationale:
+{routing_block}
+
+Role assignments:
+{role_block}
+
+Parallel workstream candidates:
+{parallel_block}
+
+Return strict JSON:
+{{
+  "summary": "one paragraph mission brief",
+  "implementation_goals": ["goal 1", "goal 2"],
+  "risks": ["risk 1"],
+  "acceptance_checks": ["check 1", "check 2"]
+}}
+""".strip()
+
+    def _build_specialist_prompt(
+        self,
+        plan: ClusterPlan,
+        workspace: TargetProjectWorkspace,
+        phase: PhaseRecord,
+        roadmap_text: str,
+        progress_context_label: str,
+        progress_context: str,
+        command_payload: dict,
+    ) -> str:
+        return f"""
+You are the {plan.primary_cluster} implementation cluster.
+The command tier and support models have already coordinated your mission.
+Act as a collaborative cluster: the lead writes, the reviewer critiques, and support models fill gaps.
+Treat the coordination rules below as hard laws.
+
+{COORDINATION_LAWS}
+
+Workspace constraints:
+1. Write to appropriate project roots: src/, app/, lib/, tests/, docs/, scripts/, or context/.
+2. Choose the root that matches the file type and project structure.
+3. Never write in the Autobots engine repository itself.
+4. Return full file contents, not diffs.
+5. Never write `progress-tracker.md`; report progress back to Optimus instead.
+
+Target roots available:
+- src root: {workspace.src_root}
+- app root: {workspace.target_root / "app"}
+- lib root: {workspace.target_root / "lib"}
+- tests root: {workspace.target_root / "tests"}
+- docs root: {workspace.target_root / "docs"}
+- scripts root: {workspace.target_root / "scripts"}
+- context root: {workspace.context_root}
+
+Phase:
+{phase.raw_line}
+
+Roadmap:
+{roadmap_text}
+
+{progress_context_label}:
+{progress_context}
+
+Execution brief:
+{json.dumps(command_payload, indent=2)}
+
+Cluster composition:
+- Lead: {plan.primary_lead.model_id}
+- Reviewer: {plan.primary_reviewer.model_id}
+- Support: {", ".join(model.model_id for model in plan.primary_support) or "None"}
+- Merge strategy: {plan.merge_strategy}
+
+Return strict JSON:
+{{
+  "summary": "what the cluster changed",
+  "implementation_notes": ["note 1", "note 2"],
+  "files": [
+    {{
+      "root": "src",
+      "path": "relative/path.ext",
+      "content": "full file content"
+    }}
+  ]
+}}
+""".strip()
+
+    def _build_review_prompt(self, plan: ClusterPlan, phase: PhaseRecord, specialist_payload: dict, command_payload: dict) -> str:
+        return f"""
+{ROLE_PROMPT_HEADERS["reviewer"]}
+Treat the coordination rules below as hard laws.
+
+{COORDINATION_LAWS}
+
+Phase:
+{phase.raw_line}
+
+Command brief:
+{json.dumps(command_payload, indent=2)}
+
+Specialist output:
+{json.dumps(specialist_payload, indent=2)}
+
+Return strict JSON:
+{{
+  "status": "pass" or "revise",
+  "summary": "review verdict",
+  "issues": ["issue 1", "issue 2"]
+}}
+""".strip()
+
+    def _build_repair_prompt(
+        self,
+        plan: ClusterPlan,
+        workspace: TargetProjectWorkspace,
+        phase: PhaseRecord,
+        roadmap_text: str,
+        progress_text: str,
+        command_payload: dict,
+        specialist_payload: dict,
+        review_payload: dict,
+    ) -> str:
+        return f"""
+{ROLE_PROMPT_HEADERS["repair"]}
+Revise the implementation after autonomous review and feedback from the swarm.
+Treat the coordination rules below as hard laws.
+
+{COORDINATION_LAWS}
+
+Workspace constraints:
+1. Write to appropriate project roots: src/, app/, lib/, tests/, docs/, scripts/, or context/.
+2. Choose the root that matches the file type and project structure.
+3. Never write in the Autobots engine repository itself.
+4. Return full file contents, not diffs.
+5. Never write `progress-tracker.md`; report progress back to Optimus instead.
+
+Target roots available:
+- src root: {workspace.src_root}
+- app root: {workspace.target_root / "app"}
+- lib root: {workspace.target_root / "lib"}
+- tests root: {workspace.target_root / "tests"}
+- docs root: {workspace.target_root / "docs"}
+- scripts root: {workspace.target_root / "scripts"}
+- context root: {workspace.context_root}
+
+Phase:
+{phase.raw_line}
+
+Roadmap:
+{roadmap_text}
+
+Progress tracker:
+{progress_text}
+
+Command brief:
+{json.dumps(command_payload, indent=2)}
+
+Previous implementation:
+{json.dumps(specialist_payload, indent=2)}
+
+Repair instructions:
+{json.dumps(review_payload, indent=2)}
+
+Return strict JSON:
+{{
+  "summary": "what Ratchet improved",
+  "files": [
+    {{
+      "root": "src",
+      "path": "relative/path.ext",
+      "content": "full file content"
+    }}
+  ]
+}}
+""".strip()
+
+    def _format_role_assignments(self, plan: ClusterPlan) -> str:
+        lines: list[str] = []
+        for assignment in plan.role_assignments:
+            lines.append(
+                f"- {assignment.role_name}: {assignment.cluster_name} lead={assignment.lead.model_id}"
+            )
+        return "\n".join(lines) if lines else "- None"
+
+    def _format_parallel_workstreams(self, plan: ClusterPlan) -> str:
+        lines: list[str] = []
+        for branch in plan.parallel_workstreams:
+            lines.append(
+                f"- {branch.branch_id}: cluster={branch.assigned_cluster} paths={', '.join(branch.focus_paths)}"
+            )
+        return "\n".join(lines) if lines else "- None"
