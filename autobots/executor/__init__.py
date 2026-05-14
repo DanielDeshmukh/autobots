@@ -7,6 +7,7 @@ from .operations import FileOperations
 from .core import PhaseExecutor
 from .modes import ExecutionMode, ExecutionState, Blocker, BlockerType, ExecutionModeManager, parse_mode_from_string
 from .autonomy import AutonomyEngine
+from .state import AuditEntry, ChangeType, PhaseSnapshot, SessionMetadata, SessionState, StateManager, StaleLockRecovery
 
 __all__ = [
     "EventHandler",
@@ -26,4 +27,11 @@ __all__ = [
     "ExecutionModeManager",
     "parse_mode_from_string",
     "AutonomyEngine",
+    "AuditEntry",
+    "ChangeType",
+    "PhaseSnapshot",
+    "SessionMetadata",
+    "SessionState",
+    "StateManager",
+    "StaleLockRecovery",
 ]

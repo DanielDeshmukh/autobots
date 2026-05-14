@@ -834,10 +834,27 @@ def run_status(args: list[str]) -> None:
     target_root = _resolve_target_project_from_args(console, ["status", target_path] if target_path else ["status"])
 
     workspace = TargetProjectWorkspace(target_root)
-    from .executor import ExecutionModeManager
+    from .executor import ExecutionModeManager, StateManager
 
     mode_manager = ExecutionModeManager()
     checkpoint = mode_manager.load_checkpoint(target_root)
+    state_manager = StateManager(target_root)
+    session = state_manager.get_session()
+    stats = state_manager.get_session_stats()
+
+    if session:
+        table = Table(title="Session Status")
+        table.add_column("Property")
+        table.add_column("Value")
+        table.add_row("Session ID", session.session_id)
+        table.add_row("Mode", session.mode)
+        table.add_row("State", session.state)
+        table.add_row("Phases Completed", str(len(session.phases_completed)))
+        table.add_row("Files Changed", str(session.total_files_changed))
+        table.add_row("Audit Entries", str(stats.get("audit_entries", 0)))
+        if session.current_phase:
+            table.add_row("Current Phase", session.current_phase)
+        console.print(table)
 
     if checkpoint:
         table = Table(title="Checkpoint Status")

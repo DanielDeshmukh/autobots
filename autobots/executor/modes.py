@@ -130,8 +130,18 @@ class ExecutionModeManager:
         phase_title: str,
         phases_completed: list[str],
         state: ExecutionState,
+        *,
+        started_at: float | None = None,
     ) -> None:
         """Save execution checkpoint for resumability."""
+        existing = self.load_checkpoint(target_root)
+        created_at = started_at
+        if created_at is None:
+            if existing and existing.session_id == session_id:
+                created_at = existing.started_at
+            else:
+                created_at = time.time()
+
         checkpoint = ExecutionCheckpoint(
             session_id=session_id,
             mode=mode.value,
@@ -139,11 +149,11 @@ class ExecutionModeManager:
             current_phase_title=phase_title,
             phases_completed=phases_completed,
             state=state.value,
-            started_at=time.time(),
+            started_at=created_at,
             last_updated=time.time(),
         )
         checkpoint_path = self.get_checkpoint_file(target_root)
-        checkpoint_path.write_text(json.dumps({
+        payload = {
             "session_id": checkpoint.session_id,
             "mode": checkpoint.mode,
             "current_phase_index": checkpoint.current_phase_index,
@@ -152,7 +162,10 @@ class ExecutionModeManager:
             "state": checkpoint.state,
             "started_at": checkpoint.started_at,
             "last_updated": checkpoint.last_updated,
-        }, indent=2), encoding="utf-8")
+        }
+        tmp_path = checkpoint_path.with_suffix(".json.tmp")
+        tmp_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        tmp_path.replace(checkpoint_path)
 
     def load_checkpoint(self, target_root: Path) -> ExecutionCheckpoint | None:
         """Load checkpoint if exists."""

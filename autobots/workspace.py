@@ -32,6 +32,13 @@ class TargetProjectWorkspace:
             "context": self.context_root,
         }
 
+    def _atomic_write_text(self, path: Path, content: str) -> None:
+        """Write text atomically to minimize partial writes on interruption."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = path.with_suffix(path.suffix + ".tmp")
+        tmp_path.write_text(content, encoding="utf-8")
+        tmp_path.replace(path)
+
     def _resolve(self, root: Path, relative_path: str) -> Path:
         if not relative_path:
             raise WorkspaceIOError("A relative path is required.")
@@ -58,9 +65,8 @@ class TargetProjectWorkspace:
         if relative_path in self.CRITICAL_CONTEXT_FILES:
             owner = lock_owner or "Autobots"
             self.acquire_context_lock(relative_path, owner)
-        path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            path.write_text(content, encoding="utf-8")
+            self._atomic_write_text(path, content)
         finally:
             if relative_path in self.CRITICAL_CONTEXT_FILES:
                 self.release_context_lock(relative_path, lock_owner or "Autobots")
@@ -68,8 +74,7 @@ class TargetProjectWorkspace:
 
     def write_src_file(self, relative_path: str, content: str) -> Path:
         path = self._resolve(self.src_root, relative_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content, encoding="utf-8")
+        self._atomic_write_text(path, content)
         return path
 
     def write_file(self, root_name: str, relative_path: str, content: str) -> Path:
@@ -88,8 +93,7 @@ class TargetProjectWorkspace:
             return self.write_context_file(relative_path, content)
 
         path = self._resolve(root, relative_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content, encoding="utf-8")
+        self._atomic_write_text(path, content)
         return path
 
     def read_file(self, root_name: str, relative_path: str) -> str:
@@ -151,25 +155,32 @@ class TargetProjectWorkspace:
         lock_path = self._lock_path(relative_path)
         lock_path.parent.mkdir(parents=True, exist_ok=True)
 
-        if lock_path.exists():
-            payload = self._read_lock_payload(lock_path)
-            expires_at = float(payload.get("expires_at", 0))
-            existing_owner = str(payload.get("owner") or "").strip()
-            if expires_at <= time.time() or existing_owner == owner:
-                lock_path.unlink(missing_ok=True)
-            else:
-                raise WorkspaceIOError(
-                    f"Context lock for '{relative_path}' is held by '{existing_owner}'."
-                )
+        for _ in range(2):
+            if lock_path.exists():
+                payload = self._read_lock_payload(lock_path)
+                expires_at = float(payload.get("expires_at", 0))
+                existing_owner = str(payload.get("owner") or "").strip()
+                if expires_at <= time.time() or existing_owner == owner:
+                    lock_path.unlink(missing_ok=True)
+                else:
+                    raise WorkspaceIOError(
+                        f"Context lock for '{relative_path}' is held by '{existing_owner}'."
+                    )
 
-        payload = {
-            "path": relative_path,
-            "owner": owner,
-            "acquired_at": time.time(),
-            "expires_at": time.time() + ttl,
-        }
-        lock_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        return lock_path
+            payload = {
+                "path": relative_path,
+                "owner": owner,
+                "acquired_at": time.time(),
+                "expires_at": time.time() + ttl,
+            }
+            try:
+                with lock_path.open("x", encoding="utf-8") as lock_file:
+                    json.dump(payload, lock_file, indent=2)
+                return lock_path
+            except FileExistsError:
+                continue
+
+        raise WorkspaceIOError(f"Unable to acquire context lock for '{relative_path}'.")
 
     def release_context_lock(self, relative_path: str, owner: str) -> None:
         lock_path = self._lock_path(relative_path)
@@ -273,4 +284,3 @@ class TargetProjectWorkspace:
                     summary_lines.append("")
 
         return "\n".join(summary_lines)
-
