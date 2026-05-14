@@ -1,0 +1,38 @@
+# Autobots Configuration File
+# Place this file in your project root or home directory
+# as .autobots.toml or autobots.toml
+
+[autobots]
+# Model selection profile: balanced, speed, or quality
+# balanced = mix of speed and quality
+# speed = prefer faster models
+# quality = prefer higher quality models
+model_selection_profile = "balanced"
+
+# Enable parallel workstream planning
+# When enabled, phases with multiple independent path groups
+# will be planned as parallel workstreams
+parallel_planning = false
+
+# Disable live model catalog discovery
+# Set to true to use only bundled models
+disable_live_catalog = false
+
+# Safety branch name for target projects
+safety_branch = "autobots-safety"
+
+# Default execution mode: supervised, milestone, or autonomous
+default_mode = "supervised"
+
+# Number of phases to complete before requiring approval in milestone mode
+milestone_threshold = 3
+
+# Maximum verification attempts per phase
+max_verification_attempts = 3
+
+# Path to custom model registry JSON file
+# model_registry_path = "path/to/registry.json"
+
+# Extra clusters (add custom model clusters)
+# [autobots.extra_clusters]
+# MyCluster = ["nvidia/custom-model-1", "nvidia/custom-model-2"]

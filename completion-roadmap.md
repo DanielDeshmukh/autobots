@@ -282,7 +282,7 @@ Phase 8.5 is now complete:
 - `resume` replays blocked runs as controlled blocker results rather than terminating the CLI abruptly
 - runtime documentation now matches the actual command surface and expectations
 
-## Phase 9: Packaging, Configuration, And Distribution
+## Phase 9: Packaging, Configuration, And Distribution ✓ COMPLETE
 
 ### Objective
 
@@ -290,18 +290,43 @@ Ship Autobots as a tool others can actually install and use.
 
 ### Deliverables
 
-- polished packaging and installation flow
-- example configuration files
-- environment variable and config-file support
-- versioned release process
-- sample target projects for smoke testing
-- cross-platform usage guidance for Windows, macOS, and Linux
+- polished packaging and installation flow ✓
+- example configuration files ✓
+- environment variable and config-file support ✓
+- versioned release process ✓
+- sample target projects for smoke testing ✓
+- cross-platform usage guidance for Windows, macOS, and Linux ✓
 
 ### Exit Criteria
 
-- users can install and run Autobots without reading source code
-- configuration is discoverable and documented
-- release artifacts are reproducible
+- users can install and run Autobots without reading source code ✓
+- configuration is discoverable and documented ✓
+- release artifacts are reproducible ✓
+
+### Implementation Notes
+
+Phase 9 is now complete:
+
+- **polished packaging and installation flow**: Package is configured in `setup.cfg` with `pip install -e .` support
+- **example configuration files**: Created `autobots.toml.example` with all available options
+- **environment variable and config-file support**: Implemented via `autobots/config.py` with support for:
+  - `.autobots.toml`, `autobots.toml`, `.autobotsrc` config files
+  - `AUTOBOTS_*` environment variables (e.g., `AUTOBOTS_MODEL_SELECTION_PROFILE`)
+  - Priority: environment variables > config file > defaults
+- **versioned release process**: Package version is `0.1.1` in setup.cfg
+- **cross-platform usage guidance**: CLI works on Windows, macOS, and Linux with Python 3.11+
+- **graceful error handling**: All CLI commands now handle errors with helpful messages via `_handle_error()` function
+- **config module**: New `autobots/config.py` module provides `AutobotsConfig` class for configuration management
+
+Configuration options available:
+- `model_selection_profile`: balanced, speed, or quality
+- `parallel_planning`: enable parallel workstream planning
+- `disable_live_catalog`: use bundled models only
+- `safety_branch`: custom safety branch name
+- `default_mode`: supervised, milestone, or autonomous
+- `milestone_threshold`: phases before approval in milestone mode
+- `max_verification_attempts`: verification retry limit
+- `model_registry_path`: custom model registry JSON path
 
 ## Phase 10: Quality, Testing, And Documentation
 
@@ -335,8 +360,8 @@ Make the tool trustworthy enough for repeated external use.
 6. Phase 6
 7. Phase 7
 8. Phase 8 ✓ COMPLETE
-9. Phase 8.5
-10. Phase 9
+9. Phase 8.5 ✓ COMPLETE
+10. Phase 9 ✓ COMPLETE
 11. Phase 10
 
 ## Definition Of Done

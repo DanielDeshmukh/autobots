@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from traceback import format_exc
 
 from dotenv import dotenv_values
 from rich.console import Console, Group
@@ -16,6 +17,7 @@ from rich.text import Text
 
 from .bootstrap import CORE_CONTEXT_FILES, detect_repo_profile, initialize_context
 from .catalog import ClusterCatalog
+from .config import AutobotsConfig, load_config
 from .planning import PlanArtifacts, write_plan
 from .router import AutobotRouter, ExecutionResult, PhaseRecord
 from .workspace import TargetProjectWorkspace
@@ -157,6 +159,47 @@ def _graceful_interrupt(console: Console) -> int:
         )
     )
     return 130
+
+
+def _handle_error(console: Console, error: Exception, command: str) -> int:
+    """Handle errors gracefully with helpful messages."""
+    error_msg = str(error)
+    error_type = type(error).__name__
+
+    if isinstance(error, FileNotFoundError):
+        console.print(
+            Panel.fit(
+                f"File or directory not found: {error_msg}",
+                title=f"{command} Error",
+                border_style="red",
+            )
+        )
+        return 1
+
+    if isinstance(error, PermissionError):
+        console.print(
+            Panel.fit(
+                f"Permission denied: {error_msg}",
+                title=f"{command} Error",
+                border_style="red",
+            )
+        )
+        return 1
+
+    if isinstance(error, KeyboardInterrupt):
+        return _graceful_interrupt(console)
+
+    console.print(
+        Panel.fit(
+            f"An unexpected error occurred during {command}.\n\n"
+            f"Error: {error_type}\n"
+            f"Message: {error_msg}\n\n"
+            f"Hint: Check that the target project is valid and all required dependencies are installed.",
+            title=f"{command} Failed",
+            border_style="red",
+        )
+    )
+    return 1
 
 
 def _resolve_target_project(console: Console) -> Path:
@@ -933,26 +976,39 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     console = Console()
+
     try:
-        if args[0] == "init":
+        config = load_config()
+        config.apply_env_vars()
+    except Exception:
+        pass
+
+    command = args[0]
+    try:
+        if command == "init":
             run_init(args)
-        elif args[0] == "plan":
+        elif command == "plan":
             run_plan(args)
-        elif args[0] == "run":
+        elif command == "run":
             run_run(args)
-        elif args[0] == "resume":
+        elif command == "resume":
             run_resume(args)
-        elif args[0] == "status":
+        elif command == "status":
             run_status(args)
-        elif args[0] == "engage":
+        elif command == "engage":
             run_engage()
-        elif args[0] == "validate-models":
+        elif command == "validate-models":
             run_validate_models()
         else:
             Console().print("Usage: autobots <init|plan|run|resume|status|engage|validate-models> [options]")
             return 1
-    except (KeyboardInterrupt, EOFError):
+    except KeyboardInterrupt:
         return _graceful_interrupt(console)
+    except EOFError:
+        return _graceful_interrupt(console)
+    except Exception as exc:
+        return _handle_error(console, exc, command)
+
     return 0
 
 
