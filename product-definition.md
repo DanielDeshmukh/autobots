@@ -44,7 +44,7 @@ Autobots continues through phases and validation loops until complete or blocked
 - branch isolation is mandatory by default
 - protected context files require lock coordination
 - `progress-tracker.md` remains coordinator-owned
-- future terminal command execution must use policy checks and approval escalation
+- validation command execution is policy-checked today; broader approval escalation and richer command policy remain future work
 
 ## Success Criteria
 

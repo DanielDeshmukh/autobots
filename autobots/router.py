@@ -5,6 +5,7 @@ import os
 import re
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable
 
 from dotenv import load_dotenv
@@ -868,6 +869,7 @@ Return strict JSON:
         if not isinstance(files, list):
             raise ModelContractError(f"{payload_name} field 'files' must be a list.")
 
+        allowed_roots = TargetProjectWorkspace.ALLOWED_WRITE_ROOTS
         for index, file_spec in enumerate(files):
             if not isinstance(file_spec, dict):
                 raise ModelContractError(
@@ -876,9 +878,9 @@ Return strict JSON:
             root_name = file_spec.get("root")
             relative_path = file_spec.get("path")
             content = file_spec.get("content")
-            if root_name not in {"src", "context"}:
+            if root_name not in allowed_roots:
                 raise ModelContractError(
-                    f"{payload_name} files[{index}].root must be 'src' or 'context'."
+                    f"{payload_name} files[{index}].root must be one of: {', '.join(sorted(allowed_roots))}."
                 )
             if not isinstance(relative_path, str) or not relative_path.strip():
                 raise ModelContractError(
@@ -895,22 +897,32 @@ Return strict JSON:
         file_paths: list[str],
         workspace: TargetProjectWorkspace,
     ) -> list[dict]:
+        layout_roots = {
+            "src": workspace.src_root,
+            "app": workspace.target_root / "app",
+            "lib": workspace.target_root / "lib",
+            "tests": workspace.target_root / "tests",
+            "docs": workspace.target_root / "docs",
+            "scripts": workspace.target_root / "scripts",
+            "context": workspace.context_root,
+        }
         entries: list[dict] = []
         for file_path in file_paths:
             path = os.path.abspath(file_path)
-            if path.startswith(str(workspace.src_root)):
-                root = "src"
-                relative = os.path.relpath(path, workspace.src_root)
-            elif path.startswith(str(workspace.context_root)):
-                root = "context"
-                relative = os.path.relpath(path, workspace.context_root)
-            else:
+            match = None
+            for root_name, root_path in layout_roots.items():
+                root_str = str(root_path)
+                if path == root_str or path.startswith(root_str + os.sep):
+                    match = (root_name, os.path.relpath(path, root_path))
+                    break
+            if match is None:
                 continue
+            root, relative = match
             entries.append(
                 {
                     "root": root,
                     "path": relative.replace("\\", "/"),
-                    "content": open(path, encoding="utf-8").read(),
+                    "content": Path(path).read_text(encoding="utf-8"),
                 }
             )
         return entries

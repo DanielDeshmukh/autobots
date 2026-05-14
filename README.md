@@ -1,271 +1,89 @@
-#  Autobots: Decentralized 100+ NIM Software Engine
+# Autobots
 
+Autobots is a Python CLI for running a structured, approval-gated coding swarm against a target repository. It can initialize project context, generate phased plans, route implementation work through model clusters, and validate model contract behavior.
 
-Autobots is a massively parallelized development swarm utilizing over **100+ specialized NVIDIA NIM microservices**.  
-By orchestrating these models through a **6-File Global State Architecture**, the swarm operates as a singular, non-redundant Codex.
+## Current Status
 
----
+- Phases 1-4 in [completion-roadmap.md](/d:/Vs%20Code/VS%20code/autobots/completion-roadmap.md) are implemented.
+- Phase 5 is partially started: validation commands can run through the execution engine, but fully automated verify-repair loops and broader approval policy work are still incomplete.
+- The shipped CLI surface today is `autobots init`, `autobots plan`, `autobots engage`, and `autobots validate-models`.
 
-#  Swarm Hierarchy & Model Inventory
+## What Works Today
 
-The swarm is divided into specialized clusters.  
-Each **Autobot** represents a cluster of models optimized for specific technical domains.
+- Initialize a target repo with Autobots context files.
+- Scan a repository and generate ordered implementation phases with dependencies and acceptance checks.
+- Execute the next phase through a routed cluster workflow with review and optional repair.
+- Write generated files across common repo roots: `src/`, `app/`, `lib/`, `tests/`, `docs/`, `scripts/`, and `context/`.
+- Run validation commands through the Phase 4/5 execution layer.
+- Use a live NVIDIA model registry when available, with fallback model metadata bundled in the repo.
 
----
+## Project Layout
 
-#  Optimus Prime: The Command & Router Cluster
+- [autobots/cli.py](/d:/Vs%20Code/VS%20code/autobots/autobots/cli.py): CLI entrypoint and command flow
+- [autobots/bootstrap.py](/d:/Vs%20Code/VS%20code/autobots/autobots/bootstrap.py): repo profiling and context initialization
+- [autobots/planning.py](/d:/Vs%20Code/VS%20code/autobots/autobots/planning.py): roadmap and progress tracker generation
+- [autobots/router.py](/d:/Vs%20Code/VS%20code/autobots/autobots/router.py): cluster orchestration, model contracts, and phase execution flow
+- [autobots/executor.py](/d:/Vs%20Code/VS%20code/autobots/autobots/executor.py): work packets, file application, and validation commands
+- [autobots/workspace.py](/d:/Vs%20Code/VS%20code/autobots/autobots/workspace.py): target workspace safety and locking rules
 
-> *The “Matrix of Leadership.”*  
-> Manages the 6-file state, roadmap, and model-to-task routing.
+## Install
 
-- `nemotron-3-super-120b-a12b` — Master Reasoning
-- `llama-3.3-nemotron-super-49b-v1.5` — High-efficiency Routing
-- `mistral-large-3-675b-instruct-2512` — Long-context Instruction
-- `kimi-k2-thinking` — Strategic Planning
-- `step-3.5-flash` — Fast Agentic Decisioning
-- `gpt-oss-120b` — Mathematical Logic
-- `glm-5.1` — High-horizon Planning
-- `llama-4-maverick-17b-128e-instruct` — Multilingual Command
-- `stockmark-2-100b-instruct` — Enterprise Documentation
-
----
-
-#  Ultra Magnus: The Logic & Architect Cluster
-
-Handles complex backend reasoning, architecture, and long-horizon coding.
-
-- `kimi-k2.6` — 1T Multimodal MoE for Coding
-- `deepseek-v4-pro` — Large-scale Code Intelligence
-- `qwen3.5-397b-a17b` — Advanced RAG / Agentic Logic
-- `mistral-medium-3.5-128b` — Agentic Task Execution
-- `gemma-4-31b-it` — Frontier Code Reasoning
-- `qwen3-next-80b-a3b-thinking` — Hybrid Reasoning
-- `dracarys-llama-3.1-70b-instruct` — Fine-tuned Code Generation
-- `mixtral-8x22b-instruct-v0.1` — Sparse MoE Logic
-- `evo2-40b` — Biological / Complex Sequential Logic
-- `boltz-2` — Complex Structure Prediction
-- `alphafold2-multimer` — Systemic Complexity
-- `msa-search` — Sequence Alignment
-
----
-
-#  Red Alert: The Security & Safety Cluster
-
-> *The “Software Security” mandate.*  
-> Real-time auditing and guardrail enforcement.
-
-- `nemotron-3-content-safety` — Multilingual Safety
-- `llama-3.1-nemotron-safety-guard-8b-v3` — Content Moderation
-- `gliner-pii` — Personally Identifiable Information Detection
-- `llama-guard-4-12b` — Input / Output Safety Classification
-- `nemoguard-jailbreak-detect` — Adversarial Protection
-- `llama-3.1-nemoguard-8b-topic-control` — Domain Enforcement
-- `llama-3.1-nemoguard-8b-content-safety` — Policy Reasoning
-- `nemotron-content-safety-reasoning-4b` — Context-aware Safety
-- `synthetic-video-detector` — Deepfake / Synthetic Detection
-- `usdvalidate` — Asset Validation
-
----
-
-#  Jazz: The UI/UX & Creative Cluster
-
-Responsible for the **“Minimalist Dark Mode”** aesthetic and frontend execution.
-
-- `qwen-image-edit` — Consistent Image Editing
-- `qwen-image` — High-fidelity Text Rendering
-- `flux.2-klein-4b` — High-speed UI Asset Generation
-- `flux.1-dev` — Creative Prototyping
-- `flux.1-schnell` — Rapid Iteration
-- `stable-diffusion-3.5-large` — Production Design
-- `FLUX.1-Kontext-dev` — In-context Design Editing
-- `phi-4-multimodal-instruct` — Audio / Visual UI Analysis
-- `NVIDIA AI for Media Relighting` — Lighting Consistency
-- `TRELLIS` — 3D Asset Generation
-- `vista-3d` — Anatomical / Structural UI Mapping
-
----
-
-#  Ratchet: The Debug & Repair Cluster
-
-> *The “Fixer” swarm for refactoring, unit testing, and bug squashing.*
-
-- `deepseek-v4-flash` — Rapid Code Patching
-- `qwen3.5-coder-480b-a35b-instruct` — Agentic Bug Fixing
-- `qwen2.5-coder-32b-instruct` — Code Completion / Fixing
-- `mistral-small-4-119b-2603` — Hybrid Generation / Fixing
-- `devstral-2-123b-instruct-2512` — Deep Reasoning Debugging
-- `magistral-small-2506` — Edge Efficiency Debugging
-- `phi-4-mini-instruct` — Latency-bound Refactoring
-- `llama-3.2-3b-instruct` — Lightweight Task Fixing
-- `llama-3.2-1b-instruct` — Micro-service Optimization
-- `nemotron-mini-4b-instruct` — Functional Call Debugging
-
----
-
-#  Perceptor: The RAG & Data Cluster
-
-Knowledge extraction, OCR, and semantic retrieval.
-
-- `nemotron-ocr-v1` — Table / Document Extraction
-- `nemotron-parse` — Vision-language Metadata Extraction
-- `paddleocr` — Image-to-text Table Extraction
-- `nemotron-table-structure-v1` — Layout Analysis
-- `nemotron-page-elements-v3` — Object Detection
-- `nemotron-graphic-elements-v1` — Chart Parsing
-- `llama-3.2-nemoretriever-300m-embed-v2` — Multilingual Embedding
-- `llama-3.2-nv-embedqa-1b-v2` — Context-long QA Retrieval
-- `llama-3.2-nv-rerankqa-1b-v2` — Probabilistic Reranking
-- `nv-embedcode-7b-v1` — Code-specific Embedding
-- `bge-m3` — Multi-vector Retrieval
-- `rerank-qa-mistral-4b` — Ranking Probability
-
----
-
-#  Bumblebee: The Communication & Media Cluster
-
-Handling speech recognition, translation, and video processing.
-
-- `whisper-large-v3` — Robust ASR
-- `canary-1b-asr` — Multilingual Transcription
-- `riva-translate-4b-instruct-v1_1` — Instruction-based Translation
-- `magpie-tts-zeroshot` — Expressive Voice Synthesis
-- `nemotron-voicechat` — Conversational Audio
-- `LipSync` — Audio-Visual Syncing
-- `Background Noise Removal` — Audio Cleanup
-- `Active Speaker Detection` — Video Localization
-- `parakeet-1.1b-rnnt-multilingual-asr` — 25-language Transcription
-
----
-
-#  Ironhide: The Physical & Synthetic Data Cluster
-
-Simulation, autonomous driving logic, and physics-aware world states.
-
-- `cosmos-reason2-8b` — Physical World Understanding
-- `cosmos-transfer2.5-2b` — Physics-aware Video Generation
-- `cosmos-predict1-5b` — Future Frame Prediction
-- `streampetr` — 3D Object Detection
-- `sparsedrive` — Autonomous Driving Stack
-- `bevformer` — Bird’s-eye-view Perception
-- `fourcastnet` — Atmospheric Dynamics Prediction
-- `cuopt` — Route Optimization
-
----
-
-#  Wheeljack: The Specialized Science Cluster
-
-Quantum calibration, molecular generation, and biological design.
-
-- `ising-calibration-1-35b-a3b` — Quantum Computer Calibration
-- `genmol` — Molecular Generation
-- `molmim` — Controlled Molecular Search
-- `rfdiffusion` — Protein Binder Design
-- `proteinmpnn` — Amino Acid Sequence Prediction
-- `esm2-650m` — Protein Embedding
-- `openfold3` — Biomolecular Structure Prediction
-
----
-
-#  The 6-File Control Architecture
-
-All 100+ Autobots synchronize their state through six core Markdown files to ensure zero redundancy:
-
-## `architecture.md`
-System design and tech stack definitions.
-
-## `roadmap.md`
-Project phases and milestone tracking.
-
-## `ui-components.md`
-The “Jazz” Design System and Tailwind rules.
-
-## `progress-tracker.md`
-Real-time task state, lock ownership, and completion updates.
-
-## `project-briefing.md`
-Core business logic and intent.
-
-## `security-auth.md`
-Encryption, authentication flows, and safety benchmarks.
-
----
-
-#  Coordination Strategy For 100+ NIMs
-
-For large swarms, a hybrid coordination strategy keeps throughput high without letting file contention become chaos.
-
-## Critical Context Files Use Pessimistic Locks
-
-Use explicit write locks for low-churn, high-impact files such as:
-
-- `architecture.md`
-- `security-auth.md`
-
-These documents define shared truth for the entire swarm, so brief waiting is preferable to conflicting edits.
-
-## `progress-tracker.md` Uses A Coordinator
-
-Do not let every large model compete to write status updates.
-Instead, assign a lightweight Optimus model such as `step-3.5-flash` to act as the swarm's "Secretary":
-
-- receives status changes from worker clusters
-- serializes updates to `progress-tracker.md`
-- handles lock bookkeeping and completion markers
-- keeps larger reasoning models focused on planning and implementation
-
-This reduces file I/O contention while preserving a single source of truth for execution state.
-
-## Prevent Deadlocks With Lock Expiration
-
-Every lock should carry an expiration time.
-Recommended default:
-
-- lock TTL: `60 seconds`
-
-If a lock exceeds its TTL, treat it as stale and reclaim it automatically before retrying the write. This prevents two models from waiting on abandoned locks forever.
-
----
-
-#  Operational Principles
-
-## Parallelized Intelligence
-Each cluster executes independently while synchronizing through shared state files.
-
-## Zero-Redundancy Coordination
-No duplicated task execution across models.
-
-## Deterministic Routing
-Optimus Prime dynamically routes workloads to the most specialized NIMs.
-
-## Security-by-Default
-Red Alert validates every generation, mutation, and deployment path.
-
-## Persistent Project Memory
-The 6-file architecture acts as the swarm’s distributed cognition layer.
-
----
-
-#  Example Swarm Execution Flow
-
-```text
-User Request
-    ↓
-Optimus Prime
-    ↓
-Task Classification
-    ↓
-Ultra Magnus → Architecture & Backend
-Jazz → UI/UX
-Ratchet → Testing & Refactoring
-Red Alert → Security Validation
-Perceptor → Retrieval & OCR
-Bumblebee → Voice / Media
-Ironhide → Simulation
-Wheeljack → Scientific Reasoning
-    ↓
-6-File Synchronization Layer
-    ↓
-Unified Production Output
+```powershell
+python -m pip install -e . --no-build-isolation
 ```
 
-![Swarm Status](https://img.shields.io/badge/Swarm-160_NIMs_Active-orange?style=for-the-badge&logo=nvidia)
+## Configure
+
+Create a repo-local `.env` with:
+
+```env
+NVIDIA_API_KEY=your_key_here
+```
+
+## Usage
+
+Initialize context in a target project:
+
+```powershell
+autobots init D:\path\to\target-project
+```
+
+Generate or refresh a plan:
+
+```powershell
+autobots plan D:\path\to\target-project --goal "Add a planning workflow"
+```
+
+Run the supervised phase executor:
+
+```powershell
+autobots engage
+```
+
+Validate live model JSON contracts:
+
+```powershell
+autobots validate-models
+```
+
+## Context Files
+
+Autobots manages six project context files under `context/`:
+
+- `architecture.md`
+- `roadmap.md`
+- `ui-components.md`
+- `progress-tracker.md`
+- `project-briefing.md`
+- `security-auth.md`
+
+## Testing
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+## Notes
+
+- `engage` is the current execution command. The roadmap still targets future commands like `run`, `resume`, `status`, and `review`, but those are not implemented yet.
+- The codebase is currently aligned around the real shipped prototype rather than the earlier "100+ NIM" marketing description.
