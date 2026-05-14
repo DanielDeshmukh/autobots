@@ -304,6 +304,30 @@ def _check_six_file_architecture(console: Console, target_root: Path) -> None:
         )
 
 
+def _missing_core_context_files(target_root: Path) -> list[str]:
+    context_dir = target_root / "context"
+    return [filename for filename in CORE_CONTEXT_FILES if not (context_dir / filename).exists()]
+
+
+def _require_operational_context(console: Console, target_root: Path, command_name: str) -> None:
+    """Require the initialized six-file context architecture for operational commands."""
+    missing_files = _missing_core_context_files(target_root)
+    if not missing_files:
+        return
+
+    console.print(
+        Panel.fit(
+            "The target project is missing required Autobots context files.\n"
+            f"Command: {command_name}\n"
+            f"Missing: {', '.join(missing_files)}\n\n"
+            f"Run `autobots init {target_root}` first, then regenerate planning with `autobots plan {target_root}`.",
+            title="Incomplete Context Setup",
+            border_style="red",
+        )
+    )
+    raise SystemExit(1)
+
+
 def _render_plan(console: Console, result: ExecutionResult) -> None:
     table = Table(title="Hierarchical Cluster Plan")
     table.add_column("Stage")
@@ -743,6 +767,7 @@ def run_run(args: list[str]) -> None:
     console = Console()
     target_path, mode, milestone_threshold, dry_run = _parse_run_args(args)
     target_root = _resolve_target_project_from_args(console, ["run", target_path] if target_path else ["run"])
+    _require_operational_context(console, target_root, "run")
 
     console.print(
         Panel.fit(
@@ -800,6 +825,7 @@ def run_resume(args: list[str]) -> None:
     console = Console()
     target_path = args[1] if len(args) > 1 else None
     target_root = _resolve_target_project_from_args(console, ["resume", target_path] if target_path else ["resume"])
+    _require_operational_context(console, target_root, "resume")
 
     console.print(
         Panel.fit(
@@ -825,6 +851,16 @@ def run_resume(args: list[str]) -> None:
 
     if result.status == "no_checkpoint":
         console.print(Panel.fit("No checkpoint found. Use 'autobots run' to start fresh.", title="No Checkpoint", border_style="yellow"))
+    if result.blocker:
+        console.print(
+            Panel.fit(
+                f"Type: {result.blocker.blocker_type.value}\n"
+                f"Message: {result.blocker.message}\n"
+                f"Hint: {result.blocker.resolution_hint or 'None'}",
+                title="Execution Blocked",
+                border_style="red",
+            )
+        )
 
 
 def run_status(args: list[str]) -> None:
@@ -832,6 +868,7 @@ def run_status(args: list[str]) -> None:
     console = Console()
     target_path = args[1] if len(args) > 1 else None
     target_root = _resolve_target_project_from_args(console, ["status", target_path] if target_path else ["status"])
+    _require_operational_context(console, target_root, "status")
 
     workspace = TargetProjectWorkspace(target_root)
     from .executor import ExecutionModeManager, StateManager

@@ -45,6 +45,7 @@ class BlockerType(Enum):
     LOCK_COLLISION = "lock_collision"
     PERMISSION_ERROR = "permission_error"
     DEPENDENCY_MISSING = "dependency_missing"
+    EXECUTION_ERROR = "execution_error"
 
 
 @dataclass
@@ -75,6 +76,8 @@ class ExecutionModeManager:
     """Manages execution modes and checkpoints."""
 
     DEFAULT_MILESTONE_THRESHOLD = 3
+    ATOMIC_WRITE_RETRY_ATTEMPTS = 3
+    ATOMIC_WRITE_RETRY_DELAY_SECONDS = 0.05
 
     def __init__(self, mode: ExecutionMode = ExecutionMode.SUPERVISED, milestone_threshold: int = 3):
         self.mode = mode
@@ -165,7 +168,14 @@ class ExecutionModeManager:
         }
         tmp_path = checkpoint_path.with_suffix(".json.tmp")
         tmp_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        tmp_path.replace(checkpoint_path)
+        for attempt in range(1, self.ATOMIC_WRITE_RETRY_ATTEMPTS + 1):
+            try:
+                tmp_path.replace(checkpoint_path)
+                return
+            except PermissionError:
+                if attempt >= self.ATOMIC_WRITE_RETRY_ATTEMPTS:
+                    raise
+                time.sleep(self.ATOMIC_WRITE_RETRY_DELAY_SECONDS)
 
     def load_checkpoint(self, target_root: Path) -> ExecutionCheckpoint | None:
         """Load checkpoint if exists."""

@@ -4,17 +4,19 @@ Autobots is a Python CLI for running a structured, approval-gated coding swarm a
 
 ## Current Status
 
-- Phases 1-5 in [completion-roadmap.md](/d:/Vs%20Code/VS%20code/autobots/completion-roadmap.md) are implemented.
-- Phase 5 now includes automatic verify-repair cycles, structured validation reports, and explicit migration opt-in through phase constraints.
-- The shipped CLI surface today is `autobots init`, `autobots plan`, `autobots engage`, and `autobots validate-models`.
+- Phases 1-8 plus operational reliability work are implemented in the current codebase.
+- The shipped CLI surface today includes `autobots init`, `autobots plan`, `autobots run`, `autobots resume`, `autobots status`, `autobots engage`, and `autobots validate-models`.
+- Autonomous or milestone execution requires a configured `NVIDIA_API_KEY`; missing credentials now surface as resumable blockers instead of uncaught crashes.
 
 ## What Works Today
 
 - Initialize a target repo with Autobots context files.
 - Scan a repository and generate ordered implementation phases with dependencies and acceptance checks.
+- Create durable execution sessions, checkpoints, and audit trail state for runtime commands.
 - Execute the next phase through a routed cluster workflow with review and optional repair.
 - Write generated files across common repo roots: `src/`, `app/`, `lib/`, `tests/`, `docs/`, `scripts/`, and `context/`.
 - Run validation commands through the execution layer and feed failures into automatic repair passes.
+- Resume paused or blocked runtime sessions from the last stable checkpoint.
 - Use a live NVIDIA model registry when available, with fallback model metadata bundled in the repo.
 
 ## Project Layout
@@ -54,10 +56,22 @@ Generate or refresh a plan:
 autobots plan D:\path\to\target-project --goal "Add a planning workflow"
 ```
 
-Run the supervised phase executor:
+Run the phase executor:
 
 ```powershell
-autobots engage
+autobots run D:\path\to\target-project --supervised
+```
+
+Resume from the last checkpoint:
+
+```powershell
+autobots resume D:\path\to\target-project
+```
+
+Inspect runtime session status:
+
+```powershell
+autobots status D:\path\to\target-project
 ```
 
 Validate live model JSON contracts:
@@ -85,6 +99,7 @@ python -m unittest discover -s tests -v
 
 ## Notes
 
-- `engage` is the current execution command. The roadmap still targets future commands like `run`, `resume`, `status`, and `review`, but those are not implemented yet.
+- `engage` remains the interactive approval-gated workflow, while `run`, `resume`, and `status` are the operational runtime commands.
+- `run`, `resume`, and `status` require the initialized six-file Autobots context under `context/`.
 - Migration commands require an explicit phase constraint such as `allow migrations` before Autobots will execute them.
 - The codebase is currently aligned around the real shipped prototype rather than the earlier "100+ NIM" marketing description.

@@ -18,6 +18,7 @@ from autobots.executor import (
 )
 from autobots.router.models import ExecutionResult, PhaseRecord
 from autobots.router.phases import PhaseReader
+from autobots.bootstrap import CORE_CONTEXT_FILES
 from autobots.workspace import TargetProjectWorkspace
 
 
@@ -129,6 +130,10 @@ class Phase7AutonomyTests(unittest.TestCase):
             workspace.write_context_file("progress-tracker.md", updated, lock_owner="Autobots/test")
             return updated
 
+    class FailingRouter(DummyRouter):
+        def execute_phase(self, workspace, phase, roadmap_text, progress_text, event_handler=None):
+            raise RuntimeError("NVIDIA_API_KEY is missing. Cannot execute the swarm.")
+
     def test_execute_persists_durable_state_and_audit_trail(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -228,8 +233,13 @@ class Phase7AutonomyTests(unittest.TestCase):
             root = Path(tmpdir)
             (root / "src").mkdir()
             (root / "context").mkdir()
-            (root / "context" / "roadmap.md").write_text("# Roadmap\n", encoding="utf-8")
-            (root / "context" / "progress-tracker.md").write_text("- [x] P1 | Finished\n", encoding="utf-8")
+            for filename in CORE_CONTEXT_FILES:
+                content = "# Placeholder\n"
+                if filename == "roadmap.md":
+                    content = "# Roadmap\n"
+                elif filename == "progress-tracker.md":
+                    content = "- [x] P1 | Finished\n"
+                (root / "context" / filename).write_text(content, encoding="utf-8")
 
             state_manager = StateManager(root)
             session = state_manager.create_session("sess-3", str(root), "autonomous")
@@ -242,6 +252,66 @@ class Phase7AutonomyTests(unittest.TestCase):
                 run_status(["status", str(root)])
 
             self.assertTrue(console.print.called)
+
+    def test_missing_api_key_becomes_blocked_session_state_instead_of_crash(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "src").mkdir()
+            (root / "context").mkdir()
+            (root / "context" / "roadmap.md").write_text("# Roadmap\n", encoding="utf-8")
+            (root / "context" / "progress-tracker.md").write_text("- [ ] P1 | Demo phase\n", encoding="utf-8")
+
+            engine = AutonomyEngine(mode=ExecutionMode.AUTONOMOUS)
+            engine._router = self.FailingRouter()
+
+            result = engine.execute(TargetProjectWorkspace(root), mode=ExecutionMode.AUTONOMOUS)
+            checkpoint = ExecutionModeManager().load_checkpoint(root)
+            session = StateManager(root).get_session()
+
+            self.assertEqual(result.status, "blocked")
+            self.assertIsNotNone(result.blocker)
+            self.assertEqual(result.blocker.blocker_type.value, "api_key")
+            self.assertIsNotNone(checkpoint)
+            self.assertEqual(checkpoint.state, "blocked")
+            self.assertIsNotNone(session)
+            self.assertEqual(session.state, "blocked")
+
+    def test_resume_returns_blocked_result_for_recoverable_execution_blocker(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "src").mkdir()
+            (root / "context").mkdir()
+            (root / "context" / "roadmap.md").write_text("# Roadmap\n", encoding="utf-8")
+            (root / "context" / "progress-tracker.md").write_text("- [ ] P1 | Demo phase\n", encoding="utf-8")
+
+            manager = ExecutionModeManager()
+            manager.save_checkpoint(
+                target_root=root,
+                session_id="sess-blocked",
+                mode=ExecutionMode.AUTONOMOUS,
+                phase_index=0,
+                phase_title="P1 | Demo phase",
+                phases_completed=[],
+                state=ExecutionState.BLOCKED,
+            )
+
+            state_manager = StateManager(root)
+            session = state_manager.create_session("sess-blocked", str(root), "autonomous")
+            session.state = "blocked"
+            session.current_phase = "P1 | Demo phase"
+            state_manager.update_session(session)
+
+            engine = AutonomyEngine()
+            engine._router = self.FailingRouter()
+
+            result = engine.resume(TargetProjectWorkspace(root))
+            resumed_session = state_manager.get_session()
+
+            self.assertEqual(result.status, "blocked")
+            self.assertIsNotNone(result.blocker)
+            self.assertEqual(result.blocker.blocker_type.value, "api_key")
+            self.assertIsNotNone(resumed_session)
+            self.assertEqual(resumed_session.state, "blocked")
 
 
 if __name__ == "__main__":

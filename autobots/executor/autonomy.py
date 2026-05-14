@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING, Callable
 
-from .modes import ExecutionMode, ExecutionState, Blocker, parse_mode_from_string
+from .modes import Blocker, BlockerType, ExecutionMode, ExecutionState, parse_mode_from_string
 from .state import ChangeType, PhaseSnapshot, SessionState, StateManager, StaleLockRecovery
 
 if TYPE_CHECKING:
@@ -175,13 +175,46 @@ class AutonomyEngine:
                 started_at=checkpoint.started_at if checkpoint else None,
             )
 
-            result = self.router.execute_phase(
-                workspace,
-                phase,
-                roadmap_text,
-                progress_text,
-                event_handler=event_handler,
-            )
+            try:
+                result = self.router.execute_phase(
+                    workspace,
+                    phase,
+                    roadmap_text,
+                    progress_text,
+                    event_handler=event_handler,
+                )
+            except Exception as exc:
+                blocker = self._build_exception_blocker(exc)
+                snapshot.status = "blocked"
+                snapshot.error_log.append(str(exc))
+                self._state_manager.save_phase_snapshot(snapshot)
+                self._save_execution_checkpoint(
+                    workspace=workspace,
+                    mode=mode,
+                    phase_index=current_index,
+                    phase_title=phase.title,
+                    phases_completed=phases_completed,
+                    state=ExecutionState.BLOCKED,
+                    started_at=checkpoint.started_at if checkpoint else None,
+                )
+                session.state = SessionState.BLOCKED.value
+                self._state_manager.increment_error_count()
+                self._state_manager.update_session(session)
+                self._state_manager.log_audit(
+                    ChangeType.ERROR_ENCOUNTERED,
+                    str(exc),
+                    phase_id=phase_id,
+                    metadata={"blocker_type": blocker.blocker_type.value, "error_type": type(exc).__name__},
+                )
+                if event_handler:
+                    event_handler(f"BLOCKER: {blocker.message}")
+                return AutonomousResult(
+                    status="blocked",
+                    phases_completed=phases_completed,
+                    blocker=blocker,
+                    session_id=self._session_id,
+                    current_phase=phase.title,
+                )
 
             snapshot.files_written = list(result.files_written)
             snapshot.validation_attempts = result.verification_attempts
@@ -217,7 +250,7 @@ class AutonomyEngine:
                     state=ExecutionState.BLOCKED,
                     started_at=checkpoint.started_at if checkpoint else None,
                 )
-                session.state = SessionState.FAILED.value
+                session.state = SessionState.BLOCKED.value
                 self._state_manager.increment_error_count()
                 self._state_manager.update_session(session)
                 self._state_manager.log_audit(
@@ -284,7 +317,10 @@ class AutonomyEngine:
         session = self._state_manager.get_session()
         if session and session.session_id == self._session_id:
             session.mode = self.mode.value
-            session.state = SessionState.RUNNING.value
+            if checkpoint and checkpoint.state.lower() == ExecutionState.BLOCKED.value:
+                session.state = SessionState.BLOCKED.value
+            else:
+                session.state = SessionState.RUNNING.value
             self._state_manager.update_session(session)
             self._state_manager.log_audit(
                 ChangeType.CHECKPOINT_LOADED,
@@ -298,6 +334,8 @@ class AutonomyEngine:
         if checkpoint:
             session.phases_completed = list(checkpoint.phases_completed)
             session.current_phase = checkpoint.current_phase_title
+            if checkpoint.state.lower() == ExecutionState.BLOCKED.value:
+                session.state = SessionState.BLOCKED.value
         self._state_manager.update_session(session)
         return session
 
@@ -400,6 +438,32 @@ class AutonomyEngine:
         self._state_manager.clear_recovery_point()
         if event_handler:
             event_handler("Execution state marked complete and recovery point cleared")
+
+    def _build_exception_blocker(self, exc: Exception) -> Blocker:
+        """Convert runtime exceptions into durable execution blockers."""
+        message = str(exc).strip() or type(exc).__name__
+        lowered = message.lower()
+
+        if "api_key" in lowered or "api key" in lowered:
+            return Blocker(
+                blocker_type=BlockerType.API_KEY,
+                message="NVIDIA_API_KEY is missing or unavailable for swarm execution.",
+                can_auto_resolve=True,
+                resolution_hint="Set NVIDIA_API_KEY in the environment or .env, then run `autobots resume`.",
+            )
+        if "permission" in lowered:
+            return Blocker(
+                blocker_type=BlockerType.PERMISSION_ERROR,
+                message=message,
+                can_auto_resolve=False,
+                resolution_hint="Check filesystem and command permissions before resuming.",
+            )
+        return Blocker(
+            blocker_type=BlockerType.EXECUTION_ERROR,
+            message=message,
+            can_auto_resolve=False,
+            resolution_hint="Inspect `autobots status` and the audit trail before resuming.",
+        )
 
 
 class AutonomousResult:

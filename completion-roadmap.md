@@ -251,6 +251,27 @@ All Phase 8 deliverables are now implemented:
   - `best_effort`: Use first successful result, fall back to subsequent
   - `consensus`: Keep file only if all branches agree on content
 
+## Phase 8.5: Operational CLI Reliability And Recovery
+
+### Objective
+
+Make the new runtime CLI commands behave predictably after the six-file context architecture is in place.
+
+### Deliverables
+
+- enforce six-file context validation for operational commands after setup
+- convert missing NVIDIA API credentials into explicit execution blockers instead of raw crashes
+- durable blocked or failed session state for interrupted autonomous runs
+- resume behavior that re-enters from a stable checkpoint without looping into uncaught exceptions
+- command and README behavior aligned with the real shipped CLI surface
+
+### Exit Criteria
+
+- `autobots run`, `autobots resume`, and `autobots status` refuse incomplete context setups clearly
+- interrupted autonomous runs persist inspectable blocked or failed state
+- `resume` returns controlled status for recoverable blockers instead of crashing
+- operator-facing docs match the actual command surface and runtime expectations
+
 ## Phase 9: Packaging, Configuration, And Distribution
 
 ### Objective
@@ -304,8 +325,9 @@ Make the tool trustworthy enough for repeated external use.
 6. Phase 6
 7. Phase 7
 8. Phase 8 ✓ COMPLETE
-9. Phase 9
-10. Phase 10
+9. Phase 8.5
+10. Phase 9
+11. Phase 10
 
 ## Definition Of Done
 

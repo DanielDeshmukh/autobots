@@ -14,6 +14,8 @@ class TargetProjectWorkspace:
     LOCK_TTL_SECONDS = 60
     LOCK_RETRY_DELAY_SECONDS = 2
     LOCK_RETRY_ATTEMPTS = 3
+    ATOMIC_WRITE_RETRY_ATTEMPTS = 3
+    ATOMIC_WRITE_RETRY_DELAY_SECONDS = 0.05
     ALLOWED_WRITE_ROOTS = {"src", "app", "lib", "tests", "docs", "scripts", "context"}
 
     def __init__(self, target_root: str | Path):
@@ -37,7 +39,14 @@ class TargetProjectWorkspace:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = path.with_suffix(path.suffix + ".tmp")
         tmp_path.write_text(content, encoding="utf-8")
-        tmp_path.replace(path)
+        for attempt in range(1, self.ATOMIC_WRITE_RETRY_ATTEMPTS + 1):
+            try:
+                tmp_path.replace(path)
+                return
+            except PermissionError:
+                if attempt >= self.ATOMIC_WRITE_RETRY_ATTEMPTS:
+                    raise
+                time.sleep(self.ATOMIC_WRITE_RETRY_DELAY_SECONDS)
 
     def _resolve(self, root: Path, relative_path: str) -> Path:
         if not relative_path:
