@@ -1,0 +1,14 @@
+{
+  "session_id": "3bdff0b3",
+  "target_root": "D:\\Vs Code\\VS code\\autobots\\.tmp_cli_check",
+  "mode": "autonomous",
+  "created_at": 1778783248.4098876,
+  "updated_at": 1778783267.2797947,
+  "state": "running",
+  "phases_completed": [],
+  "current_phase": "Confirm project objective and success criteria",
+  "last_checkpoint_at": null,
+  "total_commands_run": 0,
+  "total_files_changed": 0,
+  "errors_encountered": 0
+}
