@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import uuid
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
-from ..router import AutobotRouter
-from ..workspace import TargetProjectWorkspace
 from .modes import ExecutionMode, ExecutionState, Blocker, parse_mode_from_string
+
+if TYPE_CHECKING:
+    from ..workspace import TargetProjectWorkspace
 
 
 class AutonomyEngine:
@@ -15,17 +16,26 @@ class AutonomyEngine:
 
     def __init__(self, mode: ExecutionMode = ExecutionMode.SUPERVISED, api_key: str | None = None):
         self.mode = mode
-        self.router = AutobotRouter(api_key=api_key)
+        self.api_key = api_key
+        self._router = None
         self._session_id: str | None = None
         self._mode_manager = None
 
+    @property
+    def router(self):
+        """Lazy load router to avoid circular import."""
+        if self._router is None:
+            from ..router import AutobotRouter
+            self._router = AutobotRouter(api_key=self.api_key)
+        return self._router
+
     def execute(
         self,
-        workspace: TargetProjectWorkspace,
+        workspace: "TargetProjectWorkspace",
         mode: ExecutionMode = ExecutionMode.SUPERVISED,
         milestone_threshold: int = 3,
         event_handler: Callable[[str], None] | None = None,
-    ) -> AutonomousResult:
+    ) -> "AutonomousResult":
         """Execute phases with the given autonomy mode."""
         from .modes import ExecutionModeManager
 
@@ -112,7 +122,7 @@ class AutonomyEngine:
             session_id=self._session_id,
         )
 
-    def resume(self, workspace: TargetProjectWorkspace, event_handler: Callable[[str], None] | None = None):
+    def resume(self, workspace: "TargetProjectWorkspace", event_handler: Callable[[str], None] | None = None):
         """Resume from a checkpoint."""
         from .modes import ExecutionModeManager
 
@@ -136,6 +146,24 @@ class AutonomyEngine:
             event_handler(f"Last phase: {checkpoint.current_phase_title}")
 
         return self.execute(workspace, mode=mode, event_handler=event_handler)
+
+
+class AutonomousResult:
+    """Result of autonomous execution."""
+
+    def __init__(
+        self,
+        status: str,
+        phases_completed: list[str],
+        session_id: str | None = None,
+        current_phase: str | None = None,
+        blocker: Blocker | None = None,
+    ):
+        self.status = status
+        self.phases_completed = phases_completed
+        self.session_id = session_id
+        self.current_phase = current_phase
+        self.blocker = blocker
 
 
 class AutonomousResult:

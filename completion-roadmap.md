@@ -160,7 +160,7 @@ Generate high-quality executable phases from user intent and repository inspecti
 - validation commands run after implementation ✓
 - failed commands trigger automatic repair ✓
 
-## Phase 6: Autonomy Modes And Human Control
+## Phase 6: Autonomy Modes And Human Control ✓ COMPLETE
 
 ### Objective
 
@@ -169,19 +169,30 @@ Support both supervised and autonomous operation cleanly.
 ### Deliverables
 
 - execution modes:
-  - manual approval per phase
-  - approval per milestone
-  - fully autonomous within policy
-- pause, resume, abort, and checkpoint commands
-- blocker detection and escalation behavior
-- dry-run mode for planning without writes
-- review mode for showing pending changes before apply
+  - manual approval per phase ✓
+  - approval per milestone ✓
+  - fully autonomous within policy ✓
+- pause, resume, abort, and checkpoint commands ✓
+- blocker detection and escalation behavior ✓
+- dry-run mode for planning without writes ✓
+- review mode for showing pending changes before apply (via engage) ✓
 
 ### Exit Criteria
 
-- users can choose the desired control level at runtime
-- long-running execution can resume after interruption
-- the system stops safely on blockers instead of silently failing
+- users can choose the desired control level at runtime ✓
+- long-running execution can resume after interruption ✓
+- the system stops safely on blockers instead of silently failing ✓
+
+### Implementation Notes
+
+New CLI commands:
+- `autobots run [--autonomous|--milestone|--supervised] [target_path]` - Execute phases
+- `autobots resume [target_path]` - Resume from checkpoint
+- `autobots status [target_path]` - Show execution status
+
+New modules:
+- `autobots/executor/modes.py` - ExecutionMode, Blocker, ExecutionModeManager
+- `autobots/executor/autonomy.py` - AutonomyEngine, AutonomousResult
 
 ## Phase 7: State Management, Locking, And Recovery
 
