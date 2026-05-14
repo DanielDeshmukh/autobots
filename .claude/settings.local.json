@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"d:\\\\Vs Code\\\\VS code\\\\autobots\" && rm -f PUBLISHING.md REFACTORING-PHASE-6.md adr-001-autonomy-boundaries.md cli-contract.md completion-roadmap.md config-model.md product-definition.md project-compatibility.md pyproject.toml autobots-model-registry.example.json)"
+    ],
+    "additionalDirectories": [
+      "d:\\Vs Code\\VS code\\autobots"
+    ]
+  }
+}
