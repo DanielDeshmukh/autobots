@@ -1,0 +1,156 @@
+"""Routing utilities and validation."""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+from ..workspace import TargetProjectWorkspace
+
+if TYPE_CHECKING:
+    pass
+
+
+class ModelContractError(ValueError):
+    """Raised when model output violates contract."""
+
+    pass
+
+
+class PayloadValidator:
+    """Validates model payloads."""
+
+    @staticmethod
+    def parse_json(raw_content: str) -> dict:
+        """Parse JSON from model response."""
+        candidate = raw_content.strip()
+        fenced_match = re.search(r"```(?:json)?\s*(\{.*\})\s*```", candidate, re.DOTALL)
+        if fenced_match:
+            candidate = fenced_match.group(1)
+
+        payload = json.loads(candidate)
+        if not isinstance(payload, dict):
+            raise ValueError("Model response must be a JSON object.")
+        return payload
+
+    @staticmethod
+    def validate_command_payload(payload: dict) -> None:
+        """Validate command stage payload."""
+        PayloadValidator._require_string(payload, "summary", "command payload")
+        PayloadValidator._require_string_list(payload, "implementation_goals", "command payload")
+        PayloadValidator._require_string_list(payload, "risks", "command payload")
+        PayloadValidator._require_string_list(payload, "acceptance_checks", "command payload")
+
+    @staticmethod
+    def validate_specialist_payload(payload: dict) -> None:
+        """Validate specialist stage payload."""
+        PayloadValidator._require_string(payload, "summary", "specialist payload")
+        PayloadValidator._require_string_list(payload, "implementation_notes", "specialist payload")
+        PayloadValidator._require_file_list(payload, "specialist payload")
+
+    @staticmethod
+    def validate_review_payload(payload: dict) -> None:
+        """Validate safety review payload."""
+        status = PayloadValidator._require_string(payload, "status", "review payload").lower()
+        if status not in {"pass", "revise"}:
+            raise ModelContractError(
+                f"review payload field 'status' must be 'pass' or 'revise', got '{payload.get('status')}'."
+            )
+        PayloadValidator._require_string(payload, "summary", "review payload")
+        PayloadValidator._require_string_list(payload, "issues", "review payload")
+
+    @staticmethod
+    def validate_repair_payload(payload: dict) -> None:
+        """Validate repair stage payload."""
+        PayloadValidator._require_string(payload, "summary", "repair payload")
+        PayloadValidator._require_file_list(payload, "repair payload")
+
+    @staticmethod
+    def _require_string(payload: dict, field: str, payload_name: str) -> str:
+        value = payload.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise ModelContractError(
+                f"{payload_name} field '{field}' must be a non-empty string."
+            )
+        return value
+
+    @staticmethod
+    def _require_string_list(payload: dict, field: str, payload_name: str) -> list[str]:
+        value = payload.get(field)
+        if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+            raise ModelContractError(
+                f"{payload_name} field '{field}' must be a list of strings."
+            )
+        return value
+
+    @staticmethod
+    def _require_file_list(payload: dict, payload_name: str) -> list[dict]:
+        files = payload.get("files")
+        if not isinstance(files, list):
+            raise ModelContractError(f"{payload_name} field 'files' must be a list.")
+
+        allowed_roots = TargetProjectWorkspace.ALLOWED_WRITE_ROOTS
+        for index, file_spec in enumerate(files):
+            if not isinstance(file_spec, dict):
+                raise ModelContractError(
+                    f"{payload_name} files[{index}] must be an object."
+                )
+            root_name = file_spec.get("root")
+            relative_path = file_spec.get("path")
+            content = file_spec.get("content")
+            if root_name not in allowed_roots:
+                raise ModelContractError(
+                    f"{payload_name} files[{index}].root must be one of: {', '.join(sorted(allowed_roots))}."
+                )
+            if not isinstance(relative_path, str) or not relative_path.strip():
+                raise ModelContractError(
+                    f"{payload_name} files[{index}].path must be a non-empty string."
+                )
+            if not isinstance(content, str):
+                raise ModelContractError(
+                    f"{payload_name} files[{index}].content must be a string."
+                )
+        return files
+
+
+class FileEntryHelper:
+    """Helps with file entry operations."""
+
+    @staticmethod
+    def file_entries_from_paths(
+        file_paths: list[str],
+        workspace: TargetProjectWorkspace,
+    ) -> list[dict]:
+        """Convert file paths to file entries."""
+        layout_roots = {
+            "src": workspace.src_root,
+            "app": workspace.target_root / "app",
+            "lib": workspace.target_root / "lib",
+            "tests": workspace.target_root / "tests",
+            "docs": workspace.target_root / "docs",
+            "scripts": workspace.target_root / "scripts",
+            "context": workspace.context_root,
+        }
+        entries: list[dict] = []
+        for file_path in file_paths:
+            path = os.path.abspath(file_path)
+            match = None
+            for root_name, root_path in layout_roots.items():
+                root_str = str(root_path)
+                if path == root_str or path.startswith(root_str + os.sep):
+                    match = (root_name, os.path.relpath(path, root_path))
+                    break
+            if match is None:
+                continue
+            root, relative = match
+            entries.append(
+                {
+                    "root": root,
+                    "path": relative.replace("\\", "/"),
+                    "content": Path(path).read_text(encoding="utf-8"),
+                }
+            )
+        return entries
