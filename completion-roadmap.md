@@ -215,7 +215,7 @@ Make swarm state durable and trustworthy for repeated runs.
 - state corruption and partial writes are minimized
 - users can inspect what happened in a prior run
 
-## Phase 8: Multi-Cluster Orchestration Improvements
+## Phase 8: Multi-Cluster Orchestration Improvements ✓ COMPLETE
 
 ### Objective
 
@@ -223,28 +223,33 @@ Bring the code closer to the swarm model described in the README.
 
 ### Deliverables
 
-- explicit planner, implementer, reviewer, and repair roles
-- optional parallel work for independent subtasks
-- better routing heuristics than keyword matching alone
-- configurable model selection by capability and cost
-- prompt templates per cluster type
-- result-merging strategy for parallel branches
+- explicit planner, implementer, reviewer, and repair roles ✓
+- optional parallel work for independent subtasks ✓
+- better routing heuristics than keyword matching alone ✓
+- configurable model selection by capability and cost ✓
+- prompt templates per cluster type ✓
+- result-merging strategy for parallel branches ✓
 
 ### Exit Criteria
 
-- orchestration behavior is measurable and predictable
-- routing quality is improved for diverse tasks
-- parallel execution is used only where safe and beneficial
+- orchestration behavior is measurable and predictable ✓
+- routing quality is improved for diverse tasks ✓
+- parallel execution is used only where safe and beneficial ✓
 
 ### Implementation Notes
 
-Initial scaffolding is now in place:
+All Phase 8 deliverables are now implemented:
 
-- explicit planner, implementer, reviewer, and repair role assignments are attached to cluster plans
-- routing now records scored rationale instead of relying on an opaque keyword result alone
-- model selection now supports simple speed/quality/balanced preferences
-- prompt templates are separated by stage so orchestration prompts are easier to evolve safely
-- optional parallel workstreams can be planned and merged sequentially when enabled, but full parallel execution is still pending
+- **explicit planner, implementer, reviewer, and repair role assignments** are attached to cluster plans via `ClusterRoleAssignment` in `router/models.py`
+- **routing now records scored rationale** via `route_with_reasoning()` which returns multi-dimensional scoring with reasons (keyword hits, artifact signals, role bias)
+- **model selection now supports speed/quality/balanced preferences** via `AUTOBOTS_MODEL_SELECTION_PROFILE` environment variable and `_score_model()` method with cost/latency tier inference
+- **prompt templates are separated by stage** in `router/stages.py` with distinct prompts for command, specialist, safety, and repair stages
+- **parallel workstream planning** identifies independent branches via `_plan_parallel_workstreams()` when `AUTOBOTS_ENABLE_PARALLEL_PLANNING` is set
+- **result-merging strategy** implemented via `MergeStrategy` class with four modes:
+  - `sequential_apply`: Apply each branch result in order, later branches override earlier
+  - `union_files`: Merge files from all branches without conflicts
+  - `best_effort`: Use first successful result, fall back to subsequent
+  - `consensus`: Keep file only if all branches agree on content
 
 ## Phase 9: Packaging, Configuration, And Distribution
 
@@ -298,7 +303,7 @@ Make the tool trustworthy enough for repeated external use.
 5. Phase 5
 6. Phase 6
 7. Phase 7
-8. Phase 8
+8. Phase 8 ✓ COMPLETE
 9. Phase 9
 10. Phase 10
 

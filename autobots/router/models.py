@@ -81,6 +81,92 @@ class ClusterPlan:
     parallel_workstreams: list[ParallelWorkstream] = field(default_factory=list)
     merge_strategy: str = "sequential_apply"
 
+    @property
+    def merger(self) -> MergeStrategy:
+        """Return the merge strategy handler for this plan."""
+        return MergeStrategy(self.merge_strategy)
+
+    def merge_results(self, results: list[dict]) -> list[dict]:
+        """Merge results from parallel workstreams using the configured strategy."""
+        return self.merger.merge_file_sets(results)
+
+
+class MergeStrategy:
+    """Defines how parallel workstream results are merged."""
+
+    MERGE_MODES = {
+        "sequential_apply": "Apply each branch result in order, later branches override earlier",
+        "union_files": "Merge files from all branches, no conflicts",
+        "best_effort": "Use first successful result, fall back to subsequent",
+        "consensus": "Keep file only if all branches agree on content",
+    }
+
+    def __init__(self, mode: str = "sequential_apply"):
+        self.mode = mode if mode in self.MERGE_MODES else "sequential_apply"
+
+    def merge_file_sets(self, branches: list[dict]) -> list[dict]:
+        """Merge file outputs from multiple workstream branches."""
+        if not branches:
+            return []
+
+        if self.mode == "sequential_apply":
+            return self._merge_sequential(branches)
+        elif self.mode == "union_files":
+            return self._merge_union(branches)
+        elif self.mode == "best_effort":
+            return self._merge_best_effort(branches)
+        elif self.mode == "consensus":
+            return self._merge_consensus(branches)
+        return branches[-1] if branches else []
+
+    def _merge_sequential(self, branches: list[dict]) -> list[dict]:
+        merged: dict[str, dict] = {}
+        for branch in branches:
+            for file_entry in branch.get("files", []):
+                key = f"{file_entry.get('root', 'src')}:{file_entry.get('path', '')}"
+                merged[key] = file_entry
+        return list(merged.values())
+
+    def _merge_union(self, branches: list[dict]) -> list[dict]:
+        seen: set[str] = set()
+        result: list[dict] = []
+        for branch in branches:
+            for file_entry in branch.get("files", []):
+                key = f"{file_entry.get('root', 'src')}:{file_entry.get('path', '')}"
+                if key not in seen:
+                    seen.add(key)
+                    result.append(file_entry)
+        return result
+
+    def _merge_best_effort(self, branches: list[dict]) -> list[dict]:
+        best: dict[str, dict] = {}
+        best_success: dict[str, bool] = {}
+        for branch in branches:
+            success = branch.get("success", True)
+            for file_entry in branch.get("files", []):
+                key = f"{file_entry.get('root', 'src')}:{file_entry.get('path', '')}"
+                if key not in best_success or (success and not best_success[key]):
+                    best[key] = file_entry
+                    best_success[key] = success
+        return list(best.values())
+
+    def _merge_consensus(self, branches: list[dict]) -> list[dict]:
+        file_groups: dict[str, list[dict]] = {}
+        for branch in branches:
+            for file_entry in branch.get("files", []):
+                key = f"{file_entry.get('root', 'src')}:{file_entry.get('path', '')}"
+                file_groups.setdefault(key, []).append(file_entry)
+
+        result: list[dict] = []
+        for key, entries in file_groups.items():
+            if len(entries) > 1:
+                first_content = entries[0].get("content", "")
+                if all(e.get("content", "") == first_content for e in entries):
+                    result.append(entries[0])
+            else:
+                result.append(entries[0])
+        return result
+
 
 @dataclass
 class ExecutionResult:
