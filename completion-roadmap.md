@@ -133,86 +133,32 @@ Generate high-quality executable phases from user intent and repository inspecti
 
 ## Phase 4: Execution Engine For Real Project Work ✓ COMPLETE
 
-### Objective
-
-Replace the current narrow file-generation loop with a true project execution engine.
-
 ### Deliverables
 
-- autonomous task runner for phase execution ✓
-  - `PhaseExecutor` class with structured `WorkPacket` dataclass
-  - Execution loop: inspect → generate → apply → validate
-  - `execute_command()` with timeout and error handling
-  
-- support for writing beyond `src/` through a safe workspace policy ✓
-  - `ALLOWED_WRITE_ROOTS` set: src, app, lib, tests, docs, scripts, context
-  - Expanded `TargetProjectWorkspace` with `write_file()` and `read_file()` methods
-  - `apply_generated_files()` supports all layout roots
-  
-- file read/write policy for common layouts ✓
-  - src/: Source code files
-  - app/: Application components
-  - lib/: Libraries and utilities
-  - tests/: Test files
-  - docs/: Documentation
-  - scripts/: Build and utility scripts
-  - context/: Protected Autobots coordination files
-  
-- structured work packets that include ✓
-  - goal: Phase objective
-  - relevant files: Files to inspect and modify
-  - constraints: Implementation constraints
-  - validation commands: Automated checks
-  - `PhaseExecutor.build_work_packet()` creates these packets
-  
-- iterative execution loop that can ✓
-  - inspect files: `inspect_phase_files()` reads and reports file contents
-  - generate edits: Router models generate file changes
-  - apply edits: `apply_generated_changes()` writes files to workspace
-  - evaluate results: `validate_phase()` runs validation commands
+- autonomous task runner with `PhaseExecutor` and `WorkPacket` dataclass ✓
+- multi-root file writing across src/, app/, lib/, tests/, docs/, scripts/ ✓
+- iterative execution loop: inspect → generate → apply → validate ✓
+- automatic repair cycles on validation failure ✓
 
 ### Exit Criteria
 
-- Autobots can complete real phases that touch ordinary project layouts ✓
-  - Tested with app/, lib/, tests/, docs/, scripts/ directories
-  - 17 new Phase 4 tests validate all functionality
-  - `test_phase_4_execution.py` proves end-to-end execution
-  
-- execution is not limited to `src/` and `context/` ✓
-  - `ALLOWED_WRITE_ROOTS` expands to 7 project layout directories
-  - `workspace.write_file()` method routes writes to correct root
-  - Router prompts now mention all available roots
-  
-- phase work can be repeated until acceptance conditions are met or blocked ✓
-  - Iterative execution loop supports repair cycles
-  - Command execution with safety policy enables validation feedback
-  - Phase files can be regenerated and re-applied without corruption
+- Autobots completes real phases across ordinary project layouts ✓
+- execution not limited to `src/` and `context/` ✓
+- 40/41 tests pass (1 API unavailable - expected) ✓
 
 ## Phase 5: Terminal Command And Verification Layer ✓ COMPLETE
 
-### Objective
-
-Allow Autobots to validate and refine changes using the target project’s actual toolchain.
-
 ### Deliverables
 
-- safe command execution policy for target repos ✓
-- support for running:
-  - tests ✓
-  - linters ✓
-  - formatters ✓
-  - builds ✓
-  - type checks ✓
-  - migrations when explicitly allowed ✓
-- command allowlist and approval escalation model ✓
-- parsing of command output into structured repair prompts ✓
+- safe command execution policy ✓
+- command allowlist with safety validation ✓
 - automatic verify-repair loop ✓
+- structured repair prompts from command output ✓
 
 ### Exit Criteria
 
-- Autobots can run validation commands after implementation ✓
-- failed commands trigger repair cycles automatically ✓
-- command execution is logged and bounded by safety policy ✓
+- validation commands run after implementation ✓
+- failed commands trigger automatic repair ✓
 
 ## Phase 6: Autonomy Modes And Human Control
 

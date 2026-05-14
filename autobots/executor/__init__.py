@@ -5,6 +5,8 @@ from .commands import CommandExecutionError, CommandPolicyViolation, CommandVali
 from .validation import PhaseValidator
 from .operations import FileOperations
 from .core import PhaseExecutor
+from .modes import ExecutionMode, ExecutionState, Blocker, BlockerType, ExecutionModeManager, parse_mode_from_string
+from .autonomy import AutonomyEngine, AutonomousResult
 
 __all__ = [
     "EventHandler",
@@ -17,4 +19,12 @@ __all__ = [
     "PhaseValidator",
     "FileOperations",
     "PhaseExecutor",
+    "ExecutionMode",
+    "ExecutionState",
+    "Blocker",
+    "BlockerType",
+    "ExecutionModeManager",
+    "parse_mode_from_string",
+    "AutonomyEngine",
+    "AutonomousResult",
 ]

@@ -19,6 +19,7 @@ from .catalog import ClusterCatalog
 from .planning import PlanArtifacts, write_plan
 from .router import AutobotRouter, ExecutionResult, PhaseRecord
 from .workspace import TargetProjectWorkspace
+from .executor import AutonomyEngine, ExecutionMode, parse_mode_from_string
 
 
 ENGINE_ROOT = Path(__file__).resolve().parent.parent
@@ -716,10 +717,165 @@ def _parse_plan_args(args: list[str]) -> tuple[str | None, str, bool, str | None
     return target_path, " ".join(part for part in goal_parts if part).strip(), append, insert_after, dry_run
 
 
+def _parse_run_args(args: list[str]) -> tuple[str | None, ExecutionMode, int, bool]:
+    """Parse run command arguments."""
+    target_path: str | None = args[1] if len(args) > 1 and not args[1].startswith("--") else None
+    mode = ExecutionMode.SUPERVISED
+    milestone_threshold = 3
+    dry_run = False
+
+    tokens = args[2:] if target_path else args[1:]
+    for token in tokens:
+        if token == "--dry-run":
+            dry_run = True
+        elif token == "--autonomous":
+            mode = ExecutionMode.AUTONOMOUS
+        elif token == "--milestone":
+            mode = ExecutionMode.MILESTONE
+        elif token == "--supervised":
+            mode = ExecutionMode.SUPERVISED
+
+    return target_path, mode, milestone_threshold, dry_run
+
+
+def run_run(args: list[str]) -> None:
+    """Run phases autonomously or in supervised mode."""
+    console = Console()
+    target_path, mode, milestone_threshold, dry_run = _parse_run_args(args)
+    target_root = _resolve_target_project_from_args(console, ["run", target_path] if target_path else ["run"])
+
+    console.print(
+        Panel.fit(
+            f"Running phases in {mode.value} mode",
+            title="Autobots Run",
+            border_style="cyan",
+        )
+    )
+
+    workspace = TargetProjectWorkspace(target_root)
+    engine = AutonomyEngine(mode=mode, api_key=None)
+
+    def event_handler(message: str):
+        console.print(f"[bold cyan]Swarm[/bold cyan] {message}")
+
+    result = engine.execute(workspace, mode=mode, milestone_threshold=milestone_threshold, event_handler=event_handler)
+
+    if dry_run:
+        console.print(Panel.fit("Dry run - no changes made", title="Preview", border_style="yellow"))
+        return
+
+    table = Table(title="Execution Summary")
+    table.add_column("Status")
+    table.add_column("Phases Completed")
+    table.add_row(result.status, str(len(result.phases_completed)))
+    console.print(table)
+
+    if result.phases_completed:
+        completed_list = "\n".join(f"- {phase}" for phase in result.phases_completed)
+        console.print(Panel.fit(completed_list, title="Completed Phases", border_style="green"))
+
+    if result.blocker:
+        console.print(
+            Panel.fit(
+                f"Type: {result.blocker.blocker_type.value}\n"
+                f"Message: {result.blocker.message}\n"
+                f"Hint: {result.blocker.resolution_hint or 'None'}",
+                title="Execution Blocked",
+                border_style="red",
+            )
+        )
+
+    if result.status == "approval_required":
+        console.print(
+            Panel.fit(
+                f"Approval required before phase: {result.current_phase}",
+                title="Approval Gate",
+                border_style="yellow",
+            )
+        )
+
+
+def run_resume(args: list[str]) -> None:
+    """Resume from a checkpoint."""
+    console = Console()
+    target_path = args[1] if len(args) > 1 else None
+    target_root = _resolve_target_project_from_args(console, ["resume", target_path] if target_path else ["resume"])
+
+    console.print(
+        Panel.fit(
+            "Resuming from checkpoint",
+            title="Autobots Resume",
+            border_style="cyan",
+        )
+    )
+
+    workspace = TargetProjectWorkspace(target_root)
+    engine = AutonomyEngine()
+
+    def event_handler(message: str):
+        console.print(f"[bold cyan]Swarm[/bold cyan] {message}")
+
+    result = engine.resume(workspace, event_handler=event_handler)
+
+    table = Table(title="Resume Summary")
+    table.add_column("Status")
+    table.add_column("Phases Completed")
+    table.add_row(result.status, str(len(result.phases_completed)))
+    console.print(table)
+
+    if result.status == "no_checkpoint":
+        console.print(Panel.fit("No checkpoint found. Use 'autobots run' to start fresh.", title="No Checkpoint", border_style="yellow"))
+
+
+def run_status(args: list[str]) -> None:
+    """Show current execution status."""
+    console = Console()
+    target_path = args[1] if len(args) > 1 else None
+    target_root = _resolve_target_project_from_args(console, ["status", target_path] if target_path else ["status"])
+
+    workspace = TargetProjectWorkspace(target_root)
+    from .executor import ExecutionModeManager
+
+    mode_manager = ExecutionModeManager()
+    checkpoint = mode_manager.load_checkpoint(target_root)
+
+    if checkpoint:
+        table = Table(title="Checkpoint Status")
+        table.add_column("Property")
+        table.add_column("Value")
+        table.add_row("Session ID", checkpoint.session_id)
+        table.add_row("Mode", checkpoint.mode)
+        table.add_row("Current Phase", f"{checkpoint.current_phase_index + 1}: {checkpoint.current_phase_title}")
+        table.add_row("Phases Completed", str(len(checkpoint.phases_completed)))
+        table.add_row("State", checkpoint.state)
+        console.print(table)
+
+        if checkpoint.phases_completed:
+            completed_list = "\n".join(f"- {phase}" for phase in checkpoint.phases_completed)
+            console.print(Panel.fit(completed_list, title="Completed Phases", border_style="green"))
+
+        console.print(
+            Panel.fit(
+                f"Run 'autobots resume' to continue from this checkpoint",
+                title="Resume Available",
+                border_style="cyan",
+            )
+        )
+    else:
+        router = AutobotRouter()
+        roadmap_text, progress_text = router.read_phase_documents(workspace)
+        phases = router.find_next_phase(progress_text)
+
+        if phases:
+            console.print(Panel.fit("No checkpoint found but phases are pending. Run 'autobots run' to start.", title="Status", border_style="yellow"))
+        else:
+            console.print(Panel.fit("No checkpoint found. All phases are complete.", title="Status", border_style="green"))
+
+
 def main(argv: list[str] | None = None) -> int:
     args = argv or sys.argv[1:]
     if not args:
-        Console().print("Usage: autobots <init|plan|engage|validate-models> [target_path]")
+        Console().print("Usage: autobots <init|plan|run|resume|status|engage|validate-models> [options]")
         return 1
 
     console = Console()
@@ -728,12 +884,18 @@ def main(argv: list[str] | None = None) -> int:
             run_init(args)
         elif args[0] == "plan":
             run_plan(args)
+        elif args[0] == "run":
+            run_run(args)
+        elif args[0] == "resume":
+            run_resume(args)
+        elif args[0] == "status":
+            run_status(args)
         elif args[0] == "engage":
             run_engage()
         elif args[0] == "validate-models":
             run_validate_models()
         else:
-            Console().print("Usage: autobots <init|plan|engage|validate-models> [target_path]")
+            Console().print("Usage: autobots <init|plan|run|resume|status|engage|validate-models> [options]")
             return 1
     except (KeyboardInterrupt, EOFError):
         return _graceful_interrupt(console)
