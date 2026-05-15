@@ -9,9 +9,8 @@ description = "Hierarchical multi-cluster coding swarm CLI"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
-authors = [
-    {name = "Daniel Deshmukh", email = "deshmukhdaniel2005@gmail.com"}
-]
+author = "Daniel Deshmukh"
+author_email = "deshmukhdaniel2005@gmail.com"
 keywords = ["cli", "automation", "ai", "nvidia-nim", "coding-agent", "swarm"]
 classifiers = [
     "Development Status :: 3 - Alpha",
