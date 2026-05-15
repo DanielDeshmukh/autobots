@@ -1,159 +1,50 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from traceback import format_exc
 
 from dotenv import dotenv_values
-from rich.console import Console, Group
-from rich.live import Live
+from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Prompt
 from rich.table import Table
-from rich.text import Text
 
 from .bootstrap import CORE_CONTEXT_FILES, detect_repo_profile, initialize_context
-from .catalog import ClusterCatalog
-from .config import AutobotsConfig, load_config
-from .planning import PlanArtifacts, write_plan
+from .config import load_config
+from .planning import write_plan
 from .router import AutobotRouter, ExecutionResult, PhaseRecord
 from .workspace import TargetProjectWorkspace
-from .executor import AutonomyEngine, ExecutionMode, parse_mode_from_string
+from .executor import AutonomyEngine, ExecutionMode
+from .selectors import (
+    resolve_target_project,
+    resolve_target_project_from_args,
+    require_safety_branch,
+    require_operational_context,
+    missing_core_context_files,
+    find_sibling_projects,
+    detect_git_branch,
+)
+from .context_gen import check_six_file_architecture
+from .ui import (
+    _select,
+    _text,
+    _password,
+    render_plan,
+    render_registry_summary,
+    render_stage_event,
+    render_phase_panel,
+    render_session_status,
+    render_execution_result,
+    render_model_validation_report,
+    ConsoleInstance,
+)
 
 
 ENGINE_ROOT = Path(__file__).resolve().parent.parent
 ENGINE_ENV_PATH = ENGINE_ROOT / ".env"
 SAFETY_BRANCH = "autobots-safety"
 ROLLOUT_MESSAGE = "Autobots, Roll out!"
-
-
-def _detect_git_branch(target_root: Path) -> str | None:
-    try:
-        result = subprocess.run(
-            ["git", "branch", "--show-current"],
-            cwd=target_root,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except FileNotFoundError:
-        return None
-
-    branch = result.stdout.strip()
-    return branch or None
-
-
-def _find_sibling_projects() -> list[Path]:
-    candidates: list[Path] = []
-
-    for parent in [ENGINE_ROOT.parent, Path.cwd().parent]:
-        if not parent.exists():
-            continue
-        try:
-            for path in parent.iterdir():
-                if path.is_dir() and path.name != ENGINE_ROOT.name and not path.name.startswith("."):
-                    if path not in candidates:
-                        candidates.append(path)
-        except (PermissionError, OSError):
-            pass
-
-    return sorted(candidates, key=lambda item: item.name.lower())
-
-
-def _read_menu_key() -> str:
-    try:
-        import msvcrt
-    except ImportError:
-        import termios
-        import tty
-
-        fd = sys.stdin.fileno()
-        original = termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            first = sys.stdin.read(1)
-            if first == "\x1b":
-                second = sys.stdin.read(1)
-                third = sys.stdin.read(1)
-                if second == "[" and third == "A":
-                    return "up"
-                if second == "[" and third == "B":
-                    return "down"
-            if first in {"\r", "\n"}:
-                return "enter"
-            if first == "\x03":
-                raise KeyboardInterrupt
-            return ""
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, original)
-
-    first = msvcrt.getwch()
-    if first in {"\x00", "\xe0"}:
-        second = msvcrt.getwch()
-        if second == "H":
-            return "up"
-        if second == "P":
-            return "down"
-        return ""
-    if first == "\r":
-        return "enter"
-    if first == "\x03":
-        raise KeyboardInterrupt
-    return ""
-
-
-def _render_menu(message: str, choices: list[str], selected_index: int) -> Group:
-    items: list[Text] = [Text(message, style="bold blue"), Text("")]
-    for index, choice in enumerate(choices):
-        prefix = "› " if index == selected_index else "  "
-        style = "bold red" if index == selected_index else ""
-        items.append(Text(f"{prefix}{choice}", style=style))
-    items.append(Text(""))
-    items.append(Text("Use ↑/↓ to choose and Enter to confirm.", style="dim"))
-    return Group(*items)
-
-
-def _select(
-    console: Console,
-    message: str,
-    choices: list[str],
-    default: str | None = None,
-) -> str:
-    if not choices:
-        raise ValueError("Selection choices cannot be empty.")
-
-    selected_index = choices.index(default) if default in choices else 0
-    with Live(
-        _render_menu(message, choices, selected_index),
-        console=console,
-        refresh_per_second=20,
-        transient=True,
-    ) as live:
-        while True:
-            key = _read_menu_key()
-            if key == "up":
-                selected_index = (selected_index - 1) % len(choices)
-                live.update(_render_menu(message, choices, selected_index))
-            elif key == "down":
-                selected_index = (selected_index + 1) % len(choices)
-                live.update(_render_menu(message, choices, selected_index))
-            elif key == "enter":
-                choice = choices[selected_index]
-                console.print(f"{message}\n[cyan]{choice}[/cyan]")
-                return choice
-
-
-def _text(message: str, default: str | None = None) -> str:
-    if default is None:
-        return Prompt.ask(message).strip()
-    return Prompt.ask(message, default=default).strip()
-
-
-def _password(message: str) -> str:
-    return Prompt.ask(message, password=True).strip()
 
 
 def _graceful_interrupt(console: Console) -> int:
@@ -208,100 +99,6 @@ def _handle_error(console: Console, error: Exception, command: str) -> int:
     return 1
 
 
-def _resolve_target_project(console: Console) -> Path:
-    sibling_projects = _find_sibling_projects()
-    sibling_hint = ", ".join(project.name for project in sibling_projects) or "none detected"
-
-    location_mode = _select(
-        console,
-        f"Where is the target project located? Detected siblings: {sibling_hint}",
-        choices=[
-            "Sibling directory of autobots",
-            "Parent folder of autobots",
-            "Custom absolute path",
-        ],
-        default="Sibling directory of autobots" if sibling_projects else "Parent folder of autobots",
-    )
-
-    if location_mode == "Sibling directory of autobots":
-        if sibling_projects:
-            project_name = _select(
-                console,
-                "Choose the sibling target project",
-                choices=[project.name for project in sibling_projects],
-                default=sibling_projects[0].name,
-            )
-        else:
-            project_name = _text("Enter the sibling directory name")
-        target_root = (ENGINE_ROOT.parent / project_name).expanduser().resolve()
-    elif location_mode == "Parent folder of autobots":
-        cwd = Path.cwd().resolve()
-        if cwd.name == "Lib" and cwd.parent.name == ".venv":
-            target_root = cwd.parent.parent.resolve()
-        else:
-            target_root = cwd
-    else:
-        target_root = Path(
-            _text("Enter the absolute path to the target project")
-        ).expanduser().resolve()
-
-    if not target_root.exists() or not target_root.is_dir():
-        raise FileNotFoundError(f"Target project not found: {target_root}")
-
-    console.print(
-        Panel.fit(
-            f"Target workspace mapped to:\n{target_root}",
-            title="Workspace",
-            border_style="cyan",
-        )
-    )
-    return target_root
-
-
-def _resolve_target_project_from_args(console: Console, args: list[str]) -> Path:
-    if len(args) > 1:
-        target_root = Path(args[1]).expanduser().resolve()
-        if not target_root.exists() or not target_root.is_dir():
-            raise FileNotFoundError(f"Target project not found: {target_root}")
-        console.print(
-            Panel.fit(
-                f"Target workspace mapped to:\n{target_root}",
-                title="Workspace",
-                border_style="cyan",
-            )
-        )
-        return target_root
-    return _resolve_target_project(console)
-
-
-def _require_safety_branch(console: Console, target_root: Path) -> None:
-    current_branch = _detect_git_branch(target_root)
-    detected = current_branch or "unknown"
-
-    branch_choice = _select(
-        console,
-        f"Safety branch check for '{SAFETY_BRANCH}'. Detected current branch: {detected}",
-        choices=[
-            "Yes, continue",
-            "No, stop here",
-        ],
-        default="Yes, continue" if current_branch == SAFETY_BRANCH else "No, stop here",
-    )
-    confirmed = branch_choice == "Yes, continue"
-
-    if not confirmed or current_branch != SAFETY_BRANCH:
-        console.print(
-            Panel.fit(
-                "Execution blocked.\n"
-                f"Switch the target project to `{SAFETY_BRANCH}` with:\n"
-                f"`git checkout -b {SAFETY_BRANCH}`",
-                title="Safety Branch Required",
-                border_style="red",
-            )
-        )
-        raise SystemExit(1)
-
-
 def _ensure_api_key(console: Console) -> None:
     env_values = dotenv_values(ENGINE_ENV_PATH)
     existing_key = (env_values.get("NVIDIA_API_KEY") or "").strip()
@@ -331,269 +128,6 @@ def _ensure_api_key(console: Console) -> None:
     console.print(Panel.fit("Saved NVIDIA_API_KEY to .env", title="Credentials", border_style="green"))
 
 
-def _check_six_file_architecture(console: Console, target_root: Path) -> None:
-    context_dir = target_root / "context"
-    context_files = [path for path in context_dir.iterdir()] if context_dir.exists() else []
-    existing_files = {path.name for path in context_files if path.is_file()}
-
-    required_files = {"architecture.md", "roadmap.md", "ui-components.md", "progress-tracker.md", "project-briefing.md", "security-auth.md"}
-    missing_files = required_files - existing_files
-
-    if not missing_files:
-        console.print(
-            Panel.fit(
-                f"6-File Architecture detected in {context_dir}: all 6 context files present.",
-                title="Architecture Check",
-                border_style="green",
-            )
-        )
-        return
-
-    console.print(
-        Panel.fit(
-            f"6-File Architecture incomplete in {context_dir}.\n"
-            f"Missing: {', '.join(sorted(missing_files))}",
-            title="Context Files Missing",
-            border_style="yellow",
-        )
-    )
-
-    generation_choice = _select(
-        console,
-        "How would you like to generate the 6-File Context?",
-        choices=[
-            "Generate from README (Recommended)",
-            "Generate from autobots benchmarks (Ask questions)",
-            "Continue without 6-File Context",
-        ],
-        default="Generate from README (Recommended)",
-    )
-
-    if generation_choice == "Generate from README (Recommended)":
-        _generate_from_readme(console, target_root)
-    elif generation_choice == "Generate from autobots benchmarks (Ask questions)":
-        _generate_from_benchmarks(console, target_root)
-    else:
-        console.print(
-            Panel.fit(
-                "Continuing without the full 6-File Architecture. "
-                "Make sure roadmap.md and progress-tracker.md exist in the target context folder.",
-                title="Architecture Check",
-                border_style="yellow",
-            )
-        )
-
-
-def _generate_from_readme(console: Console, target_root: Path) -> None:
-    readme_paths = [
-        target_root / "README.md",
-        target_root / "readme.md",
-        target_root / "README.TXT",
-    ]
-    readme_path = None
-    for path in readme_paths:
-        if path.exists():
-            readme_path = path
-            break
-
-    if not readme_path:
-        console.print(
-            Panel.fit(
-                "No README file found in target root. Falling back to autobots benchmarks.",
-                title="No README Found",
-                border_style="yellow",
-            )
-        )
-        _generate_from_benchmarks(console, target_root)
-        return
-
-    readme_content = readme_path.read_text(encoding="utf-8")
-    profile = detect_repo_profile(target_root)
-
-    context_dir = target_root / "context"
-    context_dir.mkdir(parents=True, exist_ok=True)
-
-    (context_dir / "architecture.md").write_text(
-        f"# Architecture\n\n## Project\n{profile.project_name}\n\n## From README\n{readme_content[:2000]}\n\n## TODO\n- Expand architecture details based on README",
-        encoding="utf-8",
-    )
-    (context_dir / "roadmap.md").write_text(
-        "# Roadmap\n\n## Phase 1\n- Analyze README and project structure\n## Phase 2\n- Implement core features from README\n## Phase 3\n- Verify against README requirements",
-        encoding="utf-8",
-    )
-    (context_dir / "ui-components.md").write_text(
-        "# UI Components\n\n## From README\n- Review README for UI/UX requirements\n\n## TODO\n- Document UI framework and component needs",
-        encoding="utf-8",
-    )
-    (context_dir / "progress-tracker.md").write_text(
-        "# Progress Tracker\n\n- [ ] Analyze README requirements\n- [ ] Implement core features\n- [ ] Verify against README\n",
-        encoding="utf-8",
-    )
-    (context_dir / "project-briefing.md").write_text(
-        f"# Project Briefing\n\n## Project Name\n{profile.project_name}\n\n## Source\nREADME.md\n\n## From README\n{readme_content[:1500]}\n",
-        encoding="utf-8",
-    )
-    (context_dir / "security-auth.md").write_text(
-        "# Security And Auth\n\n## From README\n- Review README for security requirements\n\n## TODO\n- Document authentication and security needs",
-        encoding="utf-8",
-    )
-
-    console.print(
-        Panel.fit(
-            f"Generated 6-File Context from README at {context_dir}",
-            title="Context Generated",
-            border_style="green",
-        )
-    )
-
-
-def _generate_from_benchmarks(console: Console, target_root: Path) -> None:
-    console.print(
-        Panel.fit(
-            "Generating 6-File Context using autobots benchmarks.\n"
-            "Answer a few questions to help autobots understand your project.",
-            title="Project Discovery",
-            border_style="cyan",
-        )
-    )
-
-    project_goal = _text("What is the main goal of this project? (one-line description)")
-    target_users = _text("Who are the target users? (e.g., developers, end-users, enterprises)")
-    key_features = _text("What are the 3 most important features? (comma-separated)")
-    security_needs = _text("Any specific security requirements? (e.g., auth, encryption, compliance)")
-    ui_framework = _text("Preferred UI framework? (or 'none' for backend-only)")
-
-    profile = detect_repo_profile(target_root)
-
-    context_dir = target_root / "context"
-    context_dir.mkdir(parents=True, exist_ok="True")
-
-    (context_dir / "architecture.md").write_text(
-        f"# Architecture\n\n## Project\n{profile.project_name}\n\n## Goal\n{project_goal}\n\n## Target Users\n{target_users}\n\n## Key Features\n{key_features}\n\n## Security Requirements\n{security_needs or 'None specified'}\n\n## UI Framework\n{ui_framework or 'Not specified'}",
-        encoding="utf-8",
-    )
-    (context_dir / "roadmap.md").write_text(
-        f"# Roadmap\n\n## Goal\n{project_goal}\n\n## Phase 1\n- Setup project structure and dependencies\n\n## Phase 2\n- Implement core features: {key_features}\n\n## Phase 3\n- Add security and authentication\n\n## Phase 4\n- Finalize UI/UX ({ui_framework or 'none'})",
-        encoding="utf-8",
-    )
-    (context_dir / "ui-components.md").write_text(
-        f"# UI Components\n\n## Framework\n{ui_framework or 'Not specified'}\n\n## Requirements\n- User-facing interface needed: {'Yes' if ui_framework != 'none' else 'No (backend-only)'}\n\n## TODO\n- Define component library and design system",
-        encoding="utf-8",
-    )
-    (context_dir / "progress-tracker.md").write_text(
-        f"# Progress Tracker\n\n- [ ] Setup project structure\n- [ ] Implement core features: {key_features}\n- [ ] Add security: {security_needs or 'basic'}\n- [ ] Finalize UI\n",
-        encoding="utf-8",
-    )
-    (context_dir / "project-briefing.md").write_text(
-        f"# Project Briefing\n\n## Project Name\n{profile.project_name}\n\n## Goal\n{project_goal}\n\n## Target Users\n{target_users}\n\n## Key Features\n{key_features}\n\n## Security Requirements\n{security_needs or 'None'}\n\n## UI Framework\n{ui_framework or 'None'}\n\n## Detected Stack\n- Languages: {', '.join(profile.languages)}\n- Package managers: {', '.join(profile.package_managers)}\n- Source roots: {', '.join(profile.source_roots)}",
-        encoding="utf-8",
-    )
-    (context_dir / "security-auth.md").write_text(
-        f"# Security And Auth\n\n## Requirements\n{security_needs or 'To be determined based on project goals'}\n\n## TODO\n- Define authentication approach\n- Document secret handling\n- Set up security policies",
-        encoding="utf-8",
-    )
-
-    console.print(
-        Panel.fit(
-            f"Generated 6-File Context from benchmark answers at {context_dir}",
-            title="Context Generated",
-            border_style="green",
-        )
-    )
-
-
-def _missing_core_context_files(target_root: Path) -> list[str]:
-    context_dir = target_root / "context"
-    return [filename for filename in CORE_CONTEXT_FILES if not (context_dir / filename).exists()]
-
-
-def _require_operational_context(console: Console, target_root: Path, command_name: str) -> None:
-    """Require the initialized six-file context architecture for operational commands."""
-    missing_files = _missing_core_context_files(target_root)
-    if not missing_files:
-        return
-
-    console.print(
-        Panel.fit(
-            "The target project is missing required Autobots context files.\n"
-            f"Command: {command_name}\n"
-            f"Missing: {', '.join(missing_files)}\n\n"
-            f"Run `autobots init {target_root}` first, then regenerate planning with `autobots plan {target_root}`.",
-            title="Incomplete Context Setup",
-            border_style="red",
-        )
-    )
-    raise SystemExit(1)
-
-
-def _render_plan(console: Console, result: ExecutionResult) -> None:
-    table = Table(title="Hierarchical Cluster Plan")
-    table.add_column("Stage")
-    table.add_column("Cluster")
-    table.add_column("Lead Model")
-
-    table.add_row("Command", "Optimus", result.plan.command_lead.model_id)
-    table.add_row("Secretary", "Optimus", result.plan.secretary_lead.model_id)
-    table.add_row("Primary", result.plan.primary_cluster, result.plan.primary_lead.model_id)
-    table.add_row("Review", "RedAlert", result.plan.safety_lead.model_id)
-    table.add_row("Repair", "Ratchet", result.plan.repair_lead.model_id)
-    console.print(table)
-
-
-def _render_registry_summary(console: Console, catalog: ClusterCatalog) -> None:
-    source_label = "Live NVIDIA registry" if catalog.using_live_catalog else "Bundled fallback registry"
-    summary_lines = [f"{source_label}: {catalog.available_model_count or catalog.model_count} models"]
-    if catalog.discovery_error:
-        summary_lines.append(f"Discovery fallback: {catalog.discovery_error}")
-
-    console.print(
-        Panel.fit(
-            "\n".join(summary_lines),
-            title="Swarm Registry",
-            border_style="cyan",
-        )
-    )
-
-    table = Table(title="Functional Category Inventory")
-    table.add_column("Cluster")
-    table.add_column("Role")
-    table.add_column("Models")
-    for cluster_name, role, count in catalog.cluster_model_counts():
-        table.add_row(cluster_name, role, str(count))
-    console.print(table)
-
-
-def _render_stage_event(console: Console, message: str) -> None:
-    console.print(f"[bold cyan]Swarm[/bold cyan] {message}")
-
-
-def _render_phase_panel(console: Console, result: ExecutionResult) -> None:
-    if result.files_written:
-        changes = "\n".join(f"- {path}" for path in result.files_written)
-    else:
-        changes = "- No files were written"
-
-    transcript = "\n".join(
-        f"[{entry.speaker}] {entry.summary}" for entry in result.journal
-    )
-    validation_block = ""
-    if result.validation_report:
-        verdict = "PASS" if result.validation_passed else "FAIL"
-        validation_block = (
-            f"\n\n[bold]Validation[/bold]\n"
-            f"Verdict: {verdict}\n"
-            f"Attempts: {result.verification_attempts}\n"
-            f"{result.validation_report}"
-        )
-    console.print(
-        Panel(
-            f"{result.summary}\n\n[bold]Cluster journal[/bold]\n{transcript}\n\n[bold]Files changed[/bold]\n{changes}{validation_block}",
-            title=f"Phase Output - {result.cluster_name}",
-            border_style="magenta",
-        )
-    )
-
-
 def _approval_loop(
     console: Console,
     router: AutobotRouter,
@@ -607,12 +141,12 @@ def _approval_loop(
         phase,
         roadmap_text,
         progress_text,
-        event_handler=lambda message: _render_stage_event(console, message),
+        event_handler=lambda message: render_stage_event(console, message),
     )
-    _render_plan(console, result)
+    render_plan(console, result)
 
     while True:
-        _render_phase_panel(console, result)
+        render_phase_panel(console, result)
         decision = _select(
             console,
             "How would you like to handle this phase output?",
@@ -630,7 +164,7 @@ def _approval_loop(
                 phase,
                 progress_text,
                 result.plan,
-                event_handler=lambda message: _render_stage_event(console, message),
+                event_handler=lambda message: render_stage_event(console, message),
             )
             console.print(
                 Panel.fit(
@@ -651,7 +185,7 @@ def _approval_loop(
             progress_text=progress_text,
             previous_result=result,
             feedback=feedback,
-            event_handler=lambda message: _render_stage_event(console, message),
+            event_handler=lambda message: render_stage_event(console, message),
         )
 
 
@@ -666,12 +200,12 @@ def run_engage() -> None:
         )
     )
 
-    target_root = _resolve_target_project(console)
-    _require_safety_branch(console, target_root)
+    target_root = resolve_target_project(console)
+    require_safety_branch(console, target_root)
     _ensure_api_key(console)
     router = AutobotRouter()
-    _render_registry_summary(console, router.catalog)
-    _check_six_file_architecture(console, target_root)
+    render_registry_summary(console, router.catalog)
+    check_six_file_architecture(console, target_root)
 
     workspace = TargetProjectWorkspace(target_root)
     while True:
@@ -700,7 +234,7 @@ def run_engage() -> None:
 
 def run_init(args: list[str]) -> None:
     console = Console()
-    target_root = _resolve_target_project_from_args(console, args)
+    target_root = resolve_target_project_from_args(console, args)
     workspace = TargetProjectWorkspace(target_root)
     profile = detect_repo_profile(target_root)
     written_paths = initialize_context(workspace, profile)
@@ -728,7 +262,7 @@ def run_init(args: list[str]) -> None:
 def run_plan(args: list[str]) -> None:
     console = Console()
     target_root, goal, append, insert_after, dry_run = _parse_plan_args(args)
-    target_root = _resolve_target_project_from_args(console, ["plan", target_root] if target_root else ["plan"])
+    target_root = resolve_target_project_from_args(console, ["plan", target_root] if target_root else ["plan"])
     workspace = TargetProjectWorkspace(target_root)
     profile, scan, artifacts = write_plan(
         workspace,
@@ -786,7 +320,7 @@ def run_validate_models() -> None:
     console = Console()
     _ensure_api_key(console)
     router = AutobotRouter()
-    _render_registry_summary(console, router.catalog)
+    render_registry_summary(console, router.catalog)
     workspace = _create_model_validation_workspace()
     roadmap_text, progress_text = router.read_phase_documents(workspace)
     phase = router.find_next_phase(progress_text)
@@ -964,8 +498,8 @@ def run_run(args: list[str]) -> None:
     """Run phases autonomously or in supervised mode."""
     console = Console()
     target_path, mode, milestone_threshold, dry_run = _parse_run_args(args)
-    target_root = _resolve_target_project_from_args(console, ["run", target_path] if target_path else ["run"])
-    _require_operational_context(console, target_root, "run")
+    target_root = resolve_target_project_from_args(console, ["run", target_path] if target_path else ["run"])
+    require_operational_context(console, target_root, "run")
 
     console.print(
         Panel.fit(
@@ -1022,8 +556,8 @@ def run_resume(args: list[str]) -> None:
     """Resume from a checkpoint."""
     console = Console()
     target_path = args[1] if len(args) > 1 else None
-    target_root = _resolve_target_project_from_args(console, ["resume", target_path] if target_path else ["resume"])
-    _require_operational_context(console, target_root, "resume")
+    target_root = resolve_target_project_from_args(console, ["resume", target_path] if target_path else ["resume"])
+    require_operational_context(console, target_root, "resume")
 
     console.print(
         Panel.fit(
@@ -1065,8 +599,8 @@ def run_status(args: list[str]) -> None:
     """Show current execution status."""
     console = Console()
     target_path = args[1] if len(args) > 1 else None
-    target_root = _resolve_target_project_from_args(console, ["status", target_path] if target_path else ["status"])
-    _require_operational_context(console, target_root, "status")
+    target_root = resolve_target_project_from_args(console, ["status", target_path] if target_path else ["status"])
+    require_operational_context(console, target_root, "status")
 
     workspace = TargetProjectWorkspace(target_root)
     from .executor import ExecutionModeManager, StateManager
@@ -1124,11 +658,38 @@ def run_status(args: list[str]) -> None:
             console.print(Panel.fit("No checkpoint found. All phases are complete.", title="Status", border_style="green"))
 
 
+def run_list() -> None:
+    """List all available autobots commands."""
+    console = Console()
+
+    commands = [
+        ("init", "Initialize 6-file context architecture for a target project"),
+        ("plan", "Generate or update roadmap.md and progress-tracker.md with implementation phases"),
+        ("run", "Execute phases autonomously (--autonomous), supervised (--supervised), or by milestones (--milestone)"),
+        ("resume", "Resume execution from the last checkpoint"),
+        ("status", "Show current session and checkpoint status"),
+        ("engage", "Interactive swarm execution with operator approval at each phase"),
+        ("validate-models", "Test live model contracts and validate API connectivity"),
+        ("list", "Show this help information"),
+    ]
+
+    table = Table(title="Autobots Commands")
+    table.add_column("Command", style="cyan")
+    table.add_column("Description", style="white")
+
+    for cmd, desc in commands:
+        table.add_row(cmd, desc)
+
+    console.print(table)
+    console.print()
+    console.print("[dim]Run 'autobots <command> --help' for detailed usage.[/dim]")
+
+
 def main(argv: list[str] | None = None) -> int:
     args = argv or sys.argv[1:]
     if not args:
-        Console().print("Usage: autobots <init|plan|run|resume|status|engage|validate-models> [options]")
-        return 1
+        run_list()
+        return 0
 
     console = Console()
 
@@ -1154,8 +715,10 @@ def main(argv: list[str] | None = None) -> int:
             run_engage()
         elif command == "validate-models":
             run_validate_models()
+        elif command == "list":
+            run_list()
         else:
-            Console().print("Usage: autobots <init|plan|run|resume|status|engage|validate-models> [options]")
+            run_list()
             return 1
     except KeyboardInterrupt:
         return _graceful_interrupt(console)
