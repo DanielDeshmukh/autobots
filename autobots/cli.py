@@ -47,14 +47,20 @@ def _detect_git_branch(target_root: Path) -> str | None:
 
 
 def _find_sibling_projects() -> list[Path]:
-    return sorted(
-        [
-            path
-            for path in ENGINE_ROOT.parent.iterdir()
-            if path.is_dir() and path.name != ENGINE_ROOT.name
-        ],
-        key=lambda item: item.name.lower(),
-    )
+    candidates: list[Path] = []
+
+    for parent in [ENGINE_ROOT.parent, Path.cwd().parent]:
+        if not parent.exists():
+            continue
+        try:
+            for path in parent.iterdir():
+                if path.is_dir() and path.name != ENGINE_ROOT.name and not path.name.startswith("."):
+                    if path not in candidates:
+                        candidates.append(path)
+        except (PermissionError, OSError):
+            pass
+
+    return sorted(candidates, key=lambda item: item.name.lower())
 
 
 def _read_menu_key() -> str:
@@ -229,7 +235,11 @@ def _resolve_target_project(console: Console) -> Path:
             project_name = _text("Enter the sibling directory name")
         target_root = (ENGINE_ROOT.parent / project_name).expanduser().resolve()
     elif location_mode == "Parent folder of autobots":
-        target_root = ENGINE_ROOT.parent.resolve()
+        cwd = Path.cwd().resolve()
+        if cwd.name == "Lib" and cwd.parent.name == ".venv":
+            target_root = cwd.parent.parent.resolve()
+        else:
+            target_root = cwd
     else:
         target_root = Path(
             _text("Enter the absolute path to the target project")
@@ -456,7 +466,7 @@ def _generate_from_benchmarks(console: Console, target_root: Path) -> None:
     profile = detect_repo_profile(target_root)
 
     context_dir = target_root / "context"
-    context_dir.mkdir(parents=True, exist_ok=True")
+    context_dir.mkdir(parents=True, exist_ok="True")
 
     (context_dir / "architecture.md").write_text(
         f"# Architecture\n\n## Project\n{profile.project_name}\n\n## Goal\n{project_goal}\n\n## Target Users\n{target_users}\n\n## Key Features\n{key_features}\n\n## Security Requirements\n{security_needs or 'None specified'}\n\n## UI Framework\n{ui_framework or 'Not specified'}",
