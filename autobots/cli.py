@@ -233,8 +233,33 @@ def run_engage() -> None:
 
 
 def run_init(args: list[str]) -> None:
+    """Initialize 6-file context architecture for a target project."""
     console = Console()
-    target_root = resolve_target_project_from_args(console, args)
+
+    # Auto-detect target: use provided path, or default to current directory
+    if len(args) > 1 and not args[1].startswith("--"):
+        target_root = Path(args[1]).expanduser().resolve()
+    else:
+        target_root = Path.cwd().resolve()
+
+    if not target_root.exists() or not target_root.is_dir():
+        console.print(
+            Panel.fit(
+                f"Target project not found: {target_root}",
+                title="Init Error",
+                border_style="red",
+            )
+        )
+        raise SystemExit(1)
+
+    console.print(
+        Panel.fit(
+            f"Initializing context in:\n{target_root}",
+            title="Workspace",
+            border_style="cyan",
+        )
+    )
+
     workspace = TargetProjectWorkspace(target_root)
     profile = detect_repo_profile(target_root)
     written_paths = initialize_context(workspace, profile)

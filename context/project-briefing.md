@@ -4,11 +4,11 @@
 autobots
 
 ## Repository Signals
-- Languages: Python
-- Package managers: pip/pyproject
+- Languages: Unknown
+- Package managers: Unknown
 - Test tools: pytest
 - Source roots: tests, autobots
-- Config files: pyproject.toml
+- Config files: None detected
 
 ## Operator Notes
 - Replace this starter summary with the actual product goal, user request, and constraints.

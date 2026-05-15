@@ -4,8 +4,8 @@
 autobots
 
 ## Detected Stack
-- Languages: Python
-- Package managers: pip/pyproject
+- Languages: Unknown
+- Package managers: Unknown
 - Source roots: tests, autobots
 
 ## Notes
