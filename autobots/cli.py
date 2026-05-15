@@ -18,11 +18,9 @@ from .workspace import TargetProjectWorkspace
 from .executor import AutonomyEngine, ExecutionMode
 from .selectors import (
     resolve_target_project,
-    resolve_target_project_from_args,
     require_safety_branch,
     require_operational_context,
     missing_core_context_files,
-    find_sibling_projects,
     detect_git_branch,
 )
 from .context_gen import check_six_file_architecture
@@ -285,9 +283,26 @@ def run_init(args: list[str]) -> None:
 
 
 def run_plan(args: list[str]) -> None:
+    """Generate or update roadmap.md and progress-tracker.md with implementation phases."""
     console = Console()
     target_root, goal, append, insert_after, dry_run = _parse_plan_args(args)
-    target_root = resolve_target_project_from_args(console, ["plan", target_root] if target_root else ["plan"])
+
+    # Auto-detect target: use provided path, or default to current directory
+    if target_root:
+        target_root = Path(target_root).expanduser().resolve()
+    else:
+        target_root = Path.cwd().resolve()
+
+    if not target_root.exists() or not target_root.is_dir():
+        console.print(
+            Panel.fit(f"Target project not found: {target_root}", title="Plan Error", border_style="red")
+        )
+        raise SystemExit(1)
+
+    console.print(
+        Panel.fit(f"Planning in:\n{target_root}", title="Workspace", border_style="cyan")
+    )
+
     workspace = TargetProjectWorkspace(target_root)
     profile, scan, artifacts = write_plan(
         workspace,
@@ -523,7 +538,23 @@ def run_run(args: list[str]) -> None:
     """Run phases autonomously or in supervised mode."""
     console = Console()
     target_path, mode, milestone_threshold, dry_run = _parse_run_args(args)
-    target_root = resolve_target_project_from_args(console, ["run", target_path] if target_path else ["run"])
+
+    # Auto-detect target: use provided path, or default to current directory
+    if target_path:
+        target_root = Path(target_path).expanduser().resolve()
+    else:
+        target_root = Path.cwd().resolve()
+
+    if not target_root.exists() or not target_root.is_dir():
+        console.print(
+            Panel.fit(f"Target project not found: {target_root}", title="Run Error", border_style="red")
+        )
+        raise SystemExit(1)
+
+    console.print(
+        Panel.fit(f"Running phases in {mode.value} mode\nTarget: {target_root}", title="Autobots Run", border_style="cyan")
+    )
+
     require_operational_context(console, target_root, "run")
 
     console.print(
@@ -580,8 +611,24 @@ def run_run(args: list[str]) -> None:
 def run_resume(args: list[str]) -> None:
     """Resume from a checkpoint."""
     console = Console()
-    target_path = args[1] if len(args) > 1 else None
-    target_root = resolve_target_project_from_args(console, ["resume", target_path] if target_path else ["resume"])
+
+    # Auto-detect target: use provided path, or default to current directory
+    target_path = args[1] if len(args) > 1 and not args[1].startswith("--") else None
+    if target_path:
+        target_root = Path(target_path).expanduser().resolve()
+    else:
+        target_root = Path.cwd().resolve()
+
+    if not target_root.exists() or not target_root.is_dir():
+        console.print(
+            Panel.fit(f"Target project not found: {target_root}", title="Resume Error", border_style="red")
+        )
+        raise SystemExit(1)
+
+    console.print(
+        Panel.fit(f"Resuming from checkpoint\nTarget: {target_root}", title="Autobots Resume", border_style="cyan")
+    )
+
     require_operational_context(console, target_root, "resume")
 
     console.print(
@@ -623,8 +670,24 @@ def run_resume(args: list[str]) -> None:
 def run_status(args: list[str]) -> None:
     """Show current execution status."""
     console = Console()
-    target_path = args[1] if len(args) > 1 else None
-    target_root = resolve_target_project_from_args(console, ["status", target_path] if target_path else ["status"])
+
+    # Auto-detect target: use provided path, or default to current directory
+    target_path = args[1] if len(args) > 1 and not args[1].startswith("--") else None
+    if target_path:
+        target_root = Path(target_path).expanduser().resolve()
+    else:
+        target_root = Path.cwd().resolve()
+
+    if not target_root.exists() or not target_root.is_dir():
+        console.print(
+            Panel.fit(f"Target project not found: {target_root}", title="Status Error", border_style="red")
+        )
+        raise SystemExit(1)
+
+    console.print(
+        Panel.fit(f"Showing status for:\n{target_root}", title="Autobots Status", border_style="cyan")
+    )
+
     require_operational_context(console, target_root, "status")
 
     workspace = TargetProjectWorkspace(target_root)

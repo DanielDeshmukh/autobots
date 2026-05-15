@@ -179,29 +179,26 @@ max_verification_attempts = 3
 
 ## CLI Commands
 
+All commands automatically detect the target project from the current working directory.
+
 ### Initialize Project
 
 ```powershell
-autobots init <target_path>
+autobots init
 ```
 
 Creates the six-file context architecture and detects project profile.
 
-| Flag | Description |
-|------|-------------|
-| `<target_path>` | Optional path to target project |
-
 ### Generate/Refresh Plan
 
 ```powershell
-autobots plan <target_path> [options]
+autobots plan [options]
 ```
 
 Generates roadmap and progress tracker from project context.
 
 | Flag | Description |
 |------|-------------|
-| `<target_path>` | Optional path to target project |
 | `--goal "text"` | Set the planning goal |
 | `--append` | Append new phases instead of replacing |
 | `--insert-after "phase"` | Insert after specific phase |
@@ -210,14 +207,13 @@ Generates roadmap and progress tracker from project context.
 ### Execute Phases
 
 ```powershell
-autobots run <target_path> [options]
+autobots run [options]
 ```
 
 Execute phases with specified autonomy mode.
 
 | Flag | Description |
 |------|-------------|
-| `<target_path>` | Optional path to target project |
 | `--supervised` | Manual approval per phase (default) |
 | `--milestone` | Approval every N phases |
 | `--autonomous` | Fully autonomous execution |
@@ -226,7 +222,7 @@ Execute phases with specified autonomy mode.
 ### Resume Execution
 
 ```powershell
-autobots resume <target_path>
+autobots resume
 ```
 
 Resume from the last checkpoint after interruption.
@@ -234,7 +230,7 @@ Resume from the last checkpoint after interruption.
 ### Show Status
 
 ```powershell
-autobots status <target_path>
+autobots status
 ```
 
 Display current execution status, session details, and checkpoint information.
@@ -389,7 +385,7 @@ Autobots includes a comprehensive model registry with 9 clusters:
 ### Supervised Mode (Default)
 
 ```powershell
-autobots run <target> --supervised
+autobots run --supervised
 ```
 
 - Requires approval before each phase
@@ -399,7 +395,7 @@ autobots run <target> --supervised
 ### Milestone Mode
 
 ```powershell
-autobots run <target> --milestone
+autobots run --milestone
 ```
 
 - Requires approval after N phases (default: 3)
@@ -409,7 +405,7 @@ autobots run <target> --milestone
 ### Autonomous Mode
 
 ```body
-autobots run <target> --autonomous
+autobots run --autonomous
 ```
 
 - No approval gates
@@ -435,6 +431,8 @@ Autobots manages six required context files under `context/`:
 
 ## Cross-Platform Usage
 
+All commands automatically use the current working directory as the target project.
+
 ### Windows
 
 ```powershell
@@ -444,10 +442,11 @@ python -m pip install -e .
 # Set API key
 $env:NVIDIA_API_KEY = "your_key"
 
-# Run commands
-autobots init C:\path\to\project
-autobots plan C:\path\to\project
-autobots run C:\path\to\project
+# Run commands (from your project directory)
+cd C:\path\to\your\project
+autobots init
+autobots plan
+autobots run
 ```
 
 ### macOS / Linux
@@ -459,10 +458,11 @@ python3 -m pip install -e .
 # Set API key
 export NVIDIA_API_KEY="your_key"
 
-# Run commands
-autobots init /path/to/project
-autobots plan /path/to/project
-autobots run /path/to/project
+# Run commands (from your project directory)
+cd /path/to/your/project
+autobots init
+autobots plan
+autobots run
 ```
 
 ---
@@ -500,7 +500,7 @@ Command: run
 Missing: roadmap.md, progress-tracker.md
 ```
 
-**Solution**: Run `autobots init <target>` first, then `autobots plan <target>`.
+**Solution**: Run `autobots init` first, then `autobots plan`.
 
 ### Safety Branch Check Fails
 
@@ -527,7 +527,7 @@ Command not in safety whitelist: rm -rf /
 No checkpoint found. Use 'autobots run' to start fresh.
 ```
 
-**Solution**: Start a new run with `autobots run <target>`.
+**Solution**: Start a new run with `autobots run`.
 
 ---
 
