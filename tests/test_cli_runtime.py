@@ -5,6 +5,16 @@ from unittest.mock import patch
 
 
 class CliRuntimeGuardTests(unittest.TestCase):
+    def test_parse_init_file_args_accepts_single_file(self) -> None:
+        from autobots.cli import _parse_init_file_args
+
+        self.assertEqual(_parse_init_file_args(["--file", "roadmap.md"]), ("roadmap.md",))
+
+    def test_parse_init_file_args_defaults_to_prompt(self) -> None:
+        from autobots.cli import _parse_init_file_args
+
+        self.assertIsNone(_parse_init_file_args([]))
+
     @patch("autobots.cli.Console")
     def test_run_rejects_incomplete_context_setup(self, console_cls) -> None:
         from autobots.cli import run_run

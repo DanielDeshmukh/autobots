@@ -41,6 +41,18 @@ class BootstrapTests(unittest.TestCase):
             self.assertIn("JavaScript/TypeScript", briefing)
             self.assertIn("vitest", briefing)
 
+    def test_initialize_context_writes_selected_file_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            workspace = TargetProjectWorkspace(root)
+            profile = detect_repo_profile(root)
+
+            written = initialize_context(workspace, profile, selected_files=("roadmap.md",))
+
+            self.assertEqual([path.name for path in written], ["roadmap.md"])
+            self.assertTrue((root / "context" / "roadmap.md").exists())
+            self.assertFalse((root / "context" / "architecture.md").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -119,10 +119,20 @@ def detect_repo_profile(target_root: str | Path) -> RepoProfile:
     )
 
 
-def initialize_context(workspace: TargetProjectWorkspace, profile: RepoProfile) -> list[Path]:
+def initialize_context(
+    workspace: TargetProjectWorkspace,
+    profile: RepoProfile,
+    selected_files: tuple[str, ...] | None = None,
+) -> list[Path]:
     written_paths: list[Path] = []
     templates = build_context_templates(profile)
-    for filename, content in templates.items():
+    filenames = selected_files or CORE_CONTEXT_FILES
+    unknown_files = tuple(filename for filename in filenames if filename not in templates)
+    if unknown_files:
+        raise ValueError(f"Unknown context file(s): {', '.join(unknown_files)}")
+
+    for filename in filenames:
+        content = templates[filename]
         written_paths.append(workspace.write_context_file(filename, content, lock_owner="Autobots/init"))
     return written_paths
 

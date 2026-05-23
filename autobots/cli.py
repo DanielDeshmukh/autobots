@@ -44,6 +44,7 @@ ENGINE_ROOT = Path(__file__).resolve().parent.parent
 ENGINE_ENV_PATH = ENGINE_ROOT / ".env"
 SAFETY_BRANCH = "autobots-safety"
 ROLLOUT_MESSAGE = "Autobots, Roll out!"
+ALL_CONTEXT_FILES_CHOICE = "All context files"
 
 
 def _graceful_interrupt(console: Console) -> int:
@@ -232,14 +233,16 @@ def run_engage() -> None:
 
 
 def run_init(args: list[str]) -> None:
-    """Initialize 6-file context architecture for a target project."""
+    """Initialize selected context files for a target project."""
     console = Console()
 
     # Auto-detect target: use provided path, or default to current directory
     if len(args) > 1 and not args[1].startswith("--"):
         target_root = Path(args[1]).expanduser().resolve()
+        tokens = args[2:]
     else:
         target_root = Path.cwd().resolve()
+        tokens = args[1:]
 
     if not target_root.exists() or not target_root.is_dir():
         console.print(
@@ -261,7 +264,6 @@ def run_init(args: list[str]) -> None:
 
     workspace = TargetProjectWorkspace(target_root)
     profile = detect_repo_profile(target_root)
-    written_paths = initialize_context(workspace, profile)
 
     table = Table(title="Autobots Init Summary")
     table.add_column("Detected")
@@ -273,14 +275,54 @@ def run_init(args: list[str]) -> None:
     table.add_row("Source Roots", ", ".join(profile.source_roots))
     console.print(table)
 
+    selected_files = _parse_init_file_args(tokens)
+    if selected_files is None:
+        selection = _select(
+            console,
+            "Which context file should Autobots initialize?",
+            choices=[ALL_CONTEXT_FILES_CHOICE, *CORE_CONTEXT_FILES],
+            default=ALL_CONTEXT_FILES_CHOICE,
+        )
+        selected_files = CORE_CONTEXT_FILES if selection == ALL_CONTEXT_FILES_CHOICE else (selection,)
+
+    written_paths = initialize_context(workspace, profile, selected_files=selected_files)
+
     file_list = "\n".join(f"- {path.name}" for path in written_paths)
     console.print(
         Panel.fit(
-            f"Created or refreshed {len(CORE_CONTEXT_FILES)} context files.\n\n{file_list}",
+            f"Created or refreshed {len(written_paths)} context file(s).\n\n{file_list}",
             title="Context Initialized",
             border_style="green",
         )
     )
+
+
+def _parse_init_file_args(tokens: list[str]) -> tuple[str, ...] | None:
+    selected_files: list[str] = []
+    index = 0
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "--all":
+            selected_files.extend(CORE_CONTEXT_FILES)
+            index += 1
+            continue
+        if token == "--file":
+            if index + 1 >= len(tokens):
+                raise SystemExit("Missing value for --file")
+            selected_files.append(tokens[index + 1].strip())
+            index += 2
+            continue
+        raise SystemExit(f"Unknown init option: {token}")
+
+    if not selected_files:
+        return None
+
+    selected = tuple(dict.fromkeys(selected_files))
+    unknown_files = tuple(filename for filename in selected if filename not in CORE_CONTEXT_FILES)
+    if unknown_files:
+        allowed = ", ".join(CORE_CONTEXT_FILES)
+        raise SystemExit(f"Unknown context file(s): {', '.join(unknown_files)}. Allowed: {allowed}")
+    return selected
 
 
 def run_plan(args: list[str]) -> None:
