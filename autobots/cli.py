@@ -23,6 +23,7 @@ from .selectors import (
     missing_core_context_files,
     detect_git_branch,
 )
+from .selectors import resolve_target_project_from_args as _resolve_target_project_from_args
 from .context_gen import check_six_file_architecture
 from .ui import (
     _select,
