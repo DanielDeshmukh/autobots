@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from .bootstrap import CORE_CONTEXT_FILES, detect_repo_profile, initialize_context
+from .bootstrap import detect_repo_profile, initialize_context
 from .config import load_config
 from .planning import write_plan
 from .router import AutobotRouter, ExecutionResult, PhaseRecord
@@ -18,12 +18,17 @@ from .workspace import TargetProjectWorkspace
 from .executor import AutonomyEngine, ExecutionMode
 from .selectors import (
     resolve_target_project,
+    resolve_target_project_from_args as _resolve_target_project_from_args,
     require_safety_branch,
     require_operational_context,
     missing_core_context_files,
     detect_git_branch,
 )
-from .context_gen import check_six_file_architecture
+from .context_gen import (
+    check_six_file_architecture,
+    generate_from_benchmarks,
+    generate_from_readme,
+)
 from .ui import (
     _select,
     _text,
@@ -260,7 +265,26 @@ def run_init(args: list[str]) -> None:
 
     workspace = TargetProjectWorkspace(target_root)
     profile = detect_repo_profile(target_root)
-    written_paths = initialize_context(workspace, profile)
+    missing_files = missing_core_context_files(target_root)
+    if missing_files:
+        context_choice = _select(
+            console,
+            "Required context files are missing. How should Autobots create the missing files?",
+            choices=[
+                "Autonomously create starter context files",
+                "Generate from README (Recommended)",
+                "Answer one-to-one project questions",
+            ],
+            default="Generate from README (Recommended)",
+        )
+        if context_choice == "Autonomously create starter context files":
+            written_paths = initialize_context(workspace, profile)
+        elif context_choice == "Generate from README (Recommended)":
+            written_paths = generate_from_readme(console, target_root)
+        else:
+            written_paths = generate_from_benchmarks(console, target_root)
+    else:
+        written_paths = []
 
     table = Table(title="Autobots Init Summary")
     table.add_column("Detected")
@@ -272,10 +296,10 @@ def run_init(args: list[str]) -> None:
     table.add_row("Source Roots", ", ".join(profile.source_roots))
     console.print(table)
 
-    file_list = "\n".join(f"- {path.name}" for path in written_paths)
+    file_list = "\n".join(f"- {path.name}" for path in written_paths) or "- No files needed creation"
     console.print(
         Panel.fit(
-            f"Created or refreshed {len(CORE_CONTEXT_FILES)} context files.\n\n{file_list}",
+            f"Created {len(written_paths)} missing context files without overwriting existing files.\n\n{file_list}",
             title="Context Initialized",
             border_style="green",
         )
@@ -541,7 +565,7 @@ def run_run(args: list[str]) -> None:
 
     # Auto-detect target: use provided path, or default to current directory
     if target_path:
-        target_root = Path(target_path).expanduser().resolve()
+        target_root = _resolve_target_project_from_args(console, ["run", target_path])
     else:
         target_root = Path.cwd().resolve()
 
@@ -615,7 +639,7 @@ def run_resume(args: list[str]) -> None:
     # Auto-detect target: use provided path, or default to current directory
     target_path = args[1] if len(args) > 1 and not args[1].startswith("--") else None
     if target_path:
-        target_root = Path(target_path).expanduser().resolve()
+        target_root = _resolve_target_project_from_args(console, ["status", target_path])
     else:
         target_root = Path.cwd().resolve()
 

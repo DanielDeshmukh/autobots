@@ -123,6 +123,8 @@ def initialize_context(workspace: TargetProjectWorkspace, profile: RepoProfile) 
     written_paths: list[Path] = []
     templates = build_context_templates(profile)
     for filename, content in templates.items():
+        if (workspace.context_root / filename).exists():
+            continue
         written_paths.append(workspace.write_context_file(filename, content, lock_owner="Autobots/init"))
     return written_paths
 
