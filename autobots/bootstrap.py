@@ -132,6 +132,8 @@ def initialize_context(
         raise ValueError(f"Unknown context file(s): {', '.join(unknown_files)}")
 
     for filename in filenames:
+        if (workspace.context_root / filename).exists():
+            continue
         content = templates[filename]
         written_paths.append(workspace.write_context_file(filename, content, lock_owner="Autobots/init"))
     return written_paths

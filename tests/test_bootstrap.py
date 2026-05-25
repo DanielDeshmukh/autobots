@@ -53,6 +53,22 @@ class BootstrapTests(unittest.TestCase):
             self.assertTrue((root / "context" / "roadmap.md").exists())
             self.assertFalse((root / "context" / "architecture.md").exists())
 
+    def test_initialize_context_does_not_overwrite_existing_context_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            context_root = root / "context"
+            context_root.mkdir()
+            architecture = context_root / "architecture.md"
+            architecture.write_text("# Existing Architecture\n", encoding="utf-8")
+            workspace = TargetProjectWorkspace(root)
+            profile = detect_repo_profile(root)
+
+            written = initialize_context(workspace, profile)
+
+            self.assertEqual(architecture.read_text(encoding="utf-8"), "# Existing Architecture\n")
+            self.assertEqual(len(written), len(CORE_CONTEXT_FILES) - 1)
+            self.assertNotIn(architecture, written)
+
 
 if __name__ == "__main__":
     unittest.main()

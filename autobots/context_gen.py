@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .bootstrap import detect_repo_profile
+from .bootstrap import build_context_templates, detect_repo_profile
 from .ui import _select, _text
 
 
@@ -38,16 +38,20 @@ def check_six_file_architecture(console, target_root: Path) -> None:
         console,
         "How would you like to generate the 6-File Context?",
         choices=[
+            "Autonomously create starter context files",
             "Generate from README (Recommended)",
-            "Generate from autobots benchmarks (Ask questions)",
+            "Answer one-to-one project questions",
             "Continue without 6-File Context",
         ],
         default="Generate from README (Recommended)",
     )
 
-    if generation_choice == "Generate from README (Recommended)":
+
+    if generation_choice == "Autonomously create starter context files":
+        generate_autonomous_context(console, target_root)
+    elif generation_choice == "Generate from README (Recommended)":
         generate_from_readme(console, target_root)
-    elif generation_choice == "Generate from autobots benchmarks (Ask questions)":
+    elif generation_choice == "Answer one-to-one project questions":
         generate_from_benchmarks(console, target_root)
     else:
         console.print(
@@ -60,7 +64,47 @@ def check_six_file_architecture(console, target_root: Path) -> None:
         )
 
 
-def generate_from_readme(console, target_root: Path) -> None:
+def _write_missing_context_files(console, target_root: Path, templates: dict[str, str], source_label: str) -> list[Path]:
+    from rich.panel import Panel
+
+    context_dir = target_root / "context"
+    context_dir.mkdir(parents=True, exist_ok=True)
+    written_paths: list[Path] = []
+    skipped: list[str] = []
+
+    for filename, content in templates.items():
+        path = context_dir / filename
+        if path.exists():
+            skipped.append(filename)
+            continue
+        path.write_text(content, encoding="utf-8")
+        written_paths.append(path)
+
+    skipped_block = ""
+    if skipped:
+        skipped_block = "\n\nPreserved existing files:\n" + "\n".join(f"- {name}" for name in skipped)
+
+    console.print(
+        Panel.fit(
+            f"Generated {len(written_paths)} missing context files from {source_label} at {context_dir}.{skipped_block}",
+            title="Context Generated",
+            border_style="green",
+        )
+    )
+    return written_paths
+
+
+def generate_autonomous_context(console, target_root: Path) -> list[Path]:
+    profile = detect_repo_profile(target_root)
+    return _write_missing_context_files(
+        console,
+        target_root,
+        build_context_templates(profile),
+        "detected project signals",
+    )
+
+
+def generate_from_readme(console, target_root: Path) -> list[Path]:
     from rich.panel import Panel
     readme_paths = [
         target_root / "README.md",
@@ -81,50 +125,52 @@ def generate_from_readme(console, target_root: Path) -> None:
                 border_style="yellow",
             )
         )
-        generate_from_benchmarks(console, target_root)
-        return
+        return generate_from_benchmarks(console, target_root)
 
     readme_content = readme_path.read_text(encoding="utf-8")
     profile = detect_repo_profile(target_root)
 
-    context_dir = target_root / "context"
-    context_dir.mkdir(parents=True, exist_ok=True)
+    return _write_missing_context_files(
+        console,
+        target_root,
+        {
+            "architecture.md": (
+                f"# Architecture\n\n## Project\n{profile.project_name}\n\n"
+                f"## From README\n{readme_content[:2000]}\n\n"
+                "## TODO\n- Expand architecture details based on README"
+            ),
+            "roadmap.md": (
+                "# Roadmap\n\n"
+                "## Phase 1\n- Analyze README and project structure\n"
+                "## Phase 2\n- Implement core features from README\n"
+                "## Phase 3\n- Verify against README requirements"
+            ),
+            "ui-components.md": (
+                "# UI Components\n\n"
+                "## From README\n- Review README for UI/UX requirements\n\n"
+                "## TODO\n- Document UI framework and component needs"
+            ),
+            "progress-tracker.md": (
+                "# Progress Tracker\n\n"
+                "- [ ] Analyze README requirements\n"
+                "- [ ] Implement core features\n"
+                "- [ ] Verify against README\n"
+            ),
+            "project-briefing.md": (
+                f"# Project Briefing\n\n## Project Name\n{profile.project_name}\n\n"
+                f"## Source\nREADME.md\n\n## From README\n{readme_content[:1500]}\n"
+            ),
+            "security-auth.md": (
+                "# Security And Auth\n\n"
+                "## From README\n- Review README for security requirements\n\n"
+                "## TODO\n- Document authentication and security needs"
+            ),
+        },
+        "README.md",
+    )
 
-    (context_dir / "architecture.md").write_text(
-        f"# Architecture\n\n## Project\n{profile.project_name}\n\n## From README\n{readme_content[:2000]}\n\n## TODO\n- Expand architecture details based on README",
-        encoding="utf-8",
-    )
-    (context_dir / "roadmap.md").write_text(
-        "# Roadmap\n\n## Phase 1\n- Analyze README and project structure\n## Phase 2\n- Implement core features from README\n## Phase 3\n- Verify against README requirements",
-        encoding="utf-8",
-    )
-    (context_dir / "ui-components.md").write_text(
-        "# UI Components\n\n## From README\n- Review README for UI/UX requirements\n\n## TODO\n- Document UI framework and component needs",
-        encoding="utf-8",
-    )
-    (context_dir / "progress-tracker.md").write_text(
-        "# Progress Tracker\n\n- [ ] Analyze README requirements\n- [ ] Implement core features\n- [ ] Verify against README\n",
-        encoding="utf-8",
-    )
-    (context_dir / "project-briefing.md").write_text(
-        f"# Project Briefing\n\n## Project Name\n{profile.project_name}\n\n## Source\nREADME.md\n\n## From README\n{readme_content[:1500]}\n",
-        encoding="utf-8",
-    )
-    (context_dir / "security-auth.md").write_text(
-        "# Security And Auth\n\n## From README\n- Review README for security requirements\n\n## TODO\n- Document authentication and security needs",
-        encoding="utf-8",
-    )
 
-    console.print(
-        Panel.fit(
-            f"Generated 6-File Context from README at {context_dir}",
-            title="Context Generated",
-            border_style="green",
-        )
-    )
-
-
-def generate_from_benchmarks(console, target_root: Path) -> None:
+def generate_from_benchmarks(console, target_root: Path) -> list[Path]:
     from rich.panel import Panel
     console.print(
         Panel.fit(
@@ -143,38 +189,46 @@ def generate_from_benchmarks(console, target_root: Path) -> None:
 
     profile = detect_repo_profile(target_root)
 
-    context_dir = target_root / "context"
-    context_dir.mkdir(parents=True, exist_ok=True)
-
-    (context_dir / "architecture.md").write_text(
-        f"# Architecture\n\n## Project\n{profile.project_name}\n\n## Goal\n{project_goal}\n\n## Target Users\n{target_users}\n\n## Key Features\n{key_features}\n\n## Security Requirements\n{security_needs or 'None specified'}\n\n## UI Framework\n{ui_framework or 'Not specified'}",
-        encoding="utf-8",
-    )
-    (context_dir / "roadmap.md").write_text(
-        f"# Roadmap\n\n## Goal\n{project_goal}\n\n## Phase 1\n- Setup project structure and dependencies\n\n## Phase 2\n- Implement core features: {key_features}\n\n## Phase 3\n- Add security and authentication\n\n## Phase 4\n- Finalize UI/UX ({ui_framework or 'none'})",
-        encoding="utf-8",
-    )
-    (context_dir / "ui-components.md").write_text(
-        f"# UI Components\n\n## Framework\n{ui_framework or 'Not specified'}\n\n## Requirements\n- User-facing interface needed: {'Yes' if ui_framework != 'none' else 'No (backend-only)'}\n\n## TODO\n- Define component library and design system",
-        encoding="utf-8",
-    )
-    (context_dir / "progress-tracker.md").write_text(
-        f"# Progress Tracker\n\n- [ ] Setup project structure\n- [ ] Implement core features: {key_features}\n- [ ] Add security: {security_needs or 'basic'}\n- [ ] Finalize UI\n",
-        encoding="utf-8",
-    )
-    (context_dir / "project-briefing.md").write_text(
-        f"# Project Briefing\n\n## Project Name\n{profile.project_name}\n\n## Goal\n{project_goal}\n\n## Target Users\n{target_users}\n\n## Key Features\n{key_features}\n\n## Security Requirements\n{security_needs or 'None'}\n\n## UI Framework\n{ui_framework or 'None'}\n\n## Detected Stack\n- Languages: {', '.join(profile.languages)}\n- Package managers: {', '.join(profile.package_managers)}\n- Source roots: {', '.join(profile.source_roots)}",
-        encoding="utf-8",
-    )
-    (context_dir / "security-auth.md").write_text(
-        f"# Security And Auth\n\n## Requirements\n{security_needs or 'To be determined based on project goals'}\n\n## TODO\n- Define authentication approach\n- Document secret handling\n- Set up security policies",
-        encoding="utf-8",
-    )
-
-    console.print(
-        Panel.fit(
-            f"Generated 6-File Context from benchmark answers at {context_dir}",
-            title="Context Generated",
-            border_style="green",
-        )
+    return _write_missing_context_files(
+        console,
+        target_root,
+        {
+            "architecture.md": (
+                f"# Architecture\n\n## Project\n{profile.project_name}\n\n## Goal\n{project_goal}\n\n"
+                f"## Target Users\n{target_users}\n\n## Key Features\n{key_features}\n\n"
+                f"## Security Requirements\n{security_needs or 'None specified'}\n\n"
+                f"## UI Framework\n{ui_framework or 'Not specified'}"
+            ),
+            "roadmap.md": (
+                f"# Roadmap\n\n## Goal\n{project_goal}\n\n"
+                "## Phase 1\n- Setup project structure and dependencies\n\n"
+                f"## Phase 2\n- Implement core features: {key_features}\n\n"
+                "## Phase 3\n- Add security and authentication\n\n"
+                f"## Phase 4\n- Finalize UI/UX ({ui_framework or 'none'})"
+            ),
+            "ui-components.md": (
+                f"# UI Components\n\n## Framework\n{ui_framework or 'Not specified'}\n\n"
+                f"## Requirements\n- User-facing interface needed: {'Yes' if ui_framework != 'none' else 'No (backend-only)'}\n\n"
+                "## TODO\n- Define component library and design system"
+            ),
+            "progress-tracker.md": (
+                f"# Progress Tracker\n\n- [ ] Setup project structure\n"
+                f"- [ ] Implement core features: {key_features}\n"
+                f"- [ ] Add security: {security_needs or 'basic'}\n"
+                "- [ ] Finalize UI\n"
+            ),
+            "project-briefing.md": (
+                f"# Project Briefing\n\n## Project Name\n{profile.project_name}\n\n## Goal\n{project_goal}\n\n"
+                f"## Target Users\n{target_users}\n\n## Key Features\n{key_features}\n\n"
+                f"## Security Requirements\n{security_needs or 'None'}\n\n## UI Framework\n{ui_framework or 'None'}\n\n"
+                f"## Detected Stack\n- Languages: {', '.join(profile.languages)}\n"
+                f"- Package managers: {', '.join(profile.package_managers)}\n"
+                f"- Source roots: {', '.join(profile.source_roots)}"
+            ),
+            "security-auth.md": (
+                f"# Security And Auth\n\n## Requirements\n{security_needs or 'To be determined based on project goals'}\n\n"
+                "## TODO\n- Define authentication approach\n- Document secret handling\n- Set up security policies"
+            ),
+        },
+        "project discovery answers",
     )
