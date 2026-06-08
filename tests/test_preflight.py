@@ -39,7 +39,9 @@ class TestCheckApiKeyFormat(unittest.TestCase):
         self.assertIn("too short", result.message)
 
     def test_valid_nvapi_key_passes(self):
-        result = check_api_key_format("nvapi-abc123def456ghi789")
+        # Uses clearly fake key format - never use real API keys in tests
+        fake_key = "nvapi-0000000000000000"
+        result = check_api_key_format(fake_key)
         self.assertEqual(result.status, CheckStatus.PASS)
         self.assertIn("valid format", result.message)
 

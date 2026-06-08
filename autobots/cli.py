@@ -1066,6 +1066,8 @@ def run_list() -> None:
         ("status", "Show all phase and task statuses from task-registry.json"),
         ("engage", "Interactive swarm execution with operator approval at each phase"),
         ("doctor", "Run preflight checks to verify API, config, and workspace"),
+        ("diff", "Compare current workspace state to a snapshot"),
+        ("logs", "View audit trail logs with filtering"),
         ("validate-models", "Test live model contracts and validate API connectivity"),
         ("publish", "Auto-increment version, build, and publish to PyPI"),
         ("undo", "Undo the last task or a specific task's changes"),
@@ -1228,10 +1230,200 @@ def run_snapshots(args: list[str]) -> None:
         created = datetime.fromtimestamp(snap["created_at"]).strftime("%Y-%m-%d %H:%M:%S")
         table.add_row(snap["snapshot_id"], snap["task_id"], created, str(snap["files_tracked"]))
 
-    console.print(table)
+        console.print(table)
 
 
-def run_catalog(args: list[str]) -> None:
+def run_diff(args: list[str]) -> None:
+    """Compare current workspace to a snapshot."""
+    console = Console()
+
+    target_path = None
+    snapshot_id = None
+
+    for arg in args[1:]:
+        if arg == "--help" or arg == "-h":
+            console.print(
+                Panel.fit(
+                    "Usage: autobots diff [target] [snapshot_id]\n\n"
+                    "Compare current workspace state to a snapshot.\n"
+                    "If no snapshot_id is specified, compares to the latest snapshot.\n\n"
+                    "Examples:\n"
+                    "  autobots diff                    # Compare to latest snapshot\n"
+                    "  autobots diff ./my-project        # Compare specific project\n"
+                    "  autobots diff . snap_abc123       # Compare to specific snapshot",
+                    title="Diff Command",
+                    border_style="cyan",
+                )
+            )
+            return
+        elif not arg.startswith("--"):
+            if snapshot_id:
+                target_path = arg
+            else:
+                snapshot_id = arg
+
+    if target_path:
+        target_root = Path(target_path).expanduser().resolve()
+    else:
+        target_root = Path.cwd().resolve()
+
+    if not target_root.exists() or not target_root.is_dir():
+        raise workspace_not_found(str(target_root))
+
+    from .executor.state import RollbackManager
+    from .diff import compute_diff
+
+    manager = RollbackManager(target_root)
+    diff = compute_diff(target_root, manager.snapshots_root, snapshot_id)
+
+    if diff is None:
+        console.print(Panel.fit("No snapshots found.", title="Diff", border_style="yellow"))
+        return
+
+    if not diff.has_changes():
+        console.print(Panel.fit("No changes since snapshot.", title="Diff", border_style="green"))
+        return
+
+    # Render diff
+    console.print(f"\n[bold]Comparing to snapshot:[/bold] {diff.snapshot_id}")
+    console.print(f"[dim]Task: {diff.task_id} | Created: {datetime.fromtimestamp(diff.created_at).strftime('%Y-%m-%d %H:%M:%S')}[/dim]\n")
+
+    if diff.added:
+        console.print(f"[green]Added ({len(diff.added)} files):[/green]")
+        for path in sorted(diff.added):
+            console.print(f"  + {path}")
+        console.print()
+
+    if diff.removed:
+        console.print(f"[red]Removed ({len(diff.removed)} files):[/red]")
+        for path in sorted(diff.removed):
+            console.print(f"  - {path}")
+        console.print()
+
+    if diff.modified:
+        console.print(f"[yellow]Modified ({len(diff.modified)} files):[/yellow]")
+        for mod in sorted(diff.modified, key=lambda x: x["path"]):
+            console.print(f"  ~ {mod['path']} ({mod['old_lines']} → {mod['new_lines']} lines)")
+        console.print()
+
+    console.print(f"[dim]{diff.summary()}[/dim]")
+
+
+def run_logs(args: list[str]) -> None:
+    """View audit trail logs."""
+    console = Console()
+
+    target_path = None
+    phase_filter = None
+    change_type = None
+    limit = 50
+    show_details = False
+
+    for arg in args[1:]:
+        if arg == "--help" or arg == "-h":
+            console.print(
+                Panel.fit(
+                    "Usage: autobots logs [target] [options]\n\n"
+                    "View audit trail logs with optional filtering.\n\n"
+                    "Options:\n"
+                    "  --phase <phaseId>     Filter by phase ID\n"
+                    "  --type <changeType>   Filter by change type\n"
+                    "  --limit <n>           Number of entries (default: 50)\n"
+                    "  --details             Show detailed information\n\n"
+                    "Change Types:\n"
+                    "  file_created, file_modified, file_deleted\n"
+                    "  phase_started, phase_completed\n"
+                    "  validation_passed, validation_failed\n"
+                    "  command_executed, error_encountered\n\n"
+                    "Examples:\n"
+                    "  autobots logs                    # Show recent 50 entries\n"
+                    "  autobots logs --phase P1         # Filter by phase\n"
+                    "  autobots logs --type file_modified --limit 20\n"
+                    "  autobots logs --details          # Show full details",
+                    title="Logs Command",
+                    border_style="cyan",
+                )
+            )
+            return
+        elif arg == "--details":
+            show_details = True
+        elif arg == "--phase" and len(args) > args.index(arg) + 1:
+            phase_filter = args[args.index(arg) + 1]
+        elif arg == "--type" and len(args) > args.index(arg) + 1:
+            change_type = args[args.index(arg) + 1]
+        elif arg == "--limit" and len(args) > args.index(arg) + 1:
+            try:
+                limit = int(args[args.index(arg) + 1])
+            except ValueError:
+                pass
+        elif not arg.startswith("--"):
+            target_path = arg
+
+    if target_path:
+        target_root = Path(target_path).expanduser().resolve()
+    else:
+        target_root = Path.cwd().resolve()
+
+    if not target_root.exists() or not target_root.is_dir():
+        raise workspace_not_found(str(target_root))
+
+    from .executor.state import StateManager, ChangeType as CT
+
+    manager = StateManager(target_root)
+    entries = manager.get_audit_trail(limit=1000)  # Get all, then filter
+
+    # Apply filters
+    if phase_filter:
+        entries = [e for e in entries if e.phase_id == phase_filter]
+    if change_type:
+        entries = [e for e in entries if e.change_type == change_type]
+
+    entries = entries[-limit:]
+
+    if not entries:
+        console.print(Panel.fit("No audit trail entries found.", title="Logs", border_style="yellow"))
+        return
+
+    # Group by phase
+    phases: dict[str, list] = {}
+    for entry in entries:
+        phase = entry.phase_id or "global"
+        if phase not in phases:
+            phases[phase] = []
+        phases[phase].append(entry)
+
+    # Render
+    for phase, phase_entries in phases.items():
+        if phase != "global":
+            console.print(f"\n[bold cyan]Phase: {phase}[/bold cyan]")
+
+        for entry in phase_entries:
+            ts = datetime.fromtimestamp(entry.timestamp).strftime("%H:%M:%S")
+            ct = entry.change_type.replace("_", " ").title()
+
+            # Color based on change type
+            if "failed" in entry.change_type or "error" in entry.change_type:
+                style = "red"
+            elif "passed" in entry.change_type or "completed" in entry.change_type:
+                style = "green"
+            elif "created" in entry.change_type:
+                style = "cyan"
+            elif "modified" in entry.change_type:
+                style = "yellow"
+            else:
+                style = "white"
+
+            console.print(f"  [{style}]{ts}[/] [{style}]{ct}[/] {entry.description}")
+
+            if show_details:
+                if entry.file_path:
+                    console.print(f"    [dim]File: {entry.file_path}[/dim]")
+                if entry.command:
+                    console.print(f"    [dim]Command: {entry.command}[/dim]")
+                if entry.metadata:
+                    console.print(f"    [dim]Metadata: {json.dumps(entry.metadata, indent=2)}[/dim]")
+
+    console.print(f"\n[dim]{len(entries)} entries shown (filtered from audit trail)[/dim]")
     """Handle catalog subcommands: refresh, list."""
     console = Console()
 
@@ -1525,6 +1717,10 @@ def main(argv: list[str] | None = None) -> int:
             run_catalog(args)
         elif command == "doctor":
             run_doctor(args)
+        elif command == "diff":
+            run_diff(args)
+        elif command == "logs":
+            run_logs(args)
         elif command == "list":
             run_list()
         else:
