@@ -183,6 +183,20 @@ class StageExecutor:
         """Single model call with streaming — retried by with_retry on transient errors."""
         logger.debug("Calling %s (temperature=%.2f, max_tokens=%d)", model_id, self.temperature, self.max_tokens)
 
+        # Verbose mode: log full prompts
+        try:
+            from ..cli import VERBOSE
+            if VERBOSE:
+                console.print(f"\n[dim]{'='*60} VERBOSE MODE {'='*60}[/dim]")
+                console.print(f"[dim]Model: {model_id}[/dim]")
+                console.print(f"[dim]System prompt ({len(system_content)} chars):[/dim]")
+                console.print(system_content[:2000] + ("..." if len(system_content) > 2000 else ""))
+                console.print(f"\n[dim]User prompt ({len(user_prompt)} chars):[/dim]")
+                console.print(user_prompt[:2000] + ("..." if len(user_prompt) > 2000 else ""))
+                console.print(f"[dim]{'='*60} END VERBOSE {'='*60}[/dim]\n")
+        except Exception:
+            pass
+
         # Check context budget if manager is available
         if self.context_budget_manager:
             budget = self.context_budget_manager.create_budget(model_id)

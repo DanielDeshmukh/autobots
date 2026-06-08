@@ -2,7 +2,7 @@
 
 **Hierarchical multi-cluster coding swarm CLI powered by NVIDIA NIM**
 
-Autobots is a Python CLI tool that orchestrates multiple AI models as a coding swarm to autonomously plan, implement, review, and repair code in your target repositories. It routes tasks to specialized clusters, injects project context into model prompts, and runs validation loops with automatic repair.
+Autobots is a Python CLI tool that orchestrates multiple AI models as a coding swarm to autonomously plan, implement, review, repair, and validate code in your target repositories. It routes tasks to specialized clusters, injects project context into model prompts, and runs validation loops with automatic repair and rollback support.
 
 ---
 
@@ -30,12 +30,13 @@ autobots engage
 
 ## What Autobots Does
 
-1. **Plans** - Parses a roadmap into phases and tasks with dependencies
-2. **Routes** - Intelligently assigns tasks to the best-fit AI cluster
-3. **Implements** - Specialist models generate code with your project context
-4. **Reviews** - A reviewer cluster validates correctness and safety
-5. **Repairs** - A repair cluster fixes issues found during review
-6. **Validates** - Runs your tests, linters, and build commands
+1. **Plans** — Parses a roadmap into phases and tasks with dependencies
+2. **Routes** — Intelligently assigns tasks to the best-fit AI cluster
+3. **Implements** — Specialist models generate code with your project context
+4. **Reviews** — A reviewer cluster validates correctness and safety
+5. **Repairs** — A repair cluster fixes issues found during review
+6. **Validates** — Runs your tests, linters, and build commands
+7. **Rolls Back** — Snapshots before writes, `autobots undo` reverts changes
 
 ---
 
@@ -61,9 +62,9 @@ Autobots reads your `context/` directory (architecture, conventions, testing str
 
 ### Execution Modes
 
-- **Supervised** - Approval required before each phase
-- **Milestone** - Approval every N phases (configurable)
-- **Autonomous** - No approval, runs to completion
+- **Supervised** — Approval required before each phase
+- **Milestone** — Approval every N phases (configurable)
+- **Autonomous** — No approval, runs to completion
 
 ### Configurable Models
 
@@ -74,6 +75,25 @@ model_selection_profile = "balanced"  # fast, balanced, quality
 temperature = 0.2
 max_tokens = 4096
 ```
+
+### Additional Features
+
+- **Rollback/Undo** — Snapshot system with `autobots undo` and `autobots snapshots`
+- **Response Streaming** — Live character counter during model calls
+- **Doctor Preflight** — Health checks for API, git, config, and dependencies
+- **Structured Errors** — Contextual messages with actionable suggestions
+- **Test Gate** — Run tests before commit
+- **Git Integration** — Auto-commit after phase completion
+- **Config Validation** — `autobots config validate` checks TOML settings
+- **Shell Completions** — bash, zsh, and fish tab completion
+- **Context Budget** — Warns and truncates when prompts approach model limits
+- **Plugin System** — before/after hooks for custom extensions
+- **Skill Marketplace** — Built-in packs for FastAPI, Django, React, Next.js
+- **Web Dashboard** — Real-time status on port 8080
+- **Rich Status Output** — Progress bars, estimated time, branch info
+- **Explain Command** — `autobots explain P2-T3` shows audit trail details
+- **Usage Stats** — `autobots stats` shows totals, averages, costs
+- **Verbose Mode** — `--verbose` flag logs full prompts sent to models
 
 ---
 
@@ -94,6 +114,8 @@ safety_branch = "autobots-safety"
 default_mode = "supervised"
 milestone_threshold = 3
 max_verification_attempts = 3
+temperature = 0.2
+max_tokens = 4096
 ```
 
 All settings can also be set via environment variables:
@@ -110,12 +132,25 @@ export AUTOBOTS_SAFETY_BRANCH=main
 | Command | Description |
 |---------|-------------|
 | `autobots init` | Check context files in target project |
+| `autobots init --interactive` | Interactive setup wizard |
 | `autobots plan` | Generate implementation roadmap |
 | `autobots run <task>` | Execute a specific task |
 | `autobots resume` | Resume from last checkpoint |
-| `autobots status` | Show current progress |
 | `autobots engage` | Interactive mode with startup screen |
-| `autobots validate-models` | Verify NVIDIA API connectivity |
+| `autobots status` | Rich status with progress bars |
+| `autobots explain <id>` | Show audit trail for a phase/task |
+| `autobots stats` | Usage statistics and costs |
+| `autobots undo` | Rollback to previous snapshot |
+| `autobots snapshots` | List available snapshots |
+| `autobots diff` | Compare workspace to snapshot |
+| `autobots logs` | View audit trail |
+| `autobots doctor` | Preflight health checks |
+| `autobots catalog` | Browse NVIDIA model registry |
+| `autobots config validate` | Validate TOML configuration |
+| `autobots completions` | Generate shell completions |
+| `autobots marketplace` | Browse skill packs |
+| `autobots dashboard` | Launch web dashboard |
+| `autobots validate-models` | Test NVIDIA API connectivity |
 | `autobots publish` | Build and publish to PyPI |
 
 ---
@@ -149,7 +184,7 @@ These files are injected into model prompts so generated code matches your proje
                                                               ↓
                                                       [Validation Loop]
                                                               ↓
-                                                      [Files Written]
+                                                      [Snapshot + Write]
 ```
 
 ---
@@ -161,13 +196,16 @@ These files are injected into model prompts so generated code matches your proje
 - Atomic writes ensure no partial file corruption
 - Path traversal protection keeps writes within allowed directories
 - Audit trail logs all actions for debugging
+- Test gate runs tests before commit
+- Pre-commit snapshots enable rollback
 
 ---
 
 ## Development Status
 
-- **Version:** 0.1.6
-- **Status:** Alpha
+- **Version:** 0.1.8
+- **Status:** Production-ready
+- **Tests:** 465 passing
 - **License:** MIT
 
 ---
@@ -183,4 +221,4 @@ These files are injected into model prompts so generated code matches your proje
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License — see LICENSE file for details.

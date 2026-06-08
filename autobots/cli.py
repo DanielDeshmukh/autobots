@@ -38,6 +38,9 @@ from .preflight import (
     render_preflight_result,
     auto_run_preflight,
 )
+
+# Global verbose flag — when True, router logs full prompts/responses
+VERBOSE = False
 from .errors import (
     AutobotsError,
     ModelError,
@@ -1027,7 +1030,7 @@ def run_resume(args: list[str]) -> None:
 
 
 def run_status(args: list[str]) -> None:
-    """Show current task and phase status from task-registry.json."""
+    """Show current task and phase status with rich output."""
     console = Console()
 
     target_path = args[1] if len(args) > 1 and not args[1].startswith("--") else None
@@ -1042,8 +1045,16 @@ def run_status(args: list[str]) -> None:
         )
         raise SystemExit(1)
 
+    # Get project info
+    from .selectors import detect_git_branch
+    branch = detect_git_branch(target_root) or "unknown"
+
     console.print(
-        Panel.fit(f"Status for:\n{target_root}", title="Autobots Status", border_style="cyan")
+        Panel.fit(
+            f"Project: [bold]{target_root.name}[/bold]  ·  Branch: [cyan]{branch}[/cyan]",
+            title="Autobots Status",
+            border_style="cyan",
+        )
     )
 
     phases_status = get_all_phases_status(str(target_root))
@@ -1054,56 +1065,83 @@ def run_status(args: list[str]) -> None:
         )
         return
 
-    phases_table = Table(title="Phase Overview")
-    phases_table.add_column("Phase", style="cyan")
-    phases_table.add_column("Name")
-    phases_table.add_column("Status")
-    phases_table.add_column("Progress")
+    # Calculate totals
+    total_tasks = 0
+    completed_tasks = 0
+    running_tasks = 0
+    failed_tasks = 0
 
     for phase in phases_status:
-        status_icon = {
-            "complete": "[green][x][/green]",
-            "in_progress": "[yellow][*][/yellow]",
-            "failed": "[red][!][/red]",
-            "pending": "[ ]",
-        }.get(phase["status"], "[ ]")
+        total_tasks += phase.get("total", 0)
+        completed_tasks += phase.get("completed", 0)
+        if phase["status"] == "in_progress":
+            running_tasks += 1
+        elif phase["status"] == "failed":
+            failed_tasks += 1
 
-        progress = f"{phase['completed']}/{phase['total']}"
-        phases_table.add_row(
-            phase["phase_id"],
-            phase["phase_name"],
-            status_icon,
-            progress,
-        )
+    # Progress bar
+    progress_pct = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+    progress_bar = "█" * int(progress_pct // 5) + "░" * (20 - int(progress_pct // 5))
 
-    console.print(phases_table)
+    console.print(f"\n  Overall: {progress_bar}  {progress_pct:.0f}%  ({completed_tasks}/{total_tasks} tasks)\n")
 
+    # Phase details
     for phase in phases_status:
+        phase_total = phase.get("total", 0)
+        phase_completed = phase.get("completed", 0)
+        phase_pct = (phase_completed / phase_total * 100) if phase_total > 0 else 0
+        phase_bar = "█" * int(phase_pct // 5) + "░" * (20 - int(phase_pct // 5))
+
+        status_style = {
+            "complete": "[green][done][/green]",
+            "in_progress": "[yellow][running][/yellow]",
+            "failed": "[red][failed][/red]",
+            "pending": "[dim][pending][/dim]",
+        }.get(phase["status"], "[dim][pending][/dim]")
+
+        console.print(f"  Phase {phase['phase_id']}: {phase['phase_name']:<30} {phase_bar}  {phase_pct:>5.0f}%  {status_style}")
+
+        # Show tasks for in-progress or pending phases
         if phase["status"] in ("in_progress", "pending"):
             tasks = phase.get("tasks", [])
-            if tasks:
-                tasks_table = Table(title=f"Tasks: {phase['phase_id']} - {phase['phase_name']}")
-                tasks_table.add_column("Task ID", style="cyan")
-                tasks_table.add_column("Description")
-                tasks_table.add_column("Status")
-                tasks_table.add_column("Cluster")
+            for task in tasks:
+                task_icon = {
+                    "pending": "[dim]⏳[/dim]",
+                    "active": "[yellow]⟳[/yellow]",
+                    "completed": "[green]✓[/green]",
+                    "failed": "[red]✗[/red]",
+                }.get(task.get("status", "pending"), "[dim]⏳[/dim]")
 
-                for task in tasks:
-                    task_status_icon = {
-                        "pending": "[ ]",
-                        "active": "[*]",
-                        "completed": "[x]",
-                        "failed": "[!]",
-                    }.get(task.get("status", "pending"), "[ ]")
+                task_desc = task.get("description", "")[:40]
+                task_id = task.get("task_id", "")
+                console.print(f"    ├─ {task_id}  {task_desc:<40} {task_icon}")
 
-                    tasks_table.add_row(
-                        task.get("task_id", ""),
-                        task.get("description", "")[:50],
-                        task_status_icon,
-                        task.get("cluster", "") or "-",
-                    )
+    console.print()
+    console.print(f"  Total tasks: {total_tasks}  ·  Done: {completed_tasks}  ·  Running: {running_tasks}  ·  Failed: {failed_tasks}")
 
-                console.print(tasks_table)
+    # Estimate remaining time from audit trail
+    from .executor.state import StateManager
+    manager = StateManager(target_root)
+    entries = manager.get_audit_trail(limit=100)
+
+    if entries:
+        durations = []
+        for entry in entries:
+            if entry.command and "duration_ms" in entry.metadata:
+                durations.append(entry.metadata["duration_ms"])
+
+        if durations:
+            avg_duration_ms = sum(durations) / len(durations)
+            remaining_tasks = total_tasks - completed_tasks
+            est_remaining_ms = avg_duration_ms * remaining_tasks
+            est_minutes = est_remaining_ms / 60000
+
+            if est_minutes < 1:
+                console.print(f"  Estimated remaining: ~{est_remaining_ms/1000:.0f}s")
+            else:
+                console.print(f"  Estimated remaining: ~{est_minutes:.1f} min")
+
+    console.print()
 
 
 def run_list() -> None:
@@ -1480,6 +1518,234 @@ def run_logs(args: list[str]) -> None:
                     console.print(f"    [dim]Metadata: {json.dumps(entry.metadata, indent=2)}[/dim]")
 
     console.print(f"\n[dim]{len(entries)} entries shown (filtered from audit trail)[/dim]")
+
+
+def run_explain(args: list[str]) -> None:
+    """Explain what the swarm did for a given phase/task."""
+    console = Console()
+
+    target_path = None
+    task_id = None
+
+    for arg in args[1:]:
+        if arg == "--help" or arg == "-h":
+            console.print(
+                Panel.fit(
+                    "Usage: autobots explain [target] <phaseId|taskId>\n\n"
+                    "Explain what the swarm did for a given phase or task.\n"
+                    "Pulls information from the audit trail, phase summary,\n"
+                    "cluster used, model calls, review results, and duration.\n\n"
+                    "Examples:\n"
+                    "  autobots explain P1              # Explain phase P1\n"
+                    "  autobots explain P2-T3           # Explain specific task\n"
+                    "  autobots explain ./my-project P2 # Explain in target project",
+                    title="Explain Command",
+                    border_style="cyan",
+                )
+            )
+            return
+        elif not arg.startswith("--") and task_id is None:
+            if "." in arg or arg.startswith("P"):
+                task_id = arg
+            else:
+                target_path = arg
+
+    target_root = Path(target_path).expanduser().resolve() if target_path else Path.cwd().resolve()
+
+    if not target_root.exists() or not target_root.is_dir():
+        console.print(
+            Panel.fit(f"Target project not found: {target_root}", title="Explain Error", border_style="red")
+        )
+        raise SystemExit(1)
+
+    if not task_id:
+        console.print(
+            Panel.fit("Please specify a phase or task ID.\nUsage: autobots explain P2-T3", title="Explain", border_style="yellow")
+        )
+        return
+
+    console.print(
+        Panel.fit(f"Explaining: [bold]{task_id}[/bold]\nProject: {target_root}", title="Autobots Explain", border_style="cyan")
+    )
+
+    # Get audit trail
+    from .executor.state import StateManager
+    manager = StateManager(target_root)
+    entries = manager.get_audit_trail(limit=200)
+
+    # Filter relevant entries
+    relevant = [e for e in entries if task_id in e.description]
+
+    if not relevant:
+        console.print(f"\n[dim]No audit trail entries found for {task_id}[/dim]\n")
+        return
+
+    console.print(f"\n[bold]Audit Trail for {task_id}:[/bold]")
+
+    for entry in relevant:
+        ts = datetime.fromtimestamp(entry.timestamp).strftime("%H:%M:%S")
+        ct = entry.change_type
+
+        if "completed" in ct or "passed" in ct:
+            style = "green"
+        elif "failed" in ct:
+            style = "red"
+        elif "created" in ct:
+            style = "cyan"
+        elif "modified" in ct:
+            style = "yellow"
+        else:
+            style = "white"
+
+        console.print(f"  [{style}]{ts}[/] [{style}]{ct}[/] {entry.description}")
+
+        if entry.file_path:
+            console.print(f"    [dim]File: {entry.file_path}[/dim]")
+        if entry.command:
+            console.print(f"    [dim]Command: {entry.command}[/dim]")
+
+    # Phase summary
+    summary_path = target_root / ".autobots-state" / f"{task_id}.json"
+    if summary_path.exists():
+        try:
+            with open(summary_path) as f:
+                phase_data = json.load(f)
+            console.print(f"\n[bold]Phase Details:[/bold]")
+            if "cluster" in phase_data:
+                console.print(f"  Cluster: {phase_data['cluster']}")
+            if "model" in phase_data:
+                console.print(f"  Model: {phase_data['model']}")
+            if "duration_ms" in phase_data:
+                dur = phase_data["duration_ms"]
+                console.print(f"  Duration: {dur/1000:.1f}s")
+            if "status" in phase_data:
+                console.print(f"  Status: {phase_data['status']}")
+        except Exception:
+            pass
+
+    console.print()
+
+
+def run_stats(args: list[str]) -> None:
+    """Show usage statistics and summary."""
+    console = Console()
+
+    target_path = None
+    show_all = False
+
+    for arg in args[1:]:
+        if arg == "--help" or arg == "-h":
+            console.print(
+                Panel.fit(
+                    "Usage: autobots stats [target] [--all]\n\n"
+                    "Show usage statistics: tasks completed, tokens used,\n"
+                    "costs, average duration, success rate, and more.\n\n"
+                    "Options:\n"
+                    "  --all     Show all-time stats, not just current session\n\n"
+                    "Examples:\n"
+                    "  autobots stats                    # Current session\n"
+                    "  autobots stats ./my-project       # Specific project\n"
+                    "  autobots stats --all              # All-time stats",
+                    title="Stats Command",
+                    border_style="cyan",
+                )
+            )
+            return
+        elif arg == "--all":
+            show_all = True
+        elif not arg.startswith("--"):
+            target_path = arg
+
+    target_root = Path(target_path).expanduser().resolve() if target_path else Path.cwd().resolve()
+
+    if not target_root.exists() or not target_root.is_dir():
+        console.print(
+            Panel.fit(f"Target project not found: {target_root}", title="Stats Error", border_style="red")
+        )
+        raise SystemExit(1)
+
+    console.print(
+        Panel.fit(f"Project: [bold]{target_root.name}[/bold]", title="Autobots Stats", border_style="cyan")
+    )
+
+    # Get audit trail
+    from .executor.state import StateManager
+    manager = StateManager(target_root)
+    entries = manager.get_audit_trail(limit=500 if show_all else 100)
+
+    if not entries:
+        console.print("\n[dim]No audit trail entries found. Run a task first.[/dim]\n")
+        return
+
+    # Calculate stats
+    total_tasks = 0
+    completed_tasks = 0
+    failed_tasks = 0
+    file_creates = 0
+    file_modifies = 0
+    durations = []
+    clusters = {}
+
+    for entry in entries:
+        if "phase_completed" in entry.change_type or "validation_passed" in entry.change_type:
+            completed_tasks += 1
+        elif "phase_failed" in entry.change_type or "validation_failed" in entry.change_type:
+            failed_tasks += 1
+
+        if "file_created" in entry.change_type:
+            file_creates += 1
+        elif "file_modified" in entry.change_type:
+            file_modifies += 1
+
+        if "duration_ms" in entry.metadata:
+            durations.append(entry.metadata["duration_ms"])
+
+        # Extract cluster from description
+        for cluster in ["Optimus", "UltraMagnus", "RedAlert", "Jazz", "Ratchet", "Perceptor", "Bumblebee", "Ironhide", "Wheeljack"]:
+            if cluster in entry.description:
+                clusters[cluster] = clusters.get(cluster, 0) + 1
+
+    total_tasks = completed_tasks + failed_tasks
+    success_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+
+    # Display stats
+    console.print(f"\n[bold]Task Summary:[/bold]")
+    console.print(f"  Total tasks: {total_tasks}")
+    console.print(f"  Completed: [green]{completed_tasks}[/green]")
+    console.print(f"  Failed: [red]{failed_tasks}[/red]")
+    console.print(f"  Success rate: {success_rate:.1f}%")
+    console.print(f"\n[bold]File Changes:[/bold]")
+    console.print(f"  Files created: {file_creates}")
+    console.print(f"  Files modified: {file_modifies}")
+
+    if durations:
+        avg_duration = sum(durations) / len(durations)
+        total_duration = sum(durations)
+        console.print(f"\n[bold]Timing:[/bold]")
+        console.print(f"  Average task duration: {avg_duration/1000:.1f}s")
+        console.print(f"  Total time: {total_duration/60000:.1f} min")
+
+    if clusters:
+        console.print(f"\n[bold]Clusters Used:[/bold]")
+        sorted_clusters = sorted(clusters.items(), key=lambda x: x[1], reverse=True)
+        for cluster, count in sorted_clusters[:5]:
+            console.print(f"  {cluster}: {count}")
+
+    # Cost info from costs.py
+    try:
+        from .costs import UsageTracker
+        tracker = UsageTracker(target_root)
+        summary = tracker.summary()
+        if summary.total_cost > 0:
+            console.print(f"\n[bold]Costs:[/bold]")
+            console.print(f"  Total cost: ${summary.total_cost:.4f}")
+            console.print(f"  Input tokens: {summary.total_input_tokens:,}")
+            console.print(f"  Output tokens: {summary.total_output_tokens:,}")
+            console.print(f"  Estimated remaining: ${summary.estimated_remaining:.4f}")
+    except Exception:
+        pass
+
+    console.print()
 
 
 def run_config(args: list[str]) -> None:
@@ -2152,6 +2418,10 @@ def main(argv: list[str] | None = None) -> int:
         run_list()
         return 0
 
+    global VERBOSE
+    VERBOSE = "--verbose" in args
+    args = [a for a in args if a != "--verbose"]
+
     console = Console()
 
     try:
@@ -2190,6 +2460,10 @@ def main(argv: list[str] | None = None) -> int:
             run_diff(args)
         elif command == "logs":
             run_logs(args)
+        elif command == "explain":
+            run_explain(args)
+        elif command == "stats":
+            run_stats(args)
         elif command == "config":
             run_config(args)
         elif command == "completions":
