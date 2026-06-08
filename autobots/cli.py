@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import re
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -46,6 +48,9 @@ ENGINE_ROOT = Path(__file__).resolve().parent.parent
 ENGINE_ENV_PATH = ENGINE_ROOT / ".env"
 SAFETY_BRANCH = "autobots-safety"
 ROLLOUT_MESSAGE = "Autobots, Roll out!"
+init_path = ENGINE_ROOT / "autobots" / "__init__.py"
+pyproject_path = ENGINE_ROOT / "pyproject.toml"
+dist_dir = ENGINE_ROOT / "dist"
 
 
 def _graceful_interrupt(console: Console) -> int:
@@ -840,6 +845,7 @@ def run_list() -> None:
         ("status", "Show all phase and task statuses from task-registry.json"),
         ("engage", "Interactive swarm execution with operator approval at each phase"),
         ("validate-models", "Test live model contracts and validate API connectivity"),
+        ("publish", "Auto-increment version, build, and publish to PyPI"),
         ("list", "Show this help information"),
     ]
 
@@ -853,6 +859,166 @@ def run_list() -> None:
     console.print(table)
     console.print()
     console.print("[dim]Run 'autobots <command> --help' for detailed usage.[/dim]")
+
+
+def _bump_version(version: str) -> str:
+    """Bump patch version: 0.1.4 -> 0.1.5."""
+    match = re.match(r"^(\d+)\.(\d+)\.(\d+)$", version)
+    if not match:
+        raise SystemExit(f"Invalid version format: {version}. Expected X.Y.Z")
+    major, minor, patch = int(match.group(1)), int(match.group(2)), int(match.group(3))
+    return f"{major}.{minor}.{patch + 1}"
+
+
+def _update_version_in_file(file_path: Path, old_version: str, new_version: str) -> None:
+    """Replace version string in a file."""
+    content = file_path.read_text(encoding="utf-8")
+    updated = content.replace(old_version, new_version)
+    file_path.write_text(updated, encoding="utf-8")
+
+
+def run_publish(args: list[str]) -> None:
+    """Auto-increment version, build, and publish to PyPI."""
+    console = Console()
+
+    dry_run = "--dry-run" in args
+    token = None
+    for i, arg in enumerate(args):
+        if arg == "--token" and i + 1 < len(args):
+            token = args[i + 1]
+
+    if not init_path.exists() or not pyproject_path.exists():
+        console.print(
+            Panel.fit(
+                "Could not find __init__.py or pyproject.toml",
+                title="Publish Error",
+                border_style="red",
+            )
+        )
+        raise SystemExit(1)
+
+    init_content = init_path.read_text(encoding="utf-8")
+    version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', init_content)
+    if not version_match:
+        console.print(
+            Panel.fit(
+                "Could not extract version from __init__.py",
+                title="Publish Error",
+                border_style="red",
+            )
+        )
+        raise SystemExit(1)
+
+    current_version = version_match.group(1)
+    new_version = _bump_version(current_version)
+
+    console.print(
+        Panel.fit(
+            f"Current version: {current_version}\nNew version: {new_version}",
+            title="Version Bump",
+            border_style="cyan",
+        )
+    )
+
+    if dry_run:
+        console.print(
+            Panel.fit(
+                "Dry run - skipping version update, build, and publish",
+                title="Dry Run",
+                style="yellow",
+            )
+        )
+        return
+
+    _update_version_in_file(init_path, current_version, new_version)
+    _update_version_in_file(pyproject_path, current_version, new_version)
+
+    console.print(
+        Panel.fit(
+            f"Updated __init__.py and pyproject.toml to {new_version}",
+            title="Version Updated",
+            border_style="green",
+        )
+    )
+
+    console.print(
+        Panel.fit(
+            "Building package...",
+            title="Build",
+            border_style="cyan",
+        )
+    )
+
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build"],
+        cwd=str(ENGINE_ROOT),
+        capture_output=True,
+        text=True,
+    )
+
+    if build_result.returncode != 0:
+        console.print(
+            Panel.fit(
+                f"Build failed:\n{build_result.stderr}",
+                title="Build Error",
+                border_style="red",
+            )
+        )
+        raise SystemExit(1)
+
+    console.print(
+        Panel.fit(
+            "Build successful",
+            title="Build",
+            border_style="green",
+        )
+    )
+
+    if not dist_dir.exists():
+        console.print(
+            Panel.fit(
+                "dist/ directory not found after build",
+                title="Publish Error",
+                border_style="red",
+            )
+        )
+        raise SystemExit(1)
+
+    console.print(
+        Panel.fit(
+            f"Publishing to PyPI...\nVersion: {new_version}",
+            title="Publish",
+            border_style="cyan",
+        )
+    )
+
+    env = {"PYPI_API_TOKEN": token} if token else {}
+    publish_result = subprocess.run(
+        [sys.executable, "-m", "twine", "upload", "--non-interactive", "--disable-progress-bar", "dist/*"],
+        cwd=str(ENGINE_ROOT),
+        capture_output=True,
+        text=True,
+        env={**dict(__import__("os").environ), **env},
+    )
+
+    if publish_result.returncode != 0:
+        console.print(
+            Panel.fit(
+                f"Publish failed:\n{publish_result.stderr}",
+                title="Publish Error",
+                border_style="red",
+            )
+        )
+        raise SystemExit(1)
+
+    console.print(
+        Panel.fit(
+            f"Successfully published autobot-swarm {new_version} to PyPI!\n\n"
+            f"Install with: pip install autobot-swarm=={new_version}",
+            title="Published",
+            border_style="green",
+        )
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -885,6 +1051,8 @@ def main(argv: list[str] | None = None) -> int:
             run_engage()
         elif command == "validate-models":
             run_validate_models()
+        elif command == "publish":
+            run_publish(args)
         elif command == "list":
             run_list()
         else:
