@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import re
+import shlex
 import subprocess
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -81,11 +83,16 @@ class CommandValidator:
         cls.check_command_policy(command, allow_migrations=allow_migrations)
         category = cls.categorize_command(command)
 
+        # On Unix, use shlex.split for safe argument parsing (no shell injection).
+        # On Windows, fall back to shell=True because shlex uses POSIX rules.
+        use_shell = sys.platform == "win32"
+        cmd_args = command if use_shell else shlex.split(command)
+
         try:
             result = subprocess.run(
-                command,
+                cmd_args,
                 cwd=str(working_dir),
-                shell=True,
+                shell=use_shell,
                 capture_output=True,
                 text=True,
                 timeout=timeout_seconds,

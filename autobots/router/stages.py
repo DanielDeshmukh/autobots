@@ -3,13 +3,18 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import TYPE_CHECKING
 
 from .utils import PayloadValidator
 from ..workspace import TargetProjectWorkspace
+from ..skills.loader import load_skill_pack
+from ..utils.retry import with_retry
 
 if TYPE_CHECKING:
     from .models import ClusterPlan, PhaseRecord
+
+logger = logging.getLogger("autobots")
 
 
 COORDINATION_LAWS = """Autobots Coordination Laws:
@@ -32,8 +37,19 @@ ROLE_PROMPT_HEADERS = {
 class StageExecutor:
     """Executes different stages of the execution workflow."""
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(
+        self,
+        api_key: str | None = None,
+        workspace_root: str | None = None,
+        base_url: str = "https://integrate.api.nvidia.com/v1",
+        temperature: float = 0.2,
+        max_tokens: int = 4096,
+    ):
         self.api_key = api_key
+        self.workspace_root = workspace_root
+        self.base_url = base_url
+        self.temperature = temperature
+        self.max_tokens = max_tokens
         self.client = self._build_client() if api_key else None
 
     def run_command_stage(
@@ -45,7 +61,7 @@ class StageExecutor:
     ) -> tuple[dict, str]:
         """Run command/planning stage."""
         prompt = self._build_command_prompt(plan, phase, roadmap_text, progress_text)
-        raw = self._complete(plan.command_lead.model_id, prompt)
+        raw = self._complete(plan.command_lead.model_id, prompt, "Optimus")
         payload = PayloadValidator.parse_json(raw)
         PayloadValidator.validate_command_payload(payload)
         return payload, raw
@@ -80,7 +96,7 @@ class StageExecutor:
             progress_context,
             command_payload,
         )
-        raw = self._complete(plan.primary_lead.model_id, prompt)
+        raw = self._complete(plan.primary_lead.model_id, prompt, plan.primary_cluster)
         payload = PayloadValidator.parse_json(raw)
         if "files" not in payload:
             payload["files"] = []
@@ -96,7 +112,7 @@ class StageExecutor:
     ) -> tuple[dict, str]:
         """Run safety review stage."""
         prompt = self._build_review_prompt(plan, phase, specialist_payload, command_payload)
-        raw = self._complete(plan.safety_lead.model_id, prompt)
+        raw = self._complete(plan.safety_lead.model_id, prompt, "RedAlert")
         payload = PayloadValidator.parse_json(raw)
         payload.setdefault("issues", [])
         payload.setdefault("status", "pass")
@@ -125,35 +141,45 @@ class StageExecutor:
             specialist_payload,
             review_payload,
         )
-        raw = self._complete(plan.repair_lead.model_id, prompt)
+        raw = self._complete(plan.repair_lead.model_id, prompt, "Ratchet")
         payload = PayloadValidator.parse_json(raw)
         if "files" not in payload:
             payload["files"] = []
         PayloadValidator.validate_repair_payload(payload)
         return payload, raw
 
-    def _complete(self, model_id: str, prompt: str) -> str:
-        """Call model for completion."""
+    def _complete(self, model_id: str, prompt: str, cluster_name: str | None = None) -> str:
+        """Call model for completion with retry on transient failures."""
         if self.client is None:
             raise RuntimeError("NVIDIA_API_KEY is missing. Cannot execute the swarm.")
 
+        system_content = (
+            "You are part of a hierarchical Autobots coding swarm. "
+            "Autobots Coordination Laws are mandatory. "
+            "Never write progress-tracker.md unless you are the Optimus secretary. "
+            "Use pessimistic locks for architecture.md and security-auth.md with a 60 second stale-lock reclaim rule. "
+            "Reply with strict JSON only."
+        )
+
+        if self.workspace_root and cluster_name:
+            skill_pack = load_skill_pack(self.workspace_root, cluster_name)
+            if skill_pack:
+                system_content = f"{system_content}\n\n{skill_pack}"
+
+        return self._call_model(model_id, system_content, prompt)
+
+    @with_retry(max_attempts=3, base_delay=1.0)
+    def _call_model(self, model_id: str, system_content: str, user_prompt: str) -> str:
+        """Single model call — retried by with_retry on transient errors."""
+        logger.debug("Calling %s (temperature=%.2f, max_tokens=%d)", model_id, self.temperature, self.max_tokens)
         response = self.client.chat.completions.create(
             model=model_id,
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are part of a hierarchical Autobots coding swarm. "
-                        "Autobots Coordination Laws are mandatory. "
-                        "Never write progress-tracker.md unless you are the Optimus secretary. "
-                        "Use pessimistic locks for architecture.md and security-auth.md with a 60 second stale-lock reclaim rule. "
-                        "Reply with strict JSON only."
-                    ),
-                },
-                {"role": "user", "content": prompt},
+                {"role": "system", "content": system_content},
+                {"role": "user", "content": user_prompt},
             ],
-            temperature=0.2,
-            max_tokens=4096,
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
         )
         return response.choices[0].message.content or ""
 
@@ -161,7 +187,7 @@ class StageExecutor:
         from openai import OpenAI
 
         return OpenAI(
-            base_url="https://integrate.api.nvidia.com/v1",
+            base_url=self.base_url,
             api_key=self.api_key,
         )
 

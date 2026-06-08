@@ -9,7 +9,7 @@ from .ui import _select, _text, ConsoleInstance
 
 ENGINE_ROOT = Path(__file__).resolve().parent.parent
 ENGINE_ENV_PATH = ENGINE_ROOT / ".env"
-SAFETY_BRANCH = "autobots-safety"
+DEFAULT_SAFETY_BRANCH = "autobots-safety"
 
 
 def detect_git_branch(target_root: Path) -> str | None:
@@ -113,28 +113,29 @@ def resolve_target_project_from_args(console, args: list) -> Path:
     return resolve_target_project(console)
 
 
-def require_safety_branch(console, target_root: Path) -> None:
+def require_safety_branch(console, target_root: Path, safety_branch: str | None = None) -> None:
+    branch = safety_branch or DEFAULT_SAFETY_BRANCH
     current_branch = detect_git_branch(target_root)
     detected = current_branch or "unknown"
 
     branch_choice = _select(
         console,
-        f"Safety branch check for '{SAFETY_BRANCH}'. Detected current branch: {detected}",
+        f"Safety branch check for '{branch}'. Detected current branch: {detected}",
         choices=[
             "Yes, continue",
             "No, stop here",
         ],
-        default="Yes, continue" if current_branch == SAFETY_BRANCH else "No, stop here",
+        default="Yes, continue" if current_branch == branch else "No, stop here",
     )
     confirmed = branch_choice == "Yes, continue"
 
-    if not confirmed or current_branch != SAFETY_BRANCH:
+    if not confirmed or current_branch != branch:
         from rich.panel import Panel
         console.print(
             Panel.fit(
                 "Execution blocked.\n"
-                f"Switch the target project to `{SAFETY_BRANCH}` with:\n"
-                f"`git checkout -b {SAFETY_BRANCH}`",
+                f"Switch the target project to `{branch}` with:\n"
+                f"`git checkout -b {branch}`",
                 title="Safety Branch Required",
                 border_style="red",
             )

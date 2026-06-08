@@ -85,7 +85,7 @@ def run_task(target_root: str, task_id: str, mode: str = "supervised") -> dict:
     if not task:
         return {"error": f"Task {task_id} not found"}
 
-    if task["status"] == "task_registry.COMPLETED":
+    if task["status"] == "completed":
         return {"error": f"Task {task_id} already completed"}
 
     context_dir = Path(target_root) / "context"

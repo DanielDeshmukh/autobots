@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/DanielDeshmukh/autobots">
-    <img src="https://img.shields.io/badge/version-0.1.4-blue" alt="Version">
+    <img src="https://img.shields.io/badge/version-0.1.5-blue" alt="Version">
   </a>
   <a href="https://python.org">
     <img src="https://img.shields.io/badge/python-3.11+-brightgreen" alt="Python">
@@ -577,6 +577,7 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.1.5 | 2026-06-08 | Task ID registry, publish command, skill injection system |
 | 0.1.4 | 2026-06-08 | Removed Autobots-created starter context files; missing context now reports filenames only |
 | 0.1.1 | 2026-05-15 | Phase 9-10 complete: config, error handling, failure tests |
 | 0.1.0 | 2026-05-14 | Phase 1-8.5 complete: core functionality |

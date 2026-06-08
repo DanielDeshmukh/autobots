@@ -263,3 +263,93 @@ def render_model_validation_report(console: Console, rows: list, report_path: Pa
             border_style="green",
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# autobots engage — startup screen and interactive loop
+# ---------------------------------------------------------------------------
+
+WORDMARK = r"""
+   ___   __  ______________  ____  __________
+  / _ | / / / /_  __/ __ \ / __ )/ _____  __/
+ / __ |/ /_/ / / / / / / // __  / /_   / /
+/_/ |_|\____/ /_/ /_/ /_//_____/\__/  /_/
+"""
+
+ACCENT = "bold cyan"
+DIM = "dim white"
+WARN = "bold yellow"
+OK = "bold green"
+
+
+def _get_git_branch() -> str:
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, timeout=2,
+        )
+        return result.stdout.strip() or "detached"
+    except Exception:
+        return "no git"
+
+
+def _get_model_display(config) -> str:
+    profile = getattr(config, "model_selection_profile", "balanced")
+    profiles = {
+        "fast": "llama-3.1-8b",
+        "balanced": "llama-3.3-70b",
+        "quality": "qwen3-coder-480b",
+    }
+    return profiles.get(profile, profile)
+
+
+def render_engage_screen(config) -> None:
+    """Render the startup wordmark, status row, and divider."""
+    import os
+    import time
+
+    console = ConsoleInstance
+
+    # 1. Wordmark (streamed)
+    lines = WORDMARK.strip("\n").split("\n")
+    for line in lines:
+        console.print(line, style=ACCENT, highlight=False)
+        time.sleep(0.04)
+    console.print()
+
+    # 2. Tagline
+    version = getattr(config, "version", "0.1.5") if hasattr(config, "version") else "0.1.5"
+    console.print(f"  hierarchical coding swarm  ·  v{version}", style=DIM)
+    console.print()
+
+    # 3. Status row
+    from rich.table import Table as _Table
+
+    table = _Table.grid(padding=(0, 3))
+    table.add_column(style=DIM)
+    table.add_column(style="white")
+
+    api_key = os.getenv("NVIDIA_API_KEY") or os.getenv("NVIDIA_NIM_API_KEY")
+    key_status = f"[{OK}]set[/{OK}]" if api_key else f"[{WARN}]missing[/{WARN}]"
+
+    table.add_row("model", f"[{ACCENT}]{_get_model_display(config)}[/{ACCENT}]")
+    table.add_row("branch", _get_git_branch())
+    table.add_row("api key", key_status)
+    table.add_row("workspace", os.getcwd())
+
+    console.print(table)
+    console.print()
+
+    # 4. Divider
+    console.rule(style="dim")
+    console.print()
+
+
+def engage_prompt() -> str:
+    """Task input prompt — minimal, terminal-native feel."""
+    console = ConsoleInstance
+    console.print("[dim]What should the swarm build?[/dim]")
+    console.print()
+    return console.input(f"[{ACCENT}]autobots[/{ACCENT}] [dim]>[/dim] ").strip()

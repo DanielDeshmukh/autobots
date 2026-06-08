@@ -28,6 +28,7 @@ from .selectors import (
     missing_core_context_files,
     detect_git_branch,
 )
+from .logging import setup_logging
 from .context_gen import check_six_file_architecture, format_missing_context_files
 from .ui import (
     _select,
@@ -40,6 +41,8 @@ from .ui import (
     render_session_status,
     render_execution_result,
     render_model_validation_report,
+    render_engage_screen,
+    engage_prompt,
     ConsoleInstance,
 )
 
@@ -196,22 +199,15 @@ def _approval_loop(
 
 
 def run_engage() -> None:
-    console = Console()
-    console.print(
-        Panel.fit(
-            "Autobots Engage uses a package-based CLI, a scalable cluster registry, "
-            "and hierarchical model handoffs for target-project coding.",
-            title="Autobots Engage",
-            border_style="blue",
-        )
-    )
+    config = load_config()
+    render_engage_screen(config)
 
-    target_root = resolve_target_project(console)
-    require_safety_branch(console, target_root)
-    _ensure_api_key(console)
+    target_root = resolve_target_project(ConsoleInstance)
+    require_safety_branch(ConsoleInstance, target_root, config.safety_branch)
+    _ensure_api_key(ConsoleInstance)
     router = AutobotRouter()
-    render_registry_summary(console, router.catalog)
-    if not check_six_file_architecture(console, target_root):
+    render_registry_summary(ConsoleInstance, router.catalog)
+    if not check_six_file_architecture(ConsoleInstance, target_root):
         raise SystemExit(1)
 
     workspace = TargetProjectWorkspace(target_root)
@@ -220,7 +216,7 @@ def run_engage() -> None:
         phase = router.find_next_phase(progress_text)
 
         if phase is None:
-            console.print(
+            ConsoleInstance.print(
                 Panel.fit(
                     "No IN_PROGRESS or PENDING phases remain. The target roadmap is fully processed.",
                     title="All Phases Complete",
@@ -229,14 +225,14 @@ def run_engage() -> None:
             )
             return
 
-        console.print(
+        ConsoleInstance.print(
             Panel.fit(
                 f"Active phase: {phase.title}\nStatus: {phase.status}",
                 title="Phase Dispatch",
                 border_style="cyan",
             )
         )
-        _approval_loop(console, router, workspace, phase, roadmap_text, progress_text)
+        _approval_loop(ConsoleInstance, router, workspace, phase, roadmap_text, progress_text)
 
 
 def run_init(args: list[str]) -> None:
@@ -717,14 +713,6 @@ def run_resume(args: list[str]) -> None:
 
     require_operational_context(console, target_root, "resume")
 
-    console.print(
-        Panel.fit(
-            "Resuming from checkpoint",
-            title="Autobots Resume",
-            border_style="cyan",
-        )
-    )
-
     workspace = TargetProjectWorkspace(target_root)
     engine = AutonomyEngine()
 
@@ -1022,6 +1010,7 @@ def run_publish(args: list[str]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    setup_logging()
     args = argv or sys.argv[1:]
     if not args:
         run_list()

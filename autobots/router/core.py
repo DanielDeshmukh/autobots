@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import time
 from typing import TYPE_CHECKING
@@ -18,6 +19,8 @@ from ..workspace import TargetProjectWorkspace
 if TYPE_CHECKING:
     from .models import ClusterPlan
 
+logger = logging.getLogger("autobots")
+
 
 class AutobotRouter:
     """Routes phases to appropriate clusters for execution."""
@@ -25,12 +28,24 @@ class AutobotRouter:
     MAX_VERIFICATION_ATTEMPTS = 3
     PROGRESS_TRACKER_FILE = "progress-tracker.md"
 
-    def __init__(self, api_key: str | None = None, catalog: ClusterCatalog | None = None):
+    def __init__(
+        self,
+        api_key: str | None = None,
+        catalog: ClusterCatalog | None = None,
+        base_url: str = "https://integrate.api.nvidia.com/v1",
+        temperature: float = 0.2,
+        max_tokens: int = 4096,
+    ):
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
         self.catalog = catalog or ClusterCatalog(api_key=self.api_key)
         self.executor = PhaseExecutor(api_key=self.api_key)
         self.planner = ClusterPlanner(catalog=self.catalog, api_key=self.api_key)
-        self.stage_executor = StageExecutor(api_key=self.api_key)
+        self.stage_executor = StageExecutor(
+            api_key=self.api_key,
+            base_url=base_url,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
 
     def read_phase_documents(self, workspace: TargetProjectWorkspace) -> tuple[str, str]:
         """Read roadmap and progress tracker."""
@@ -61,7 +76,9 @@ class AutobotRouter:
         event_handler: EventHandler | None = None,
     ) -> ExecutionResult:
         """Execute a phase through the swarm."""
+        logger.info("Executing phase: %s", phase.title)
         plan = self.build_cluster_plan(phase, roadmap_text)
+        logger.info("Routed to %s (command=%s, primary=%s)", plan.primary_cluster, plan.command_lead.model_id, plan.primary_lead.model_id)
         work_packet = self.build_work_packet_from_phase(phase, roadmap_text)
         progress_text = self.begin_phase(workspace, phase, progress_text, plan, event_handler=event_handler)
         self._emit(event_handler, f"Optimus planning {phase.title} with {plan.command_lead.model_id}.")
@@ -75,6 +92,7 @@ class AutobotRouter:
                 f"Parallel planning identified {len(plan.parallel_workstreams)} independent workstream candidate(s); merge strategy is {plan.merge_strategy}.",
             )
 
+        self.stage_executor.workspace_root = str(workspace.target_root)
         command_payload, command_raw = self._run_command_stage(plan, phase, roadmap_text, progress_text)
         self._emit(event_handler, f"{plan.primary_cluster} working on {phase.title}.")
 
@@ -303,7 +321,10 @@ class AutobotRouter:
                 self._emit(event_handler, f"{lock_owner} waiting on a critical file lock. Sleep/retry {attempt}/{attempts - 1}.")
                 time.sleep(delay)
 
-        return []
+        raise RuntimeError(
+            f"Lock collision: generated files for {lock_owner} could not be persisted after {attempts} attempts. "
+            "Retry with `autobots run --force`."
+        )
 
     def _files_include_critical_context(self, files: list[dict]) -> bool:
         """Check if files include critical context."""

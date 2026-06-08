@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger("autobots")
 
 
 CONFIG_FILE_NAMES = (".autobots.toml", "autobots.toml", ".autobotsrc")
@@ -75,7 +78,11 @@ class AutobotsConfig:
                 with open(path, "rb") as f:
                     data = tomllib.load(f)
             except ImportError:
+                logger.warning("No TOML parser available (install tomllib or tomli) — skipping config file %s", path)
                 return
+        except Exception as exc:
+            logger.warning("Failed to load config from %s: %s — using defaults", path, exc)
+            return
 
         if "autobots" in data:
             section = data["autobots"]
