@@ -16,6 +16,8 @@ from ..utils.retry import with_retry
 
 if TYPE_CHECKING:
     from .models import ClusterPlan, PhaseRecord
+    from ..costs import UsageTracker
+    from ..context_budget import ContextBudgetManager
 
 logger = logging.getLogger("autobots")
 console = Console()
@@ -48,6 +50,8 @@ class StageExecutor:
         base_url: str = "https://integrate.api.nvidia.com/v1",
         temperature: float = 0.2,
         max_tokens: int = 4096,
+        usage_tracker: "UsageTracker | None" = None,
+        context_budget_manager: "ContextBudgetManager | None" = None,
     ):
         self.api_key = api_key
         self.workspace_root = workspace_root
@@ -55,6 +59,8 @@ class StageExecutor:
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.client = self._build_client() if api_key else None
+        self.usage_tracker = usage_tracker
+        self.context_budget_manager = context_budget_manager
 
     def run_command_stage(
         self,
@@ -176,12 +182,31 @@ class StageExecutor:
     def _call_model(self, model_id: str, system_content: str, user_prompt: str) -> str:
         """Single model call with streaming — retried by with_retry on transient errors."""
         logger.debug("Calling %s (temperature=%.2f, max_tokens=%d)", model_id, self.temperature, self.max_tokens)
+
+        # Check context budget if manager is available
+        if self.context_budget_manager:
+            budget = self.context_budget_manager.create_budget(model_id)
+            budget.system_tokens = self.context_budget_manager.estimate_tokens(system_content)
+            budget.prompt_tokens = self.context_budget_manager.estimate_tokens(user_prompt)
+
+            warnings = self.context_budget_manager.check_budget(budget)
+            for warning in warnings:
+                if warning.level == "overflow":
+                    logger.warning("Context overflow detected for %s: truncating prompt", model_id)
+                    user_prompt, _ = self.context_budget_manager.truncate_to_fit(
+                        user_prompt, budget, preserve_start=True
+                    )
+                elif warning.level == "critical":
+                    logger.warning("Context critical for %s: %s", model_id, warning.message)
+
         return self._call_model_streaming(model_id, system_content, user_prompt)
 
     def _call_model_streaming(self, model_id: str, system_content: str, user_prompt: str) -> str:
         """Stream model response with live character counter."""
         full_response = []
         start_time = time.time()
+        input_tokens = 0
+        output_tokens = 0
 
         with console.status("", spinner="dots") as status:
             for chunk in self.client.chat.completions.create(
@@ -193,6 +218,7 @@ class StageExecutor:
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
                 stream=True,
+                stream_options={"include_usage": True},
             ):
                 if chunk.choices and chunk.choices[0].delta.content:
                     delta = chunk.choices[0].delta.content
@@ -200,6 +226,21 @@ class StageExecutor:
                     elapsed = time.time() - start_time
                     char_count = sum(len(r) for r in full_response)
                     status.update(f"[dim]Receiving response · {char_count} chars · {elapsed:.1f}s[/dim]")
+
+                # Extract usage from final chunk
+                if chunk.usage:
+                    input_tokens = chunk.usage.prompt_tokens or 0
+                    output_tokens = chunk.usage.completion_tokens or 0
+
+        # Record usage if tracker is available
+        if self.usage_tracker and (input_tokens > 0 or output_tokens > 0):
+            duration_ms = (time.time() - start_time) * 1000
+            self.usage_tracker.record(
+                model_id=model_id,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                duration_ms=duration_ms,
+            )
 
         return "".join(full_response)
 

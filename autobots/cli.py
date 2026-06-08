@@ -295,6 +295,7 @@ def _approval_loop(
     phase: PhaseRecord,
     roadmap_text: str,
     progress_text: str,
+    config=None,
 ) -> None:
     result = router.execute_phase(
         workspace,
@@ -333,6 +334,35 @@ def _approval_loop(
                     border_style="green",
                 )
             )
+
+            # Auto-commit if enabled
+            if config and config.auto_commit:
+                from .git_utils import auto_commit_after_phase, is_git_repo
+                if is_git_repo(workspace.root):
+                    commit_result = auto_commit_after_phase(
+                        workspace.root,
+                        phase_id=phase.task_id or phase.title,
+                        phase_title=phase.title,
+                        enabled=True,
+                    )
+                    if commit_result and commit_result.success:
+                        console.print(
+                            Panel.fit(
+                                f"Auto-committed {commit_result.files_committed} files\n"
+                                f"Commit: {commit_result.commit_hash[:8] if commit_result.commit_hash else 'unknown'}",
+                                title="Git Auto-Commit",
+                                border_style="green",
+                            )
+                        )
+                    elif commit_result and commit_result.error:
+                        console.print(
+                            Panel.fit(
+                                f"Auto-commit skipped: {commit_result.error}",
+                                title="Git Auto-Commit",
+                                border_style="yellow",
+                            )
+                        )
+
             return
 
         feedback = ""
@@ -356,7 +386,9 @@ def run_engage() -> None:
     target_root = resolve_target_project(ConsoleInstance)
     require_safety_branch(ConsoleInstance, target_root, config.safety_branch)
     _ensure_api_key(ConsoleInstance, target_root)
-    router = AutobotRouter()
+    from .costs import UsageTracker
+    usage_tracker = UsageTracker(session_dir=target_root / ".autobots-state")
+    router = AutobotRouter(usage_tracker=usage_tracker)
     render_registry_summary(ConsoleInstance, router.catalog)
     if not check_six_file_architecture(ConsoleInstance, target_root):
         raise SystemExit(1)
@@ -418,13 +450,31 @@ def run_engage() -> None:
                     border_style="cyan",
                 )
             )
-            _approval_loop(ConsoleInstance, router, workspace, phase, roadmap_text, progress_text)
+            _approval_loop(ConsoleInstance, router, workspace, phase, roadmap_text, progress_text, config)
 
             # Check if interrupted during approval loop
             if interrupt_handler.interrupted:
                 return
     finally:
         interrupt_handler.restore()
+        # Display usage summary
+        if usage_tracker and usage_tracker.usages:
+            from .costs import format_cost, format_tokens
+            summary = usage_tracker.summary()
+            totals = summary["total_tokens"]
+            ConsoleInstance.print(
+                Panel.fit(
+                    f"Token Usage:\n"
+                    f"  Input: {format_tokens(totals['input'])}\n"
+                    f"  Output: {format_tokens(totals['output'])}\n"
+                    f"  Total: {format_tokens(totals['total'])}\n\n"
+                    f"Estimated Cost: {format_cost(summary['total_cost_estimate'])}\n"
+                    f"API Calls: {summary['call_count']}",
+                    title="Session Summary",
+                    border_style="cyan",
+                )
+            )
+            usage_tracker.save()
 
 
 def run_init(args: list[str]) -> None:
@@ -626,7 +676,9 @@ def _create_model_validation_workspace() -> TargetProjectWorkspace:
 def run_validate_models() -> None:
     console = Console()
     _ensure_api_key(console)
-    router = AutobotRouter()
+    from .costs import UsageTracker
+    usage_tracker = UsageTracker()
+    router = AutobotRouter(usage_tracker=usage_tracker)
     render_registry_summary(console, router.catalog)
     workspace = _create_model_validation_workspace()
     roadmap_text, progress_text = router.read_phase_documents(workspace)
@@ -1066,6 +1118,10 @@ def run_list() -> None:
         ("status", "Show all phase and task statuses from task-registry.json"),
         ("engage", "Interactive swarm execution with operator approval at each phase"),
         ("doctor", "Run preflight checks to verify API, config, and workspace"),
+        ("config", "Validate or show current configuration"),
+        ("completions", "Generate shell completion scripts"),
+        ("marketplace", "Search, install, and publish skill packs"),
+        ("dashboard", "Start web dashboard for monitoring"),
         ("diff", "Compare current workspace state to a snapshot"),
         ("logs", "View audit trail logs with filtering"),
         ("validate-models", "Test live model contracts and validate API connectivity"),
@@ -1424,6 +1480,419 @@ def run_logs(args: list[str]) -> None:
                     console.print(f"    [dim]Metadata: {json.dumps(entry.metadata, indent=2)}[/dim]")
 
     console.print(f"\n[dim]{len(entries)} entries shown (filtered from audit trail)[/dim]")
+
+
+def run_config(args: list[str]) -> None:
+    """Handle config subcommands: validate, show."""
+    console = Console()
+
+    if len(args) < 2:
+        console.print(
+            Panel.fit(
+                "Usage: autobots config <validate|show>\n\n"
+                "  validate  Validate configuration and show errors\n"
+                "  show      Display current configuration",
+                title="Config Commands",
+                border_style="cyan",
+            )
+        )
+        return
+
+    subcommand = args[1]
+
+    if subcommand == "validate":
+        config = load_config()
+        result = config.validate()
+
+        if result.valid:
+            console.print(
+                Panel.fit(
+                    "Configuration is valid!",
+                    title="Config Validation",
+                    border_style="green",
+                )
+            )
+        else:
+            error_lines = ["[red]Configuration errors:[/red]\n"]
+            for error in result.errors:
+                field = error.get("field", "unknown")
+                message = error.get("message", "")
+                suggestion = error.get("suggestion", "")
+                error_lines.append(f"  [red]•[/red] {field}: {message}")
+                if suggestion:
+                    error_lines.append(f"    [dim]→ {suggestion}[/dim]")
+            console.print(Panel.fit("\n".join(error_lines), title="Config Validation", border_style="red"))
+
+        if result.warnings:
+            console.print("\n[yellow]Warnings:[/yellow]")
+            for warn in result.warnings:
+                field = warn.get("field", "unknown")
+                message = warn.get("message", "")
+                suggestion = warn.get("suggestion", "")
+                console.print(f"  [yellow]•[/yellow] {field}: {message}")
+                if suggestion:
+                    console.print(f"    [dim]→ {suggestion}[/dim]")
+
+        if not result.valid:
+            raise SystemExit(1)
+
+    elif subcommand == "show":
+        config = load_config()
+        table = Table(title="Current Configuration")
+        table.add_column("Setting", style="cyan")
+        table.add_column("Value", style="white")
+
+        table.add_row("model_selection_profile", config.model_selection_profile)
+        table.add_row("default_mode", config.default_mode)
+        table.add_row("safety_branch", config.safety_branch)
+        table.add_row("milestone_threshold", str(config.milestone_threshold))
+        table.add_row("max_verification_attempts", str(config.max_verification_attempts))
+        table.add_row("test_gate", str(config.test_gate))
+        table.add_row("test_command", config.test_command)
+        table.add_row("test_timeout", str(config.test_timeout))
+        table.add_row("auto_commit", str(config.auto_commit))
+        table.add_row("parallel_planning", str(config.parallel_planning))
+        table.add_row("disable_live_catalog", str(config.disable_live_catalog))
+        table.add_row("model_registry_path", config.model_registry_path or "None")
+        table.add_row("api_key", "***" if config.api_key else "Not set")
+
+        console.print(table)
+
+    else:
+        console.print(
+            Panel.fit(
+                f"Unknown subcommand: {subcommand}\n\n"
+                "Available subcommands: validate, show",
+                title="Config Error",
+                border_style="red",
+            )
+        )
+        raise SystemExit(1)
+
+
+def run_completions(args: list[str]) -> None:
+    """Generate shell completion scripts."""
+    console = Console()
+
+    if len(args) < 2 or args[1] == "--help" or args[1] == "-h":
+        console.print(
+            Panel.fit(
+                "Usage: autobots completions <shell>\n\n"
+                "Generate shell completion scripts for bash, zsh, or fish.\n\n"
+                "Supported shells:\n"
+                "  bash  - Bash shell\n"
+                "  zsh   - Z shell\n"
+                "  fish  - Fish shell\n\n"
+                "Installation:\n"
+                "  bash: source <(autobots completions bash)\n"
+                "  zsh:  autobots completions zsh > ~/.zfunc/_autobots\n"
+                "  fish: autobots completions fish > ~/.config/fish/completions/autobots.fish",
+                title="Shell Completions",
+                border_style="cyan",
+            )
+        )
+        return
+
+    shell = args[1].lower()
+    from .completions import get_completion_script, get_available_shells
+
+    script = get_completion_script(shell)
+    if script is None:
+        console.print(
+            Panel.fit(
+                f"Unsupported shell: {shell}\n\n"
+                f"Supported shells: {', '.join(get_available_shells())}",
+                title="Completions Error",
+                border_style="red",
+            )
+        )
+        raise SystemExit(1)
+
+    # Output the script directly for piping
+    print(script)
+
+
+def run_marketplace(args: list[str]) -> None:
+    """Handle marketplace subcommands: search, install, publish, list."""
+    console = Console()
+
+    if len(args) < 2:
+        console.print(
+            Panel.fit(
+                "Usage: autobots marketplace <search|install|publish|list|info>\n\n"
+                "  search   Search for skill packs\n"
+                "  install  Install a skill pack\n"
+                "  publish  Publish a skill pack\n"
+                "  list     List available skill packs\n"
+                "  info     Show info about a skill pack",
+                title="Marketplace Commands",
+                border_style="cyan",
+            )
+        )
+        return
+
+    subcommand = args[1]
+
+    from .marketplace import Marketplace, get_builtin_skill_packs, SkillPack
+
+    marketplace = Marketplace()
+
+    if subcommand == "search":
+        query = args[2] if len(args) > 2 else None
+        results = marketplace.search(query=query)
+
+        # Include built-in packs in search
+        builtin = get_builtin_skill_packs()
+        if query:
+            query_lower = query.lower()
+            builtin = [
+                p for p in builtin
+                if query_lower in p.name.lower()
+                or query_lower in p.description.lower()
+                or query_lower in " ".join(p.tags).lower()
+            ]
+
+        if not results and not builtin:
+            console.print(Panel.fit("No skill packs found.", title="Marketplace Search", border_style="yellow"))
+            return
+
+        table = Table(title="Search Results")
+        table.add_column("Name", style="cyan")
+        table.add_column("Version")
+        table.add_column("Author")
+        table.add_column("Description")
+        table.add_column("Downloads")
+
+        for entry in results:
+            table.add_row(entry.name, entry.version, entry.author, entry.description[:50], str(entry.downloads))
+
+        for pack in builtin:
+            if not marketplace.get(pack.name):  # Don't duplicate
+                table.add_row(pack.name, pack.version, pack.author, pack.description[:50], "built-in")
+
+        console.print(table)
+
+    elif subcommand == "list":
+        # Show built-in packs
+        builtin = get_builtin_skill_packs()
+
+        table = Table(title="Available Skill Packs")
+        table.add_column("Name", style="cyan")
+        table.add_column("Version")
+        table.add_column("Author")
+        table.add_column("Description")
+        table.add_column("Tags")
+
+        for pack in builtin:
+            table.add_row(
+                pack.name,
+                pack.version,
+                pack.author,
+                pack.description[:50],
+                ", ".join(pack.tags[:3]),
+            )
+
+        console.print(table)
+
+    elif subcommand == "install":
+        if len(args) < 3:
+            console.print("[red]Usage: autobots marketplace install <name>[/red]")
+            raise SystemExit(1)
+
+        name = args[2]
+
+        # Check built-in packs
+        builtin = get_builtin_skill_packs()
+        builtin_pack = next((p for p in builtin if p.name == name), None)
+
+        if builtin_pack:
+            # Get target directory
+            target_dir = Path.cwd()
+            for arg in args[3:]:
+                if not arg.startswith("--"):
+                    target_dir = Path(arg)
+                    break
+
+            # Install built-in pack
+            context_dir = target_dir / "context"
+            context_dir.mkdir(parents=True, exist_ok=True)
+
+            installed = []
+            for filename, content in builtin_pack.context_files.items():
+                target_file = context_dir / filename
+                if not target_file.exists():
+                    target_file.write_text(content, encoding="utf-8")
+                    installed.append(filename)
+
+            if installed:
+                console.print(
+                    Panel.fit(
+                        f"Installed {len(installed)} files:\n" + "\n".join(f"  • {f}" for f in installed),
+                        title=f"Installed {name}",
+                        border_style="green",
+                    )
+                )
+            else:
+                console.print(f"[yellow]All files already exist for {name}[/yellow]")
+        else:
+            # Check marketplace registry
+            entry = marketplace.get(name)
+            if entry:
+                target_dir = Path.cwd()
+                if marketplace.install(name, target_dir):
+                    console.print(f"[green]Installed {name}[/green]")
+                else:
+                    console.print(f"[red]Failed to install {name}[/red]")
+            else:
+                console.print(f"[red]Skill pack not found: {name}[/red]")
+
+    elif subcommand == "publish":
+        # Create a skill pack from current project
+        if len(args) < 3:
+            console.print("[red]Usage: autobots marketplace publish <name>[/red]")
+            raise SystemExit(1)
+
+        name = args[2]
+        project_dir = Path.cwd()
+        context_dir = project_dir / "context"
+
+        if not context_dir.exists():
+            console.print("[red]No context/ directory found. Run 'autobots init' first.[/red]")
+            raise SystemExit(1)
+
+        # Read context files
+        context_files = {}
+        for f in context_dir.glob("*.md"):
+            if f.name.startswith("."):
+                continue
+            context_files[f.name] = f.read_text(encoding="utf-8")
+
+        if not context_files:
+            console.print("[red]No context files found in context/[/red]")
+            raise SystemExit(1)
+
+        # Get metadata
+        author = "Local User"
+        description = f"Skill pack: {name}"
+        tags = ["custom"]
+
+        skill_pack = SkillPack(
+            name=name,
+            version="1.0.0",
+            author=author,
+            description=description,
+            tags=tags,
+            context_files=context_files,
+        )
+
+        if marketplace.publish(skill_pack):
+            console.print(
+                Panel.fit(
+                    f"Published {name} v{skill_pack.version}\n"
+                    f"Files: {', '.join(context_files.keys())}",
+                    title="Published",
+                    border_style="green",
+                )
+            )
+        else:
+            console.print("[red]Failed to publish skill pack[/red]")
+
+    elif subcommand == "info":
+        if len(args) < 3:
+            console.print("[red]Usage: autobots marketplace info <name>[/red]")
+            raise SystemExit(1)
+
+        name = args[2]
+
+        # Check built-in packs
+        builtin = get_builtin_skill_packs()
+        builtin_pack = next((p for p in builtin if p.name == name), None)
+
+        if builtin_pack:
+            console.print(f"[bold cyan]{builtin_pack.name}[/bold cyan] v{builtin_pack.version}")
+            console.print(f"Author: {builtin_pack.author}")
+            console.print(f"Description: {builtin_pack.description}")
+            console.print(f"Tags: {', '.join(builtin_pack.tags)}")
+            console.print(f"Files: {', '.join(builtin_pack.context_files.keys())}")
+        else:
+            entry = marketplace.get(name)
+            if entry:
+                console.print(f"[bold cyan]{entry.name}[/bold cyan] v{entry.version}")
+                console.print(f"Author: {entry.author}")
+                console.print(f"Description: {entry.description}")
+                console.print(f"Tags: {', '.join(entry.tags)}")
+                console.print(f"Downloads: {entry.downloads}")
+            else:
+                console.print(f"[red]Skill pack not found: {name}[/red]")
+
+    else:
+        console.print(f"[red]Unknown subcommand: {subcommand}[/red]")
+        raise SystemExit(1)
+
+
+def run_dashboard(args: list[str]) -> None:
+    """Start the web dashboard for monitoring."""
+    console = Console()
+
+    if "--help" in args or "-h" in args:
+        console.print(
+            Panel.fit(
+                "Usage: autobots dashboard [options]\n\n"
+                "Start a web dashboard for real-time monitoring.\n\n"
+                "Options:\n"
+                "  --port <port>     Port number (default: 8080)\n"
+                "  --host <host>     Host to bind (default: 127.0.0.1)\n"
+                "  --no-open         Don't auto-open browser",
+                title="Dashboard Command",
+                border_style="cyan",
+            )
+        )
+        return
+
+    # Parse arguments
+    port = 8080
+    host = "127.0.0.1"
+    auto_open = True
+
+    for i, arg in enumerate(args):
+        if arg == "--port" and i + 1 < len(args):
+            try:
+                port = int(args[i + 1])
+            except ValueError:
+                pass
+        elif arg == "--host" and i + 1 < len(args):
+            host = args[i + 1]
+        elif arg == "--no-open":
+            auto_open = False
+
+    from .dashboard import DashboardConfig, get_dashboard
+
+    config = DashboardConfig(host=host, port=port, auto_open=auto_open)
+    dashboard = get_dashboard(config)
+
+    console.print(
+        Panel.fit(
+            f"Starting dashboard at http://{host}:{port}\n\n"
+            "The dashboard will auto-refresh every 5 seconds.\n"
+            "Press Ctrl+C to stop.",
+            title="Autobots Dashboard",
+            border_style="cyan",
+        )
+    )
+
+    dashboard.start()
+
+    try:
+        # Keep running
+        import time
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        dashboard.stop()
+        console.print("\n[yellow]Dashboard stopped.[/yellow]")
+
+
+def run_catalog(args: list[str]) -> None:
     """Handle catalog subcommands: refresh, list."""
     console = Console()
 
@@ -1721,6 +2190,14 @@ def main(argv: list[str] | None = None) -> int:
             run_diff(args)
         elif command == "logs":
             run_logs(args)
+        elif command == "config":
+            run_config(args)
+        elif command == "completions":
+            run_completions(args)
+        elif command == "marketplace":
+            run_marketplace(args)
+        elif command == "dashboard":
+            run_dashboard(args)
         elif command == "list":
             run_list()
         else:

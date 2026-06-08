@@ -18,6 +18,8 @@ from ..workspace import TargetProjectWorkspace
 
 if TYPE_CHECKING:
     from .models import ClusterPlan
+    from ..costs import UsageTracker
+    from ..context_budget import ContextBudgetManager
 
 logger = logging.getLogger("autobots")
 
@@ -35,16 +37,22 @@ class AutobotRouter:
         base_url: str = "https://integrate.api.nvidia.com/v1",
         temperature: float = 0.2,
         max_tokens: int = 4096,
+        usage_tracker: "UsageTracker | None" = None,
+        context_budget_manager: "ContextBudgetManager | None" = None,
     ):
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
         self.catalog = catalog or ClusterCatalog(api_key=self.api_key)
         self.executor = PhaseExecutor(api_key=self.api_key)
         self.planner = ClusterPlanner(catalog=self.catalog, api_key=self.api_key)
+        self.usage_tracker = usage_tracker
+        self.context_budget_manager = context_budget_manager
         self.stage_executor = StageExecutor(
             api_key=self.api_key,
             base_url=base_url,
             temperature=temperature,
             max_tokens=max_tokens,
+            usage_tracker=usage_tracker,
+            context_budget_manager=context_budget_manager,
         )
 
     def read_phase_documents(self, workspace: TargetProjectWorkspace) -> tuple[str, str]:

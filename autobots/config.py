@@ -16,6 +16,45 @@ logger = logging.getLogger("autobots")
 CONFIG_FILE_NAMES = (".autobots.toml", "autobots.toml", ".autobotsrc")
 ENV_PREFIX = "AUTOBOTS_"
 
+# Valid values for enum-like fields
+VALID_MODEL_PROFILES = {"balanced", "speed", "quality"}
+VALID_EXECUTION_MODES = {"supervised", "milestone", "autonomous"}
+
+
+class ConfigValidationError(Exception):
+    """Raised when configuration validation fails."""
+
+    def __init__(self, errors: list[dict[str, str]]):
+        self.errors = errors
+        super().__init__(self._format_message())
+
+    def _format_message(self) -> str:
+        lines = ["Configuration validation failed:"]
+        for error in self.errors:
+            field_name = error.get("field", "unknown")
+            message = error.get("message", "invalid value")
+            suggestion = error.get("suggestion", "")
+            lines.append(f"  • {field_name}: {message}")
+            if suggestion:
+                lines.append(f"    → {suggestion}")
+        return "\n".join(lines)
+
+
+@dataclass
+class ConfigValidationResult:
+    """Result of configuration validation."""
+
+    valid: bool
+    errors: list[dict[str, str]] = field(default_factory=list)
+    warnings: list[dict[str, str]] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return {
+            "valid": self.valid,
+            "errors": self.errors,
+            "warnings": self.warnings,
+        }
+
 
 @dataclass
 class AutobotsConfig:
@@ -36,7 +75,89 @@ class AutobotsConfig:
     test_command: str = "pytest tests/ -q"
     test_timeout: int = 120
 
+    # Auto-commit settings
+    auto_commit: bool = True
+    auto_commit_message_template: str = "autobots: complete phase {phase_id} - {phase_title}"
+
     extra_clusters: dict[str, list[str]] = field(default_factory=dict)
+
+    def validate(self) -> ConfigValidationResult:
+        """Validate configuration values."""
+        errors = []
+        warnings = []
+
+        # Validate model_selection_profile
+        if self.model_selection_profile not in VALID_MODEL_PROFILES:
+            errors.append({
+                "field": "model_selection_profile",
+                "message": f"invalid value '{self.model_selection_profile}'",
+                "suggestion": f"must be one of: {', '.join(sorted(VALID_MODEL_PROFILES))}",
+            })
+
+        # Validate default_mode
+        if self.default_mode not in VALID_EXECUTION_MODES:
+            errors.append({
+                "field": "default_mode",
+                "message": f"invalid value '{self.default_mode}'",
+                "suggestion": f"must be one of: {', '.join(sorted(VALID_EXECUTION_MODES))}",
+            })
+
+        # Validate milestone_threshold
+        if self.milestone_threshold < 1:
+            errors.append({
+                "field": "milestone_threshold",
+                "message": f"must be at least 1, got {self.milestone_threshold}",
+                "suggestion": "set to 3 for standard milestone mode",
+            })
+
+        # Validate max_verification_attempts
+        if self.max_verification_attempts < 1:
+            errors.append({
+                "field": "max_verification_attempts",
+                "message": f"must be at least 1, got {self.max_verification_attempts}",
+                "suggestion": "set to 3 for standard verification",
+            })
+
+        # Validate test_timeout
+        if self.test_timeout < 10:
+            errors.append({
+                "field": "test_timeout",
+                "message": f"must be at least 10 seconds, got {self.test_timeout}",
+                "suggestion": "set to 120 for standard test runs",
+            })
+
+        # Validate model_registry_path exists if set
+        if self.model_registry_path:
+            registry_path = Path(self.model_registry_path)
+            if not registry_path.exists():
+                warnings.append({
+                    "field": "model_registry_path",
+                    "message": f"file not found: {self.model_registry_path}",
+                    "suggestion": "file will be ignored, using bundled registry",
+                })
+
+        # Validate safety_branch is not empty
+        if not self.safety_branch or not self.safety_branch.strip():
+            errors.append({
+                "field": "safety_branch",
+                "message": "cannot be empty",
+                "suggestion": "set to 'autobots-safety' for default behavior",
+            })
+
+        # Validate auto_commit_message_template has placeholders
+        if self.auto_commit:
+            if "{phase_id}" not in self.auto_commit_message_template:
+                warnings.append({
+                    "field": "auto_commit_message_template",
+                    "message": "missing {phase_id} placeholder",
+                    "suggestion": "include {phase_id} for proper commit messages",
+                })
+
+        return ConfigValidationResult(
+            valid=len(errors) == 0,
+            errors=errors,
+            warnings=warnings,
+        )
 
     @classmethod
     def load(cls, project_root: Path | None = None) -> "AutobotsConfig":
