@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/DanielDeshmukh/autobots">
-    <img src="https://img.shields.io/badge/version-0.1.6-blue" alt="Version">
+    <img src="https://img.shields.io/badge/version-0.1.7-blue" alt="Version">
   </a>
   <a href="https://python.org">
     <img src="https://img.shields.io/badge/python-3.11+-brightgreen" alt="Python">
@@ -577,6 +577,7 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.1.7 | 2026-06-08 | PyPI description update, package-description.md |
 | 0.1.6 | 2026-06-08 | Guide to A+++ complete: retry, safe subprocess, logging, engage screen |
 | 0.1.5 | 2026-06-08 | Task ID registry, publish command, skill injection system |
 | 0.1.4 | 2026-06-08 | Removed Autobots-created starter context files; missing context now reports filenames only |

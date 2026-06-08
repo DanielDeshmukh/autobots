@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "autobot-swarm"
-version = "0.1.6"
+version = "0.1.7"
 description = "Hierarchical multi-cluster coding swarm CLI"
-readme = "README.md"
+readme = "package-description.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [
