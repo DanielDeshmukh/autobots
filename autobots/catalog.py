@@ -470,8 +470,17 @@ class ClusterCatalog:
             self.using_live_catalog = True
             return self._manual_available_model_ids
 
-        # Live catalog discovery removed; registry updated manually on release.
-        # Use available_model_ids parameter or AUTOBOTS_MODEL_REGISTRY env var.
+        if self.refresh_live and self.api_key:
+            try:
+                from .find_endpoints import discover_models
+
+                model_ids = discover_models(self.api_key)
+                if model_ids:
+                    self.using_live_catalog = True
+                    return tuple(dict.fromkeys(model_ids))
+            except Exception:
+                pass
+
         return ()
 
     def refresh_catalog(self, force: bool = False) -> dict:

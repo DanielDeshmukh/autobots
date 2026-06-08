@@ -23,6 +23,11 @@ class ModelContractError(ValueError):
 class PayloadValidator:
     """Validates model payloads."""
 
+    MIN_SUMMARY_LENGTH = 10
+    MIN_LIST_ITEM_LENGTH = 5
+    MIN_FILE_CONTENT_LENGTH = 10
+    MAX_FILE_CONTENT_LENGTH = 500_000
+
     @staticmethod
     def parse_json(raw_content: str) -> dict:
         """Parse JSON from model response."""
@@ -39,16 +44,22 @@ class PayloadValidator:
     @staticmethod
     def validate_command_payload(payload: dict) -> None:
         """Validate command stage payload."""
-        PayloadValidator._require_string(payload, "summary", "command payload")
-        PayloadValidator._require_string_list(payload, "implementation_goals", "command payload")
-        PayloadValidator._require_string_list(payload, "risks", "command payload")
-        PayloadValidator._require_string_list(payload, "acceptance_checks", "command payload")
+        summary = PayloadValidator._require_string(payload, "summary", "command payload")
+        PayloadValidator._validate_summary_content(summary, "command payload")
+        goals = PayloadValidator._require_string_list(payload, "implementation_goals", "command payload")
+        PayloadValidator._validate_list_content(goals, "implementation_goals", "command payload")
+        risks = PayloadValidator._require_string_list(payload, "risks", "command payload")
+        PayloadValidator._validate_list_content(risks, "risks", "command payload")
+        checks = PayloadValidator._require_string_list(payload, "acceptance_checks", "command payload")
+        PayloadValidator._validate_list_content(checks, "acceptance_checks", "command payload")
 
     @staticmethod
     def validate_specialist_payload(payload: dict) -> None:
         """Validate specialist stage payload."""
-        PayloadValidator._require_string(payload, "summary", "specialist payload")
-        PayloadValidator._require_string_list(payload, "implementation_notes", "specialist payload")
+        summary = PayloadValidator._require_string(payload, "summary", "specialist payload")
+        PayloadValidator._validate_summary_content(summary, "specialist payload")
+        notes = PayloadValidator._require_string_list(payload, "implementation_notes", "specialist payload")
+        PayloadValidator._validate_list_content(notes, "implementation_notes", "specialist payload")
         PayloadValidator._require_file_list(payload, "specialist payload")
 
     @staticmethod
@@ -59,13 +70,20 @@ class PayloadValidator:
             raise ModelContractError(
                 f"review payload field 'status' must be 'pass' or 'revise', got '{payload.get('status')}'."
             )
-        PayloadValidator._require_string(payload, "summary", "review payload")
-        PayloadValidator._require_string_list(payload, "issues", "review payload")
+        summary = PayloadValidator._require_string(payload, "summary", "review payload")
+        PayloadValidator._validate_summary_content(summary, "review payload")
+        issues = PayloadValidator._require_string_list(payload, "issues", "review payload")
+        if status == "revise" and not issues:
+            raise ModelContractError(
+                "review payload with status 'revise' must include at least one issue."
+            )
+        PayloadValidator._validate_list_content(issues, "issues", "review payload")
 
     @staticmethod
     def validate_repair_payload(payload: dict) -> None:
         """Validate repair stage payload."""
-        PayloadValidator._require_string(payload, "summary", "repair payload")
+        summary = PayloadValidator._require_string(payload, "summary", "repair payload")
+        PayloadValidator._validate_summary_content(summary, "repair payload")
         PayloadValidator._require_file_list(payload, "repair payload")
 
     @staticmethod
@@ -113,7 +131,45 @@ class PayloadValidator:
                 raise ModelContractError(
                     f"{payload_name} files[{index}].content must be a string."
                 )
+            PayloadValidator._validate_file_content(content, relative_path, payload_name, index)
         return files
+
+    @staticmethod
+    def _validate_summary_content(summary: str, payload_name: str) -> None:
+        """Validate that summary has meaningful content."""
+        stripped = summary.strip()
+        if len(stripped) < PayloadValidator.MIN_SUMMARY_LENGTH:
+            raise ModelContractError(
+                f"{payload_name} field 'summary' is too short ({len(stripped)} chars, minimum {PayloadValidator.MIN_SUMMARY_LENGTH})."
+            )
+        if len(set(stripped.lower().split())) < 3:
+            raise ModelContractError(
+                f"{payload_name} field 'summary' lacks sufficient unique words."
+            )
+
+    @staticmethod
+    def _validate_list_content(items: list[str], field_name: str, payload_name: str) -> None:
+        """Validate that list items have meaningful content."""
+        if not items:
+            return
+        for index, item in enumerate(items):
+            stripped = item.strip()
+            if len(stripped) < PayloadValidator.MIN_LIST_ITEM_LENGTH:
+                raise ModelContractError(
+                    f"{payload_name} field '{field_name}'[{index}] is too short ({len(stripped)} chars)."
+                )
+
+    @staticmethod
+    def _validate_file_content(content: str, file_path: str, payload_name: str, index: int) -> None:
+        """Validate that file content is reasonable."""
+        if not content.strip():
+            raise ModelContractError(
+                f"{payload_name} files[{index}] ('{file_path}') has empty content."
+            )
+        if len(content) > PayloadValidator.MAX_FILE_CONTENT_LENGTH:
+            raise ModelContractError(
+                f"{payload_name} files[{index}] ('{file_path}') exceeds maximum length ({len(content)} > {PayloadValidator.MAX_FILE_CONTENT_LENGTH})."
+            )
 
 
 class FileEntryHelper:
