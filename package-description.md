@@ -46,6 +46,20 @@ autobots engage
 
 Autobots reads your `context/` directory (architecture, conventions, testing strategy, security docs) and injects them into model prompts. Models see your project's actual documentation before writing code.
 
+### NVIDIA Skills
+
+17 NVIDIA-specific skills are automatically injected into cluster system prompts, providing domain expertise for:
+
+- **RAG** — NVIDIA RAG Blueprint architecture, Milvus vector DB, RAGAS evaluation
+- **Deployment** — Dynamo Kubernetes recipes, model serving, GPU scaling
+- **Optimization** — cuOpt routing (VRP, TSP), numerical optimization (LP/MILP/QP)
+- **Data** — cuDF GPU DataFrames (100x faster than pandas on large datasets)
+- **Training** — Nemotron model customization, NeMo distributed training
+- **Infrastructure** — Kubernetes setup, OSMO workflows, Holoscan video analytics
+- **Quantum** — CUDA-Q quantum circuit simulation
+
+Skills are loaded automatically based on cluster role and roadmap keywords.
+
 ### Nine Specialized Clusters
 
 | Cluster | Role | Use Case |
@@ -203,7 +217,7 @@ These files are injected into model prompts so generated code matches your proje
 
 ## Development Status
 
-- **Version:** 0.1.8
+- **Version:** 0.1.9
 - **Status:** Production-ready
 - **Tests:** 465 passing
 - **License:** MIT

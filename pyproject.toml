@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "autobot-swarm"
-version = "0.1.8"
+version = "0.1.9"
 description = "Hierarchical multi-cluster coding swarm CLI"
 readme = "package-description.md"
 requires-python = ">=3.11"
@@ -41,3 +41,6 @@ Issues = "https://github.com/DanielDeshmukh/autobots/issues"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["autobots*"]
+
+[tool.setuptools.package-data]
+autobots = ["skills/nvidia/*.md"]

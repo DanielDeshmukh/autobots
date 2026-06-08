@@ -11,7 +11,7 @@ from rich.console import Console
 
 from .utils import PayloadValidator
 from ..workspace import TargetProjectWorkspace
-from ..skills.loader import load_skill_pack
+from ..skills.loader import load_skill_pack, load_nvidia_skills, load_conditional_nvidia_skills
 from ..utils.retry import with_retry
 
 if TYPE_CHECKING:
@@ -175,6 +175,14 @@ class StageExecutor:
             skill_pack = load_skill_pack(self.workspace_root, cluster_name)
             if skill_pack:
                 system_content = f"{system_content}\n\n{skill_pack}"
+
+            nvidia_skills = load_nvidia_skills(cluster_name)
+            if nvidia_skills:
+                system_content = f"{system_content}\n\n{nvidia_skills}"
+
+            conditional_skills = load_conditional_nvidia_skills(prompt)
+            if conditional_skills:
+                system_content = f"{system_content}\n\n{conditional_skills}"
 
         return self._call_model(model_id, system_content, prompt)
 

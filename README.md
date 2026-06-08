@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/DanielDeshmukh/autobots">
-    <img src="https://img.shields.io/badge/version-0.1.8-blue" alt="Version">
+    <img src="https://img.shields.io/badge/version-0.1.9-blue" alt="Version">
   </a>
   <a href="https://python.org">
     <img src="https://img.shields.io/badge/python-3.11+-brightgreen" alt="Python">
@@ -78,6 +78,7 @@ Autobots transforms your development workflow by orchestrating multiple AI model
 - **Context Budget** — Warns and truncates when prompts approach model limits
 - **Plugin System** — before/after hooks for custom extensions
 - **Skill Marketplace** — Built-in packs for FastAPI, Django, React, Next.js
+- **NVIDIA Skills** — 17 NVIDIA-specific skills injected into cluster prompts (RAG, cuOpt, cuDF, Dynamo, Holoscan, CUDA-Q)
 - **Web Dashboard** — Real-time status on port 8080
 - **Rich Status Output** — Progress bars, estimated time, branch info
 - **Explain Command** — `autobots explain P2-T3` shows audit trail details
@@ -125,7 +126,13 @@ autobots/
 │   └── synthesis.py    # Phase synthesis
 ├── skills/
 │   ├── loader.py       # Skill pack loading
-│   └── cluster_prompts.py  # Cluster-specific system prompts
+│   ├── cluster_prompts.py  # Cluster-specific system prompts
+│   └── nvidia/         # 17 NVIDIA-specific skill files
+│       ├── agent-skills.md
+│       ├── rag-blueprint.md
+│       ├── dynamo-router.md
+│       ├── skill-evolution.md
+│       └── ...         # (17 total skill files)
 └── utils/
     └── retry.py        # Exponential backoff decorator
 ```
@@ -255,6 +262,42 @@ Autobots includes a comprehensive model registry with 9 clusters:
 | **Bumblebee** | Communication & Media | 9 | speech, voice, translation, audio |
 | **Ironhide** | Physical & Simulation | 8 | simulation, physics, autonomous |
 | **Wheeljack** | Scientific Specialist | 7 | science, molecule, protein, quantum |
+
+---
+
+## NVIDIA Skills
+
+Autobots injects **17 NVIDIA-specific skills** into cluster system prompts. These are condensed knowledge docs from NVIDIA's official skill library, providing domain expertise for RAG, deployment, optimization, and more.
+
+### Always-Loaded Skills (Tier 1)
+
+| Skill | Cluster(s) | Description |
+|-------|------------|-------------|
+| `agent-skills.md` | Optimus, UltraMagnus | NemoClaw agent skill architecture and dispatch patterns |
+| `autonomous-agent-research.md` | Optimus, Wheeljack | Autonomous research workflow: hypothesis → wire → launch → evaluate |
+| `session-memory.md` | Optimus, Jazz | Durable working-session memory and checkpoint strategy |
+| `skill-evolution.md` | ALL clusters | Self-improvement protocol: reflect on tasks, propose skill updates |
+| `safety-policy.md` | Ironhide | Nemotron safety policy taxonomy and structured security reviews |
+| `rag-blueprint.md` | UltraMagnus, Optimus | NVIDIA RAG Blueprint architecture (Milvus, embedding, reranking) |
+| `rag-eval.md` | Jazz | RAG evaluation with RAGAS metrics and benchmark harnesses |
+| `dynamo-deployment.md` | UltraMagnus, Wheeljack | Dynamo Kubernetes recipes and deployment modes |
+| `dynamo-router.md` | UltraMagnus, Optimus | Dynamo router modes (round-robin, KV-aware, least-loaded) |
+| `retrieval.md` | UltraMagnus, Bumblebee | Document retrieval pipeline (PDF, image OCR, audio transcription) |
+
+### Conditional Skills (Tier 2)
+
+Loaded automatically when roadmap keywords are detected:
+
+| Skill | Loaded When | Description |
+|-------|-------------|-------------|
+| `nemotron-customize.md` | fine-tuning, training | Nemotron model customization (SFT, DPO, RLHF) |
+| `cuopt-routing.md` | routing, scheduling | cuOpt vehicle routing API (VRP, TSP, PDP) |
+| `cuopt-optimization.md` | optimization, LP/MILP/QP | cuOpt numerical optimization (GPU-accelerated) |
+| `cudf.md` | pandas, dataframe | cuDF GPU DataFrames (pandas acceleration) |
+| `neautomodel-recipe.md` | training at scale | NeMo Automodel distributed training recipes |
+| `kubernetes-infra.md` | Kubernetes, K8s | Physical AI infrastructure setup (MicroK8s, OSMO) |
+| `holoscan.md` | video, edge AI | Holoscan SDK video analytics pipelines |
+| `cudaq.md` | quantum computing | CUDA-Q quantum circuit simulation |
 
 ---
 
@@ -431,6 +474,7 @@ MIT License — See [LICENSE](LICENSE) for details.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.1.9 | 2026-06-09 | NVIDIA Skills: 17 skill files injected into cluster prompts (RAG, cuOpt, cuDF, Dynamo, Holoscan, CUDA-Q), roadmap-based conditional loading, live catalog discovery |
 | 0.1.8 | 2026-06-09 | Priority features: rollback, streaming, preflight, onboarding, errors, gate, git, config validation, completions, context budget, plugins, marketplace, dashboard, diff, logs, costs, rich status, explain, stats, verbose |
 | 0.1.7 | 2026-06-08 | PyPI description update |
 | 0.1.6 | 2026-06-08 | Guide to A+++: retry, safe subprocess, logging, engage screen |
