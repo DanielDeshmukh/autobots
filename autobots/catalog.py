@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import importlib.util
 import json
 import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from types import ModuleType
 
 
 @dataclass(frozen=True)
@@ -252,7 +251,6 @@ CLUSTER_DEFINITIONS = {
 }
 
 ENGINE_ROOT = Path(__file__).resolve().parent.parent
-ENDPOINT_DISCOVERY_PATH = ENGINE_ROOT / "find_endpoints.py"
 GENERAL_TEXT_MODEL_TOKENS = (
     "assistant",
     "chat",
@@ -286,7 +284,6 @@ CLUSTER_MATCH_TOKENS = {
     "Ironhide": ("autonomous", "bevformer", "cosmos", "cuopt", "fourcastnet", "physics", "predict", "simulation", "sparsedrive", "streampetr", "transfer"),
     "Wheeljack": ("alphafold", "biology", "esm", "evo", "fold", "genmol", "ising", "mol", "molecule", "msa", "protein", "rfdiffusion"),
 }
-DISCOVERY_MODULE: ModuleType | None = None
 
 
 class ClusterCatalog:
@@ -473,18 +470,43 @@ class ClusterCatalog:
             self.using_live_catalog = True
             return self._manual_available_model_ids
 
-        if not self.refresh_live or not self.api_key:
-            return ()
+        # Live catalog discovery removed; registry updated manually on release.
+        # Use available_model_ids parameter or AUTOBOTS_MODEL_REGISTRY env var.
+        return ()
+
+    def refresh_catalog(self, force: bool = False) -> dict:
+        """Fetch live model list from NVIDIA NIM and cache it locally."""
+        from openai import OpenAI
+
+        cache_path = Path.home() / ".autobots" / "catalog_cache.json"
+
+        if not force and cache_path.exists():
+            age = time.time() - cache_path.stat().st_mtime
+            if age < 86400:  # 24-hour cache
+                return json.loads(cache_path.read_text(encoding="utf-8"))
+
+        if not self.api_key:
+            return {"error": "API key required for live catalog refresh"}
 
         try:
-            discovery = self._load_discovery_module()
-            model_ids = discovery.fetch_available_nim_model_ids(self.api_key)
-        except Exception as exc:
-            self.discovery_error = str(exc)
-            return ()
+            client = OpenAI(api_key=self.api_key, base_url="https://integrate.api.nvidia.com/v1")
+            models = client.models.list()
+            data = {m.id: {"id": m.id} for m in models.data}
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+            return data
+        except Exception as e:
+            return {"error": f"Live catalog refresh failed: {e}"}
 
-        self.using_live_catalog = True
-        return tuple(dict.fromkeys(model_ids))
+    def get_cached_catalog(self) -> dict:
+        """Get cached catalog from local cache file."""
+        cache_path = Path.home() / ".autobots" / "catalog_cache.json"
+        if cache_path.exists():
+            try:
+                return json.loads(cache_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                pass
+        return {}
 
     def _build_live_cluster_models(self) -> dict[str, list[str]]:
         if not self.available_model_ids:
@@ -601,18 +623,3 @@ class ClusterCatalog:
         if any(token in normalized for token in ("405b", "397b", "340b", "675b", "480b")):
             return "slow"
         return "balanced"
-
-    def _load_discovery_module(self):
-        global DISCOVERY_MODULE
-
-        if DISCOVERY_MODULE is not None:
-            return DISCOVERY_MODULE
-
-        spec = importlib.util.spec_from_file_location("autobots_find_endpoints", ENDPOINT_DISCOVERY_PATH)
-        if spec is None or spec.loader is None:
-            raise RuntimeError(f"Unable to load endpoint discovery script at {ENDPOINT_DISCOVERY_PATH}")
-
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        DISCOVERY_MODULE = module
-        return module

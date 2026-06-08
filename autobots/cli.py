@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 import re
+import signal
 import subprocess
 import sys
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -20,6 +22,7 @@ from .executor import plan_runner
 from .executor.task_registry import get_all_tasks, get_phase_status, get_all_phases_status
 from .workspace import TargetProjectWorkspace
 from .executor import AutonomyEngine, ExecutionMode
+from .executor.modes import ExecutionState
 from .selectors import (
     resolve_target_project,
     resolve_target_project_from_args as _resolve_target_project_from_args,
@@ -30,6 +33,28 @@ from .selectors import (
 )
 from .logging import setup_logging
 from .context_gen import check_six_file_architecture, format_missing_context_files
+from .preflight import (
+    run_preflight,
+    render_preflight_result,
+    auto_run_preflight,
+)
+from .errors import (
+    AutobotsError,
+    ModelError,
+    ConfigError,
+    WorkspaceError,
+    APIError,
+    render_error,
+    render_warning,
+    workspace_not_found,
+    task_not_found,
+    phase_not_found,
+    preflight_failed,
+)
+from .onboarding import (
+    run_onboarding_wizard,
+    check_and_prompt_api_key,
+)
 from .ui import (
     _select,
     _text,
@@ -56,6 +81,89 @@ pyproject_path = ENGINE_ROOT / "pyproject.toml"
 dist_dir = ENGINE_ROOT / "dist"
 
 
+class InterruptHandler:
+    """Handles Ctrl+C gracefully by releasing locks and saving checkpoints."""
+
+    def __init__(self, console: Console):
+        self.console = console
+        self.interrupted = False
+        self.workspace: TargetProjectWorkspace | None = None
+        self.state_manager = None
+        self.checkpoint_data: dict | None = None
+        self._original_handler = None
+
+    def setup(self, workspace: TargetProjectWorkspace | None = None) -> None:
+        """Set up the interrupt handler with workspace context."""
+        self.workspace = workspace
+        if workspace:
+            from .executor.state import StateManager
+            self.state_manager = StateManager(workspace.target_root)
+
+        def handler(sig, frame):
+            self.interrupted = True
+            self._cleanup_on_interrupt()
+
+        self._original_handler = signal.signal(signal.SIGINT, handler)
+
+    def _cleanup_on_interrupt(self) -> None:
+        """Release locks and save checkpoint on interrupt."""
+        self.console.print("\n")
+        self.console.print(
+            Panel.fit(
+                "Interrupt received — cleaning up...",
+                title="Shutdown",
+                border_style="yellow",
+            )
+        )
+
+        # Release any stale locks
+        if self.workspace:
+            try:
+                from .executor.state import StaleLockRecovery
+                result = StaleLockRecovery.auto_recover_stale_locks(self.workspace)
+                if result["found"] > 0:
+                    self.console.print(
+                        f"[green]Released {len(result['recovered'])} lock(s)[/green]"
+                    )
+            except Exception:
+                pass
+
+        # Save checkpoint if we have checkpoint data
+        if self.checkpoint_data:
+            try:
+                from .executor.modes import ExecutionModeManager
+                mode_manager = ExecutionModeManager()
+                mode_manager.save_checkpoint(
+                    self.workspace.target_root if self.workspace else Path("."),
+                    self.checkpoint_data.get("session_id", ""),
+                    ExecutionMode(self.checkpoint_data.get("mode", "supervised")),
+                    self.checkpoint_data.get("phase_index", 0),
+                    self.checkpoint_data.get("phase_title", ""),
+                    self.checkpoint_data.get("phases_completed", []),
+                    ExecutionState.PAUSED,
+                )
+                self.console.print("[green]Checkpoint saved for resume[/green]")
+            except Exception:
+                pass
+
+        self.console.print(
+            Panel.fit(
+                f"{ROLLOUT_MESSAGE}\n\nResume with: autobots resume",
+                title="Shutdown Complete",
+                border_style="green",
+            )
+        )
+
+    def restore(self) -> None:
+        """Restore original signal handler."""
+        if self._original_handler:
+            signal.signal(signal.SIGINT, self._original_handler)
+
+    def set_checkpoint_data(self, **kwargs) -> None:
+        """Store checkpoint data for potential save on interrupt."""
+        self.checkpoint_data = kwargs
+
+
 def _graceful_interrupt(console: Console) -> int:
     console.print(
         Panel.fit(
@@ -69,6 +177,11 @@ def _graceful_interrupt(console: Console) -> int:
 
 def _handle_error(console: Console, error: Exception, command: str) -> int:
     """Handle errors gracefully with helpful messages."""
+    # Use structured error rendering for AutobotsError instances
+    if isinstance(error, AutobotsError):
+        render_error(error, console)
+        return error.exit_code
+
     error_msg = str(error)
     error_type = type(error).__name__
 
@@ -108,11 +221,49 @@ def _handle_error(console: Console, error: Exception, command: str) -> int:
     return 1
 
 
-def _ensure_api_key(console: Console) -> None:
+def _ensure_api_key(console: Console, target_root: Path | None = None) -> None:
+    """Ensure API key is available, checking multiple sources.
+
+    Checks in order:
+    1. NVIDIA_API_KEY environment variable
+    2. .env file in engine root
+    3. .autobots.toml in target project (if provided)
+    4. Prompt user for input
+    """
+    # Check environment variable
+    env_key = os.getenv("NVIDIA_API_KEY", "").strip()
+    if env_key:
+        return
+
+    # Check .env file
     env_values = dotenv_values(ENGINE_ENV_PATH)
     existing_key = (env_values.get("NVIDIA_API_KEY") or "").strip()
     if existing_key:
         return
+
+    # Check target project config if provided
+    if target_root:
+        from .config import CONFIG_FILE_NAMES
+        for config_name in CONFIG_FILE_NAMES:
+            config_path = target_root / config_name
+            if config_path.exists():
+                try:
+                    import tomllib
+                    with open(config_path, "rb") as f:
+                        data = tomllib.load(f)
+                    config_key = data.get("autobots", {}).get("api_key", "")
+                    if config_key:
+                        # Set it in environment for this session
+                        os.environ["NVIDIA_API_KEY"] = config_key
+                        return
+                except Exception:
+                    pass
+
+    # Prompt user
+    console.print(
+        "\n[yellow]NVIDIA API key is required for Autobots to function.[/yellow]\n"
+        "[dim]Get your key at: https://build.nvidia.com/[/dim]\n"
+    )
 
     api_key = _password("Enter your NVIDIA_API_KEY").strip()
     if not api_key:
@@ -204,58 +355,107 @@ def run_engage() -> None:
 
     target_root = resolve_target_project(ConsoleInstance)
     require_safety_branch(ConsoleInstance, target_root, config.safety_branch)
-    _ensure_api_key(ConsoleInstance)
+    _ensure_api_key(ConsoleInstance, target_root)
     router = AutobotRouter()
     render_registry_summary(ConsoleInstance, router.catalog)
     if not check_six_file_architecture(ConsoleInstance, target_root):
         raise SystemExit(1)
 
-    workspace = TargetProjectWorkspace(target_root)
-    while True:
-        roadmap_text, progress_text = router.read_phase_documents(workspace)
-        phase = router.find_next_phase(progress_text)
+    # Auto-run preflight check
+    import os
+    from .config import CONFIG_FILE_NAMES
+    api_key = os.getenv("NVIDIA_API_KEY") or config.api_key
+    config_file = None
+    for name in CONFIG_FILE_NAMES:
+        path = target_root / name
+        if path.exists():
+            config_file = path
+            break
 
-        if phase is None:
+    if not auto_run_preflight(
+        api_key=api_key,
+        workspace=target_root,
+        config=config,
+        config_file=config_file,
+        console=ConsoleInstance,
+    ):
+        raise SystemExit(1)
+
+    workspace = TargetProjectWorkspace(target_root)
+
+    # Set up interrupt handler
+    interrupt_handler = InterruptHandler(ConsoleInstance)
+    interrupt_handler.setup(workspace)
+
+    try:
+        while True:
+            roadmap_text, progress_text = router.read_phase_documents(workspace)
+            phase = router.find_next_phase(progress_text)
+
+            if phase is None:
+                ConsoleInstance.print(
+                    Panel.fit(
+                        "No IN_PROGRESS or PENDING phases remain. The target roadmap is fully processed.",
+                        title="All Phases Complete",
+                        border_style="green",
+                    )
+                )
+                return
+
+            # Update checkpoint data for interrupt handler
+            interrupt_handler.set_checkpoint_data(
+                session_id=f"engage_{target_root.name}",
+                mode="supervised",
+                phase_index=0,
+                phase_title=phase.title,
+                phases_completed=[],
+            )
+
             ConsoleInstance.print(
                 Panel.fit(
-                    "No IN_PROGRESS or PENDING phases remain. The target roadmap is fully processed.",
-                    title="All Phases Complete",
-                    border_style="green",
+                    f"Active phase: {phase.title}\nStatus: {phase.status}",
+                    title="Phase Dispatch",
+                    border_style="cyan",
                 )
             )
-            return
+            _approval_loop(ConsoleInstance, router, workspace, phase, roadmap_text, progress_text)
 
-        ConsoleInstance.print(
-            Panel.fit(
-                f"Active phase: {phase.title}\nStatus: {phase.status}",
-                title="Phase Dispatch",
-                border_style="cyan",
-            )
-        )
-        _approval_loop(ConsoleInstance, router, workspace, phase, roadmap_text, progress_text)
+            # Check if interrupted during approval loop
+            if interrupt_handler.interrupted:
+                return
+    finally:
+        interrupt_handler.restore()
 
 
 def run_init(args: list[str]) -> None:
     """Check context files for a target project."""
     console = Console()
 
+    # Parse arguments
+    interactive = "--interactive" in args or "--wizard" in args
+    skip_api_key = "--skip-api-key" in args
+
     # Auto-detect target: use provided path, or default to current directory
-    if len(args) > 1 and not args[1].startswith("--"):
-        target_root = Path(args[1]).expanduser().resolve()
-        tokens = args[2:]
-    else:
+    target_root = None
+    tokens = []
+    for arg in args[1:]:
+        if arg.startswith("--"):
+            tokens.append(arg)
+        elif target_root is None:
+            target_root = Path(arg).expanduser().resolve()
+        else:
+            tokens.append(arg)
+
+    if target_root is None:
         target_root = Path.cwd().resolve()
-        tokens = args[1:]
 
     if not target_root.exists() or not target_root.is_dir():
-        console.print(
-            Panel.fit(
-                f"Target project not found: {target_root}",
-                title="Init Error",
-                border_style="red",
-            )
-        )
-        raise SystemExit(1)
+        raise workspace_not_found(str(target_root))
+
+    # Run interactive onboarding if requested
+    if interactive:
+        run_onboarding_wizard(target_root, console, skip_api_key)
+        return
 
     console.print(
         Panel.fit(
@@ -266,6 +466,9 @@ def run_init(args: list[str]) -> None:
     )
 
     profile = detect_repo_profile(target_root)
+
+    # Ensure API key is available for future operations
+    _ensure_api_key(console, target_root)
 
     selected_files = _parse_init_file_args(tokens)
     missing_files = missing_core_context_files(target_root)
@@ -286,7 +489,8 @@ def run_init(args: list[str]) -> None:
         message = (
             "Autobots no longer creates target-project context files.\n\n"
             "Create these files in the target project's context folder:\n"
-            f"{format_missing_context_files(missing_files)}"
+            f"{format_missing_context_files(missing_files)}\n\n"
+            "Or run: autobots init --interactive for guided setup"
         )
         border_style = "yellow"
     else:
@@ -300,6 +504,14 @@ def run_init(args: list[str]) -> None:
             border_style=border_style,
         )
     )
+
+    # Show API key status
+    import os
+    api_key = os.getenv("NVIDIA_API_KEY", "").strip()
+    if api_key:
+        console.print("[green]✓[/green] NVIDIA API key: configured")
+    else:
+        console.print("[yellow]⚠[/yellow] NVIDIA API key: not set (required for swarm operations)")
 
 
 def _parse_init_file_args(tokens: list[str]) -> tuple[str, ...] | None:
@@ -617,6 +829,27 @@ def run_run(args: list[str]) -> None:
 
     _ensure_api_key(console)
 
+    # Auto-run preflight check
+    config = load_config(target_root)
+    import os
+    from .config import CONFIG_FILE_NAMES
+    api_key = os.getenv("NVIDIA_API_KEY") or config.api_key
+    config_file = None
+    for name in CONFIG_FILE_NAMES:
+        path = target_root / name
+        if path.exists():
+            config_file = path
+            break
+
+    if not auto_run_preflight(
+        api_key=api_key,
+        workspace=target_root,
+        config=config,
+        config_file=config_file,
+        console=console,
+    ):
+        raise SystemExit(1)
+
     if task_id:
         console.print(
             Panel.fit(
@@ -832,8 +1065,12 @@ def run_list() -> None:
         ("resume", "Resume execution from the last checkpoint"),
         ("status", "Show all phase and task statuses from task-registry.json"),
         ("engage", "Interactive swarm execution with operator approval at each phase"),
+        ("doctor", "Run preflight checks to verify API, config, and workspace"),
         ("validate-models", "Test live model contracts and validate API connectivity"),
         ("publish", "Auto-increment version, build, and publish to PyPI"),
+        ("undo", "Undo the last task or a specific task's changes"),
+        ("snapshots", "List available file snapshots for rollback"),
+        ("catalog", "Manage model catalog: refresh, list"),
         ("list", "Show this help information"),
     ]
 
@@ -847,6 +1084,244 @@ def run_list() -> None:
     console.print(table)
     console.print()
     console.print("[dim]Run 'autobots <command> --help' for detailed usage.[/dim]")
+
+
+def run_doctor(args: list[str]) -> None:
+    """Run preflight checks for Autobots."""
+    console = Console()
+
+    # Parse arguments
+    target_path = None
+    skip_model = False
+    verbose = True
+
+    for arg in args[1:]:
+        if arg == "--skip-model":
+            skip_model = True
+        elif arg == "--quiet":
+            verbose = False
+        elif not arg.startswith("--"):
+            target_path = arg
+
+    # Determine workspace
+    if target_path:
+        workspace = Path(target_path).expanduser().resolve()
+    else:
+        workspace = Path.cwd().resolve()
+
+    if not workspace.exists() or not workspace.is_dir():
+        raise workspace_not_found(str(workspace))
+
+    # Load config
+    config = load_config(workspace)
+
+    # Get API key from env or config
+    import os
+    api_key = os.getenv("NVIDIA_API_KEY") or config.api_key
+
+    # Get config file path
+    from .config import CONFIG_FILE_NAMES
+    config_file = None
+    for name in CONFIG_FILE_NAMES:
+        path = workspace / name
+        if path.exists():
+            config_file = path
+            break
+
+    # Run preflight checks
+    result = run_preflight(
+        api_key=api_key,
+        model_id=None,  # Will use default model selection
+        workspace=workspace,
+        config=config,
+        config_file=config_file,
+        skip_model_check=skip_model,
+    )
+
+    # Render result
+    render_preflight_result(result, console, verbose=verbose)
+
+    if not result.all_passed:
+        raise SystemExit(1)
+
+
+def run_undo(args: list[str]) -> None:
+    """Undo the last task or a specific task's changes."""
+    console = Console()
+
+    target_path = None
+    snapshot_id = None
+    for arg in args[1:]:
+        if arg.startswith("P") and "-T" in arg:
+            snapshot_id = arg
+        elif not arg.startswith("--"):
+            target_path = arg
+
+    if target_path:
+        target_root = Path(target_path).expanduser().resolve()
+    else:
+        target_root = Path.cwd().resolve()
+
+    if not target_root.exists() or not target_root.is_dir():
+        console.print(
+            Panel.fit(f"Target project not found: {target_root}", title="Undo Error", border_style="red")
+        )
+        raise SystemExit(1)
+
+    from .executor.state import RollbackManager
+
+    manager = RollbackManager(target_root)
+
+    if not snapshot_id:
+        snapshots = manager.list_snapshots()
+        if not snapshots:
+            console.print(Panel.fit("No snapshots found. Nothing to undo.", title="Undo", border_style="yellow"))
+            return
+        snapshot_id = snapshots[0]["snapshot_id"]
+
+    try:
+        result = manager.rollback(snapshot_id)
+        console.print(
+            Panel.fit(
+                f"Restored {result['files_restored']} files from snapshot {snapshot_id}",
+                title="Undo Complete",
+                border_style="green",
+            )
+        )
+    except FileNotFoundError as e:
+        console.print(Panel.fit(str(e), title="Undo Error", border_style="red"))
+        raise SystemExit(1)
+
+
+def run_snapshots(args: list[str]) -> None:
+    """List available snapshots."""
+    console = Console()
+
+    target_path = args[1] if len(args) > 1 and not args[1].startswith("--") else None
+    if target_path:
+        target_root = Path(target_path).expanduser().resolve()
+    else:
+        target_root = Path.cwd().resolve()
+
+    if not target_root.exists() or not target_root.is_dir():
+        console.print(
+            Panel.fit(f"Target project not found: {target_root}", title="Snapshots Error", border_style="red")
+        )
+        raise SystemExit(1)
+
+    from .executor.state import RollbackManager
+
+    manager = RollbackManager(target_root)
+    snapshots = manager.list_snapshots()
+
+    if not snapshots:
+        console.print(Panel.fit("No snapshots found.", title="Snapshots", border_style="yellow"))
+        return
+
+    table = Table(title="Available Snapshots")
+    table.add_column("Snapshot ID", style="cyan")
+    table.add_column("Task ID")
+    table.add_column("Created At")
+    table.add_column("Files Tracked")
+
+    for snap in snapshots:
+        created = datetime.fromtimestamp(snap["created_at"]).strftime("%Y-%m-%d %H:%M:%S")
+        table.add_row(snap["snapshot_id"], snap["task_id"], created, str(snap["files_tracked"]))
+
+    console.print(table)
+
+
+def run_catalog(args: list[str]) -> None:
+    """Handle catalog subcommands: refresh, list."""
+    console = Console()
+
+    if len(args) < 2:
+        console.print(
+            Panel.fit(
+                "Usage: autobots catalog <refresh|list>\n\n"
+                "  refresh  Fetch live model list from NVIDIA NIM\n"
+                "  list     Show available models from cache",
+                title="Catalog Commands",
+                border_style="cyan",
+            )
+        )
+        return
+
+    subcommand = args[1]
+
+    if subcommand == "refresh":
+        _ensure_api_key(console)
+        from .catalog import ClusterCatalog
+
+        catalog = ClusterCatalog()
+        console.print(Panel.fit("Fetching live model catalog...", title="Catalog Refresh", border_style="cyan"))
+
+        result = catalog.refresh_catalog(force="--force" in args)
+
+        if "error" in result:
+            console.print(Panel.fit(result["error"], title="Refresh Failed", border_style="red"))
+        else:
+            model_count = len(result)
+            console.print(
+                Panel.fit(
+                    f"Successfully cached {model_count} models\n"
+                    f"Cache location: ~/.autobots/catalog_cache.json\n"
+                    f"Cache expires: 24 hours",
+                    title="Refresh Complete",
+                    border_style="green",
+                )
+            )
+
+    elif subcommand == "list":
+        from .catalog import ClusterCatalog
+
+        catalog = ClusterCatalog()
+        cached = catalog.get_cached_catalog()
+
+        if not cached:
+            console.print(
+                Panel.fit(
+                    "No cached catalog found.\nRun 'autobots catalog refresh' to fetch models.",
+                    title="Catalog",
+                    border_style="yellow",
+                )
+            )
+            return
+
+        # Parse --cluster filter
+        cluster_filter = None
+        for i, arg in enumerate(args):
+            if arg == "--cluster" and i + 1 < len(args):
+                cluster_filter = args[i + 1]
+
+        table = Table(title="Available Models")
+        table.add_column("Model ID", style="cyan")
+
+        models = list(cached.keys())
+        if cluster_filter:
+            # Filter by cluster match tokens
+            from .catalog import CLUSTER_MATCH_TOKENS
+
+            tokens = CLUSTER_MATCH_TOKENS.get(cluster_filter, ())
+            models = [m for m in models if any(t in m.lower() for t in tokens)]
+
+        for model_id in sorted(models)[:50]:  # Limit to 50 for readability
+            table.add_row(model_id)
+
+        if len(models) > 50:
+            table.add_row(f"... and {len(models) - 50} more")
+
+        console.print(table)
+        console.print(f"\n[dim]Total: {len(models)} models[/dim]")
+
+    else:
+        console.print(
+            Panel.fit(
+                f"Unknown catalog subcommand: {subcommand}\nUse 'refresh' or 'list'.",
+                title="Catalog Error",
+                border_style="red",
+            )
+        )
 
 
 def _bump_version(version: str) -> str:
@@ -1042,6 +1517,14 @@ def main(argv: list[str] | None = None) -> int:
             run_validate_models()
         elif command == "publish":
             run_publish(args)
+        elif command == "undo":
+            run_undo(args)
+        elif command == "snapshots":
+            run_snapshots(args)
+        elif command == "catalog":
+            run_catalog(args)
+        elif command == "doctor":
+            run_doctor(args)
         elif command == "list":
             run_list()
         else:

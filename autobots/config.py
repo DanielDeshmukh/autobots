@@ -31,6 +31,11 @@ class AutobotsConfig:
     max_verification_attempts: int = 3
     model_registry_path: str | None = None
 
+    # Test gate settings
+    test_gate: bool = False
+    test_command: str = "pytest tests/ -q"
+    test_timeout: int = 120
+
     extra_clusters: dict[str, list[str]] = field(default_factory=dict)
 
     @classmethod
@@ -95,6 +100,11 @@ class AutobotsConfig:
             config.max_verification_attempts = section.get("max_verification_attempts", config.max_verification_attempts)
             config.model_registry_path = section.get("model_registry_path", config.model_registry_path)
 
+            # Test gate settings
+            config.test_gate = section.get("test_gate", config.test_gate)
+            config.test_command = section.get("test_command", config.test_command)
+            config.test_timeout = section.get("test_timeout", config.test_timeout)
+
             if "extra_clusters" in section:
                 config.extra_clusters = section["extra_clusters"]
 
@@ -134,6 +144,19 @@ class AutobotsConfig:
         if registry := os.getenv(f"{ENV_PREFIX}MODEL_REGISTRY"):
             config.model_registry_path = registry
 
+        # Test gate settings
+        if test_gate := os.getenv(f"{ENV_PREFIX}TEST_GATE"):
+            config.test_gate = test_gate.lower() in ("1", "true", "yes")
+
+        if test_command := os.getenv(f"{ENV_PREFIX}TEST_COMMAND"):
+            config.test_command = test_command
+
+        if test_timeout := os.getenv(f"{ENV_PREFIX}TEST_TIMEOUT"):
+            try:
+                config.test_timeout = int(test_timeout)
+            except ValueError:
+                pass
+
     def apply_env_vars(self) -> None:
         """Apply configuration as environment variables."""
         os.environ[f"{ENV_PREFIX}MODEL_SELECTION_PROFILE"] = self.model_selection_profile
@@ -145,6 +168,11 @@ class AutobotsConfig:
         os.environ[f"{ENV_PREFIX}MAX_VERIFICATION_ATTEMPTS"] = str(self.max_verification_attempts)
         if self.model_registry_path:
             os.environ[f"{ENV_PREFIX}MODEL_REGISTRY"] = self.model_registry_path
+
+        # Test gate settings
+        os.environ[f"{ENV_PREFIX}TEST_GATE"] = "1" if self.test_gate else "0"
+        os.environ[f"{ENV_PREFIX}TEST_COMMAND"] = self.test_command
+        os.environ[f"{ENV_PREFIX}TEST_TIMEOUT"] = str(self.test_timeout)
 
 
 def load_config(project_root: Path | None = None) -> AutobotsConfig:

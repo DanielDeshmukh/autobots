@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from typing import TYPE_CHECKING
+
+from rich.console import Console
 
 from .utils import PayloadValidator
 from ..workspace import TargetProjectWorkspace
@@ -15,6 +18,7 @@ if TYPE_CHECKING:
     from .models import ClusterPlan, PhaseRecord
 
 logger = logging.getLogger("autobots")
+console = Console()
 
 
 COORDINATION_LAWS = """Autobots Coordination Laws:
@@ -170,25 +174,50 @@ class StageExecutor:
 
     @with_retry(max_attempts=3, base_delay=1.0)
     def _call_model(self, model_id: str, system_content: str, user_prompt: str) -> str:
-        """Single model call — retried by with_retry on transient errors."""
+        """Single model call with streaming — retried by with_retry on transient errors."""
         logger.debug("Calling %s (temperature=%.2f, max_tokens=%d)", model_id, self.temperature, self.max_tokens)
-        response = self.client.chat.completions.create(
-            model=model_id,
-            messages=[
-                {"role": "system", "content": system_content},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
-        )
-        return response.choices[0].message.content or ""
+        return self._call_model_streaming(model_id, system_content, user_prompt)
+
+    def _call_model_streaming(self, model_id: str, system_content: str, user_prompt: str) -> str:
+        """Stream model response with live character counter."""
+        full_response = []
+        start_time = time.time()
+
+        with console.status("", spinner="dots") as status:
+            for chunk in self.client.chat.completions.create(
+                model=model_id,
+                messages=[
+                    {"role": "system", "content": system_content},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                stream=True,
+            ):
+                if chunk.choices and chunk.choices[0].delta.content:
+                    delta = chunk.choices[0].delta.content
+                    full_response.append(delta)
+                    elapsed = time.time() - start_time
+                    char_count = sum(len(r) for r in full_response)
+                    status.update(f"[dim]Receiving response · {char_count} chars · {elapsed:.1f}s[/dim]")
+
+        return "".join(full_response)
 
     def _build_client(self):
         from openai import OpenAI
+        import httpx
 
         return OpenAI(
             base_url=self.base_url,
             api_key=self.api_key,
+            http_client=httpx.Client(
+                timeout=httpx.Timeout(
+                    connect=5.0,
+                    read=120.0,
+                    write=10.0,
+                    pool=5.0,
+                )
+            ),
         )
 
     def _build_progress_tracker_snippet(self, phase: PhaseRecord, progress_text: str) -> str:

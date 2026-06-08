@@ -100,7 +100,7 @@ def run_task(target_root: str, task_id: str, mode: str = "supervised") -> dict:
         tracker = TodoTracker(task["phase_name"], [task["description"]])
         tracker.mark_active(task["description"])
 
-        results = asyncio.run(dispatch_phase([task["description"]], cluster_map))
+        results = dispatch_phase([task["description"]], cluster_map)
         result = results[0] if results else {}
 
         cluster = result.get("cluster", "")
@@ -121,6 +121,3 @@ def run_task(target_root: str, task_id: str, mode: str = "supervised") -> dict:
     except Exception as exc:
         fail_task(target_root, task_id, error=str(exc))
         return {"task_id": task_id, "status": "failed", "error": str(exc)}
-
-
-import asyncio

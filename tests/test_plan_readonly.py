@@ -1,6 +1,5 @@
 """Tests for read-only plan behaviour and parallel dispatch."""
 
-import asyncio
 import tempfile
 import time
 import threading
@@ -217,7 +216,7 @@ class DispatchPhaseTests(unittest.TestCase):
             "task A": {"cluster": "Optimus", "score": 5, "reasons": ["keyword"]},
             "task B": {"cluster": "UltraMagnus", "score": 3, "reasons": ["backend"]},
         }
-        results = asyncio.run(dispatch_phase(["task A", "task B"], cluster_map))
+        results = dispatch_phase(["task A", "task B"], cluster_map)
         self.assertEqual(len(results), 2)
         self.assertEqual(results[0]["task"], "task A")
         self.assertEqual(results[0]["cluster"], "Optimus")
@@ -227,27 +226,27 @@ class DispatchPhaseTests(unittest.TestCase):
     def test_dispatch_phase_fires_concurrently(self) -> None:
         call_times: list[float] = []
 
-        async def slow_route(task: str, cluster_map: dict) -> dict:
+        def fast_route(task: str, cluster_map: dict) -> dict:
             call_times.append(time.monotonic())
-            await asyncio.sleep(0.05)
             return {"task": task, "cluster": "Test", "score": 0, "reasons": []}
 
-        with patch("autobots.router.planning.route_to_cluster", slow_route):
-            results = asyncio.run(dispatch_phase(["a", "b", "c"], {}))
+        with patch("autobots.router.planning.route_to_cluster", fast_route):
+            results = dispatch_phase(["a", "b", "c"], {})
 
         self.assertEqual(len(results), 3)
+        # All calls should happen immediately (no async overhead)
         if len(call_times) >= 3:
             spread = max(call_times) - min(call_times)
-            self.assertLess(spread, 0.05)
+            self.assertLess(spread, 0.01)
 
     def test_route_to_cluster_returns_cluster_info(self) -> None:
         cluster_map = {"my task": {"cluster": "Ratchet", "score": 7, "reasons": ["debug"]}}
-        result = asyncio.run(route_to_cluster("my task", cluster_map))
+        result = route_to_cluster("my task", cluster_map)
         self.assertEqual(result["cluster"], "Ratchet")
         self.assertEqual(result["score"], 7)
 
     def test_route_to_cluster_defaults_to_ultramagnus(self) -> None:
-        result = asyncio.run(route_to_cluster("unknown task", {}))
+        result = route_to_cluster("unknown task", {})
         self.assertEqual(result["cluster"], "UltraMagnus")
 
 

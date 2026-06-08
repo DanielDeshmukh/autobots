@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
@@ -446,6 +447,91 @@ class StateManager:
             stats["errors_encountered"] = session.errors_encountered
 
         return stats
+
+
+class RollbackManager:
+    """Manages file snapshots for rollback/undo capability."""
+
+    SNAPSHOTS_DIR = ".autobots/snapshots"
+
+    def __init__(self, workspace_root: str | Path):
+        self.workspace_root = Path(workspace_root).resolve()
+        self.snapshots_root = self.workspace_root / self.SNAPSHOTS_DIR
+
+    def _tracked_files(self) -> list[Path]:
+        """Find all source files that should be tracked for rollback."""
+        tracked = []
+        source_dirs = ["src", "app", "lib", "tests", "docs", "scripts"]
+        for dir_name in source_dirs:
+            dir_path = self.workspace_root / dir_name
+            if dir_path.exists():
+                for ext in ["*.py", "*.js", "*.ts", "*.jsx", "*.tsx", "*.json", "*.yaml", "*.yml", "*.md"]:
+                    tracked.extend(dir_path.rglob(ext))
+        return tracked
+
+    def create_snapshot(self, task_id: str) -> str:
+        """Create a snapshot of all tracked files before a task runs."""
+        snapshot_id = f"snap_{task_id}_{int(time.time())}"
+        snapshot_dir = self.snapshots_root / snapshot_id
+        snapshot_dir.mkdir(parents=True, exist_ok=True)
+
+        for f in self._tracked_files():
+            rel = f.relative_to(self.workspace_root)
+            dest = snapshot_dir / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(f, dest)
+
+        metadata = {
+            "snapshot_id": snapshot_id,
+            "task_id": task_id,
+            "created_at": time.time(),
+            "files_tracked": len([f for f in snapshot_dir.rglob("*") if f.is_file()]),
+        }
+        (snapshot_dir / "metadata.json").write_text(json.dumps(metadata, indent=2))
+
+        return snapshot_id
+
+    def rollback(self, snapshot_id: str) -> dict:
+        """Restore files to pre-task state."""
+        snapshot_dir = self.snapshots_root / snapshot_id
+        if not snapshot_dir.exists():
+            raise FileNotFoundError(f"Snapshot {snapshot_id} not found")
+
+        restored = 0
+        for f in snapshot_dir.rglob("*"):
+            if f.is_file() and f.name != "metadata.json":
+                rel = f.relative_to(snapshot_dir)
+                dest = self.workspace_root / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, dest)
+                restored += 1
+
+        return {"snapshot_id": snapshot_id, "files_restored": restored}
+
+    def list_snapshots(self) -> list[dict]:
+        """List all available snapshots."""
+        snapshots = []
+        if not self.snapshots_root.exists():
+            return snapshots
+
+        for snapshot_dir in sorted(self.snapshots_root.iterdir(), reverse=True):
+            if snapshot_dir.is_dir():
+                metadata_path = snapshot_dir / "metadata.json"
+                if metadata_path.exists():
+                    try:
+                        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+                        snapshots.append(metadata)
+                    except json.JSONDecodeError:
+                        pass
+        return snapshots
+
+    def delete_snapshot(self, snapshot_id: str) -> bool:
+        """Delete a snapshot."""
+        snapshot_dir = self.snapshots_root / snapshot_id
+        if snapshot_dir.exists():
+            shutil.rmtree(snapshot_dir)
+            return True
+        return False
 
 
 class StaleLockRecovery:
