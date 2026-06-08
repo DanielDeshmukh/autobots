@@ -3,7 +3,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from .bootstrap import CORE_CONTEXT_FILES, detect_repo_profile
+from .bootstrap import CORE_CONTEXT_FILES
+from .context_gen import format_missing_context_files
 from .ui import _select, _text, ConsoleInstance
 
 ENGINE_ROOT = Path(__file__).resolve().parent.parent
@@ -147,7 +148,7 @@ def missing_core_context_files(target_root: Path) -> list[str]:
 
 
 def require_operational_context(console, target_root: Path, command_name: str) -> None:
-    """Require the initialized six-file context architecture for operational commands."""
+    """Require target-owned context files for operational commands."""
     missing_files = missing_core_context_files(target_root)
     if not missing_files:
         return
@@ -157,8 +158,8 @@ def require_operational_context(console, target_root: Path, command_name: str) -
         Panel.fit(
             "The target project is missing required Autobots context files.\n"
             f"Command: {command_name}\n"
-            f"Missing: {', '.join(missing_files)}\n\n"
-            f"Run `autobots init {target_root}` first, then regenerate planning with `autobots plan {target_root}`.",
+            "Create these files in the target project's context folder:\n"
+            f"{format_missing_context_files(missing_files)}",
             title="Incomplete Context Setup",
             border_style="red",
         )

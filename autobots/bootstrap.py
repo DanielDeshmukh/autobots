@@ -4,9 +4,6 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from .workspace import TargetProjectWorkspace
-
-
 CORE_CONTEXT_FILES = (
     "architecture.md",
     "roadmap.md",
@@ -117,90 +114,6 @@ def detect_repo_profile(target_root: str | Path) -> RepoProfile:
         source_roots=tuple(source_roots),
         config_signals=tuple(config_signals),
     )
-
-
-def initialize_context(
-    workspace: TargetProjectWorkspace,
-    profile: RepoProfile,
-    selected_files: tuple[str, ...] | None = None,
-) -> list[Path]:
-    written_paths: list[Path] = []
-    templates = build_context_templates(profile)
-    filenames = selected_files or CORE_CONTEXT_FILES
-    unknown_files = tuple(filename for filename in filenames if filename not in templates)
-    if unknown_files:
-        raise ValueError(f"Unknown context file(s): {', '.join(unknown_files)}")
-
-    for filename in filenames:
-        if (workspace.context_root / filename).exists():
-            continue
-        content = templates[filename]
-        written_paths.append(workspace.write_context_file(filename, content, lock_owner="Autobots/init"))
-    return written_paths
-
-
-def build_context_templates(profile: RepoProfile) -> dict[str, str]:
-    languages = ", ".join(profile.languages)
-    package_managers = ", ".join(profile.package_managers)
-    test_tools = ", ".join(profile.test_tools)
-    source_roots = ", ".join(profile.source_roots)
-    config_signals = ", ".join(profile.config_signals) or "None detected"
-
-    return {
-        "architecture.md": (
-            f"# Architecture\n\n"
-            f"## Project\n{profile.project_name}\n\n"
-            f"## Detected Stack\n"
-            f"- Languages: {languages}\n"
-            f"- Package managers: {package_managers}\n"
-            f"- Source roots: {source_roots}\n\n"
-            f"## Notes\n"
-            f"- Fill in runtime architecture, service boundaries, and dependency flow.\n"
-        ),
-        "roadmap.md": (
-            "# Roadmap\n\n"
-            "## Phase 1\n"
-            "- Confirm scope and constraints for the target repository.\n\n"
-            "## Phase 2\n"
-            "- Inspect existing code, tests, and delivery expectations.\n\n"
-            "## Phase 3\n"
-            "- Implement the first prioritized feature or fix.\n"
-        ),
-        "ui-components.md": (
-            "# UI Components\n\n"
-            "## Current State\n"
-            "- Record any design system, CSS framework, component library, and interaction rules here.\n\n"
-            "## TODO\n"
-            "- Add typography, layout, color, and component conventions.\n"
-        ),
-        "progress-tracker.md": (
-            "# Progress Tracker\n\n"
-            "- [ ] Confirm project objective and success criteria\n"
-            "- [ ] Audit repository structure and toolchain\n"
-            "- [ ] Define the first implementation-ready execution phase\n"
-        ),
-        "project-briefing.md": (
-            f"# Project Briefing\n\n"
-            f"## Project Name\n{profile.project_name}\n\n"
-            f"## Repository Signals\n"
-            f"- Languages: {languages}\n"
-            f"- Package managers: {package_managers}\n"
-            f"- Test tools: {test_tools}\n"
-            f"- Source roots: {source_roots}\n"
-            f"- Config files: {config_signals}\n\n"
-            f"## Operator Notes\n"
-            f"- Replace this starter summary with the actual product goal, user request, and constraints.\n"
-        ),
-        "security-auth.md": (
-            "# Security And Auth\n\n"
-            "## Baseline Questions\n"
-            "- What secrets or credentials does this project use?\n"
-            "- What authentication flows exist today?\n"
-            "- What actions require explicit operator approval?\n\n"
-            "## TODO\n"
-            "- Document auth boundaries, secret handling, and risky command policies.\n"
-        ),
-    }
 
 
 def _read_json_file(path: Path) -> dict:

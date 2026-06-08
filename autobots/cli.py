@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from .bootstrap import CORE_CONTEXT_FILES, detect_repo_profile, initialize_context
+from .bootstrap import CORE_CONTEXT_FILES, detect_repo_profile
 from .config import load_config
 from .planning import write_plan
 from .router import AutobotRouter, ExecutionResult, PhaseRecord
@@ -24,11 +24,7 @@ from .selectors import (
     missing_core_context_files,
     detect_git_branch,
 )
-from .context_gen import (
-    check_six_file_architecture,
-    generate_from_benchmarks,
-    generate_from_readme,
-)
+from .context_gen import check_six_file_architecture, format_missing_context_files
 from .ui import (
     _select,
     _text,
@@ -208,7 +204,8 @@ def run_engage() -> None:
     _ensure_api_key(console)
     router = AutobotRouter()
     render_registry_summary(console, router.catalog)
-    check_six_file_architecture(console, target_root)
+    if not check_six_file_architecture(console, target_root):
+        raise SystemExit(1)
 
     workspace = TargetProjectWorkspace(target_root)
     while True:
@@ -236,7 +233,7 @@ def run_engage() -> None:
 
 
 def run_init(args: list[str]) -> None:
-    """Initialize selected context files for a target project."""
+    """Check context files for a target project."""
     console = Console()
 
     # Auto-detect target: use provided path, or default to current directory
@@ -259,37 +256,18 @@ def run_init(args: list[str]) -> None:
 
     console.print(
         Panel.fit(
-            f"Initializing context in:\n{target_root}",
+            f"Checking context in:\n{target_root}",
             title="Workspace",
             border_style="cyan",
         )
     )
 
-    workspace = TargetProjectWorkspace(target_root)
     profile = detect_repo_profile(target_root)
 
     selected_files = _parse_init_file_args(tokens)
+    missing_files = missing_core_context_files(target_root)
     if selected_files is not None:
-        written_paths = initialize_context(workspace, profile, selected_files=selected_files)
-    elif missing_core_context_files(target_root):
-        context_choice = _select(
-            console,
-            "Required context files are missing. How should Autobots create the missing files?",
-            choices=[
-                "Autonomously create starter context files",
-                "Generate from README (Recommended)",
-                "Answer one-to-one project questions",
-            ],
-            default="Generate from README (Recommended)",
-        )
-        if context_choice == "Autonomously create starter context files":
-            written_paths = initialize_context(workspace, profile)
-        elif context_choice == "Generate from README (Recommended)":
-            written_paths = generate_from_readme(console, target_root)
-        else:
-            written_paths = generate_from_benchmarks(console, target_root)
-    else:
-        written_paths = []
+        missing_files = [filename for filename in selected_files if filename in missing_files]
 
     table = Table(title="Autobots Init Summary")
     table.add_column("Detected")
@@ -301,12 +279,22 @@ def run_init(args: list[str]) -> None:
     table.add_row("Source Roots", ", ".join(profile.source_roots))
     console.print(table)
 
-    file_list = "\n".join(f"- {path.name}" for path in written_paths) or "- No files needed creation"
+    if missing_files:
+        message = (
+            "Autobots no longer creates target-project context files.\n\n"
+            "Create these files in the target project's context folder:\n"
+            f"{format_missing_context_files(missing_files)}"
+        )
+        border_style = "yellow"
+    else:
+        message = "All requested context files are present."
+        border_style = "green"
+
     console.print(
         Panel.fit(
-            f"Created {len(written_paths)} missing context files without overwriting existing files.\n\n{file_list}",
-            title="Context Initialized",
-            border_style="green",
+            message,
+            title="Context Check",
+            border_style=border_style,
         )
     )
 
@@ -808,7 +796,7 @@ def run_list() -> None:
     console = Console()
 
     commands = [
-        ("init", "Initialize 6-file context architecture for a target project"),
+        ("init", "Check required context files for a target project"),
         ("plan", "Generate or update roadmap.md and progress-tracker.md with implementation phases"),
         ("run", "Execute phases autonomously (--autonomous), supervised (--supervised), or by milestones (--milestone)"),
         ("resume", "Resume execution from the last checkpoint"),

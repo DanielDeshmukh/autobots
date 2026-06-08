@@ -37,7 +37,7 @@ If you already have a key, you can save it in the root .env file before using Au
 
 Assume your target project is a fresh repository with no Autobots context files.
 
-### Step 1: Initialize the six-file context architecture
+### Step 1: Check the six-file context architecture
 
 Navigate to the target project and run:
 
@@ -47,11 +47,11 @@ You can also point at a specific project path:
 
 autobots init /path/to/your/project
 
-This creates or refreshes the Autobots context files used for planning and execution.
+This checks for the Autobots context files used for planning and execution. Autobots does not create target-project context files.
 
-### Step 2: Inspect the generated context
+### Step 2: Create any missing context files
 
-After initialization, review the generated files in the project context folder:
+If the check reports missing files, create those filenames in the project context folder:
 
 - roadmap.md
 - progress-tracker.md
@@ -64,7 +64,7 @@ These files are the source of truth for Autobots planning and completion trackin
 
 ## 5. Generate a plan for the target project
 
-After initialization, build a roadmap and progress tracker:
+After the context files exist, build a roadmap and progress tracker:
 
 autobots plan "Implement the missing feature set and prepare the project for release"
 

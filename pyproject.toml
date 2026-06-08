@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "autobot-swarm"
-version = "0.1.3"
+version = "0.1.4"
 description = "Hierarchical multi-cluster coding swarm CLI"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Daniel Deshmukh", email = "deshmukhdaniel2005@gmail.com"}
 ]

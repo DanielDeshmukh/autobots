@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/DanielDeshmukh/autobots">
-    <img src="https://img.shields.io/badge/version-0.1.1-blue" alt="Version">
+    <img src="https://img.shields.io/badge/version-0.1.4-blue" alt="Version">
   </a>
   <a href="https://python.org">
     <img src="https://img.shields.io/badge/python-3.11+-brightgreen" alt="Python">
@@ -17,7 +17,7 @@
   </a>
 </p>
 
-Autobots is a Python CLI for running a structured, approval-gated coding swarm against target repositories. It can initialize project context, generate phased plans, route implementation work through hierarchical model clusters, and execute autonomous work with validation and repair loops.
+Autobots is a Python CLI for running a structured, approval-gated coding swarm against target repositories. It can check target-owned context files, generate phased plans, route implementation work through hierarchical model clusters, and execute autonomous work with validation and repair loops.
 
 ## Table of Contents
 
@@ -56,7 +56,7 @@ Autobots transforms your development workflow by orchestrating multiple AI model
 
 ## Features
 
-- **Project Initialization** - Auto-detect project type (Python, Node, etc.) and create context files
+- **Context Checks** - Auto-detect project type (Python, Node, etc.) and report missing context filenames
 - **Phase Planning** - Generate implementation roadmaps with dependencies and acceptance criteria
 - **Model Routing** - Intelligent cluster selection based on task keywords
 - **Multi-Root File Writing** - Write to `src/`, `app/`, `lib/`, `tests/`, `docs/`, `scripts/`
@@ -74,7 +74,7 @@ Autobots follows a modular architecture:
 ```
 autobots/
 ├── cli.py              # CLI entry point and command handlers
-├── bootstrap.py        # Project profiling and context initialization
+├── bootstrap.py        # Project profiling and context filename contract
 ├── planning.py         # Roadmap and progress tracker generation
 ├── router/
 │   ├── core.py        # Main routing orchestration
@@ -181,13 +181,13 @@ max_verification_attempts = 3
 
 All commands automatically detect the target project from the current working directory.
 
-### Initialize Project
+### Check Project Context
 
 ```powershell
 autobots init
 ```
 
-Creates the six-file context architecture and detects project profile.
+Checks for the required context filenames and detects the project profile. Autobots does not create these files for target projects.
 
 ### Generate/Refresh Plan
 
@@ -416,7 +416,7 @@ autobots run --autonomous
 
 ## Context Architecture
 
-Autobots manages six required context files under `context/`:
+Autobots expects six target-owned context files under `context/`:
 
 | File | Purpose |
 |------|---------|
@@ -500,7 +500,7 @@ Command: run
 Missing: roadmap.md, progress-tracker.md
 ```
 
-**Solution**: Run `autobots init` first, then `autobots plan`.
+**Solution**: Create the listed files in the target project's `context/` folder, then run `autobots plan` if you need to refresh roadmap/progress content.
 
 ### Safety Branch Check Fails
 
@@ -554,7 +554,7 @@ autobots/
 │   ├── cli.py         # CLI entry point
 │   ├── config.py      # Configuration
 │   ├── catalog.py     # Model registry
-│   ├── bootstrap.py    # Project initialization
+│   ├── bootstrap.py    # Project profiling
 │   ├── planning.py     # Roadmap generation
 │   ├── router/         # Routing orchestration
 │   ├── executor/       # Execution engine
@@ -577,6 +577,7 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.1.4 | 2026-06-08 | Removed Autobots-created starter context files; missing context now reports filenames only |
 | 0.1.1 | 2026-05-15 | Phase 9-10 complete: config, error handling, failure tests |
 | 0.1.0 | 2026-05-14 | Phase 1-8.5 complete: core functionality |
 
