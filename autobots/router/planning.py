@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import re
 from typing import TYPE_CHECKING
@@ -12,6 +13,26 @@ from ..executor import WorkPacket
 
 if TYPE_CHECKING:
     pass
+
+
+async def route_to_cluster(task: str, cluster_map: dict) -> dict:
+    """Route a single task to its cluster and return the routing result."""
+    info = cluster_map.get(task, {"cluster": "UltraMagnus", "score": 0, "reasons": []})
+    return {
+        "task": task,
+        "cluster": info["cluster"],
+        "score": info["score"],
+        "reasons": info["reasons"],
+    }
+
+
+async def dispatch_phase(tasks: list[str], cluster_map: dict) -> list[dict]:
+    """
+    Fires all tasks in `tasks` concurrently.
+    Returns results in the same order as input tasks.
+    """
+    coroutines = [route_to_cluster(task, cluster_map) for task in tasks]
+    return await asyncio.gather(*coroutines)
 
 
 class ClusterPlanner:

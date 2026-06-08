@@ -22,6 +22,99 @@ if TYPE_CHECKING:
     from ..workspace import TargetProjectWorkspace
 
 
+def parse_roadmap(path: str) -> list[dict]:
+    """
+    Reads roadmap.md (utf-8-sig to handle BOM on Windows) and returns
+    a list of phase dicts: [{"phase": str, "tasks": [str], "complete": bool}]
+    """
+    roadmap_path = Path(path)
+    if not roadmap_path.exists():
+        return []
+
+    roadmap_text = roadmap_path.read_text(encoding="utf-8-sig")
+    progress_path = roadmap_path.parent / "progress-tracker.md"
+    progress_text = progress_path.read_text(encoding="utf-8-sig") if progress_path.exists() else ""
+
+    complete_ids = _extract_complete_phase_ids(progress_text)
+
+    phases: list[dict] = []
+    phase_blocks = re.split(r"(?=^### )", roadmap_text, flags=re.MULTILINE)
+    for block in phase_blocks:
+        block = block.strip()
+        if not block.startswith("###"):
+            continue
+
+        header_match = re.match(r"### (P\d+):\s*(.+)", block)
+        if not header_match:
+            continue
+
+        phase_id = header_match.group(1)
+        phase_title = header_match.group(2).strip()
+
+        tasks: list[str] = []
+        checks_match = re.search(r"- Acceptance checks:\s*\n((?:\s+- .+\n?)+)", block)
+        if checks_match:
+            for line in checks_match.group(1).splitlines():
+                cleaned = line.strip().lstrip("- ").strip()
+                if cleaned:
+                    tasks.append(cleaned)
+
+        if not tasks:
+            tasks = [phase_title]
+
+        phases.append({
+            "phase": phase_title,
+            "phase_id": phase_id,
+            "tasks": tasks,
+            "complete": phase_id in complete_ids,
+        })
+
+    return phases
+
+
+def _extract_complete_phase_ids(progress_text: str) -> set[str]:
+    """Extract phase IDs marked as COMPLETE from progress tracker text."""
+    complete_ids: set[str] = set()
+    for line in progress_text.splitlines():
+        if "[x]" not in line:
+            continue
+        match = re.search(r"\]\s+(P\d+)\s+\|", line)
+        if match:
+            complete_ids.add(match.group(1))
+    return complete_ids
+
+
+def route_task(task: str, api_key: str | None = None) -> dict:
+    """Route a task to the best cluster and return routing info."""
+    from ..catalog import ClusterCatalog
+
+    catalog = ClusterCatalog(api_key=api_key)
+    decision = catalog.route_with_reasoning(task)
+    return {
+        "cluster": decision.cluster_name,
+        "score": decision.score,
+        "reasons": list(decision.reasons),
+    }
+
+
+def build_cluster_dispatch(phases: list[dict], api_key: str | None = None) -> dict[str, dict]:
+    """Build a dispatch map for all tasks across all phases."""
+    from ..catalog import ClusterCatalog
+
+    catalog = ClusterCatalog(api_key=api_key)
+    dispatch_map: dict[str, dict] = {}
+    for phase in phases:
+        for task in phase["tasks"]:
+            if task not in dispatch_map:
+                decision = catalog.route_with_reasoning(task)
+                dispatch_map[task] = {
+                    "cluster": decision.cluster_name,
+                    "score": decision.score,
+                    "reasons": list(decision.reasons),
+                }
+    return dispatch_map
+
+
 def write_plan(
     workspace: TargetProjectWorkspace,
     *,
@@ -30,7 +123,7 @@ def write_plan(
     insert_after: str | None = None,
     dry_run: bool = False,
 ) -> tuple[RepoProfile, RepositoryScan, PlanArtifacts]:
-    """Write a plan to the workspace."""
+    """Write a plan to the workspace. roadmap.md is read-only; progress-tracker.md is append-only."""
     from ..bootstrap import detect_repo_profile
 
     profile = detect_repo_profile(workspace.target_root)
@@ -55,7 +148,6 @@ def write_plan(
             phases=generated.phases,
         )
     if not dry_run:
-        workspace.write_context_file("roadmap.md", artifacts.roadmap, lock_owner="Autobots/plan")
         workspace.write_context_file("progress-tracker.md", artifacts.progress, lock_owner="Autobots/plan")
     return profile, scan, artifacts
 

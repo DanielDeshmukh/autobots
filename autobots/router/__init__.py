@@ -11,7 +11,7 @@ from .models import (
     RoutingScore,
 )
 from .phases import PhaseReader
-from .planning import ClusterPlanner
+from .planning import ClusterPlanner, dispatch_phase, route_to_cluster
 from .stages import StageExecutor
 from .utils import PayloadValidator, FileEntryHelper, ModelContractError
 from .core import AutobotRouter
@@ -32,4 +32,6 @@ __all__ = [
     "FileEntryHelper",
     "ModelContractError",
     "AutobotRouter",
+    "dispatch_phase",
+    "route_to_cluster",
 ]

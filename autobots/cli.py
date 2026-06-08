@@ -12,8 +12,10 @@ from rich.table import Table
 
 from .bootstrap import CORE_CONTEXT_FILES, detect_repo_profile
 from .config import load_config
-from .planning import write_plan
+from .planning import write_plan, parse_roadmap
 from .router import AutobotRouter, ExecutionResult, PhaseRecord
+from .executor import plan_runner
+from .executor.task_registry import get_all_tasks, get_phase_status, get_all_phases_status
 from .workspace import TargetProjectWorkspace
 from .executor import AutonomyEngine, ExecutionMode
 from .selectors import (
@@ -328,15 +330,11 @@ def _parse_init_file_args(tokens: list[str]) -> tuple[str, ...] | None:
 
 
 def run_plan(args: list[str]) -> None:
-    """Generate or update roadmap.md and progress-tracker.md with implementation phases."""
+    """Read roadmap.md, select next phase, create task IDs in task-registry.json."""
     console = Console()
-    target_root, goal, append, insert_after, dry_run = _parse_plan_args(args)
+    target_root = _parse_plan_target(args)
 
-    # Auto-detect target: use provided path, or default to current directory
-    if target_root:
-        target_root = Path(target_root).expanduser().resolve()
-    else:
-        target_root = Path.cwd().resolve()
+    _ensure_api_key(console)
 
     if not target_root.exists() or not target_root.is_dir():
         console.print(
@@ -348,40 +346,51 @@ def run_plan(args: list[str]) -> None:
         Panel.fit(f"Planning in:\n{target_root}", title="Workspace", border_style="cyan")
     )
 
-    workspace = TargetProjectWorkspace(target_root)
-    profile, scan, artifacts = write_plan(
-        workspace,
-        goal=goal or None,
-        append=append,
-        insert_after=insert_after,
-        dry_run=dry_run,
-    )
+    result = plan_runner.plan_phase(str(target_root))
 
-    table = Table(title="Autobots Plan Summary")
-    table.add_column("Detected")
-    table.add_column("Value")
-    table.add_row("Project", profile.project_name)
-    table.add_row("Goal", goal or "Prepare the next implementation-ready plan")
-    table.add_row("Mode", "Append" if append else "Replace")
-    table.add_row("Insert After", insert_after or "End of plan")
-    table.add_row("Source Roots", ", ".join(scan.source_roots))
-    table.add_row("Test Roots", ", ".join(scan.test_roots) or "None detected")
-    table.add_row("Build Files", ", ".join(scan.build_files) or "None detected")
-    table.add_row("Env Files", ", ".join(scan.env_files) or "None detected")
-    table.add_row("Frameworks", ", ".join(scan.frameworks) or "None detected")
-    table.add_row("Phases", str(len(artifacts.phases)))
-    console.print(table)
-    console.print(
-        Panel.fit(
-            (
-                "Generated a planning preview without writing files."
-                if dry_run
-                else "Updated context/roadmap.md and context/progress-tracker.md for Phase 3 planning."
-            ),
-            title="Plan Generated",
-            border_style="green",
+    if result is None:
+        console.print(
+            Panel.fit("No phases found in roadmap.md or all phases complete.", title="Plan", border_style="yellow")
         )
-    )
+        return
+
+    phase_id = result["phase_id"]
+    phase_name = result["phase_name"]
+    tasks = result["tasks"]
+    already_planned = result.get("already_planned", False)
+
+    table = Table(title=f"Phase {phase_id}: {phase_name}")
+    table.add_column("Task ID", style="cyan")
+    table.add_column("Description")
+    table.add_column("Status")
+
+    for task in tasks:
+        tid = task.get("task_id", "")
+        desc = task.get("description", "")
+        status = task.get("status", "pending")
+        status_icon = {"pending": "[ ]", "active": "[*]", "completed": "[x]", "failed": "[!]"}.get(status, "[ ]")
+        table.add_row(tid, desc, status_icon)
+
+    console.print(table)
+
+    if already_planned:
+        console.print(
+            Panel.fit(
+                f"Phase {phase_id} already has task IDs.\nRun 'autobots run <taskId>' to execute tasks.",
+                title="Already Planned",
+                border_style="yellow",
+            )
+        )
+    else:
+        first_task_id = tasks[0].get("task_id", "") if tasks else ""
+        console.print(
+            Panel.fit(
+                f"Created {len(tasks)} task(s) for phase {phase_id}.\n\n"
+                f"Next: autobots run {first_task_id} --supervised",
+                title="Plan Complete",
+                border_style="green",
+            )
+        )
 
 
 def _create_model_validation_workspace() -> TargetProjectWorkspace:
@@ -558,35 +567,44 @@ def _parse_plan_args(args: list[str]) -> tuple[str | None, str, bool, str | None
     return target_path, " ".join(part for part in goal_parts if part).strip(), append, insert_after, dry_run
 
 
-def _parse_run_args(args: list[str]) -> tuple[str | None, ExecutionMode, int, bool]:
-    """Parse run command arguments."""
-    target_path: str | None = args[1] if len(args) > 1 and not args[1].startswith("--") else None
-    mode = ExecutionMode.SUPERVISED
-    milestone_threshold = 3
-    dry_run = False
+def _parse_plan_target(args: list[str]) -> Path:
+    """Parse the target path from plan command arguments."""
+    target_path = args[1] if len(args) > 1 and not args[1].startswith("--") else None
+    if target_path:
+        return Path(target_path).expanduser().resolve()
+    return Path.cwd().resolve()
 
-    tokens = args[2:] if target_path else args[1:]
+
+def _parse_run_args(args: list[str]) -> tuple[str | None, str | None, str]:
+    """Parse run command arguments: autobots run [target] [taskId] [--supervised|--autonomous|--milestone]"""
+    target_path: str | None = None
+    task_id: str | None = None
+    mode = "supervised"
+
+    tokens = args[1:]
     for token in tokens:
-        if token == "--dry-run":
-            dry_run = True
-        elif token == "--autonomous":
-            mode = ExecutionMode.AUTONOMOUS
+        if token == "--autonomous":
+            mode = "autonomous"
         elif token == "--milestone":
-            mode = ExecutionMode.MILESTONE
+            mode = "milestone"
         elif token == "--supervised":
-            mode = ExecutionMode.SUPERVISED
+            mode = "supervised"
+        elif token.startswith("P") and "-T" in token:
+            task_id = token
+        elif not token.startswith("--"):
+            if target_path is None:
+                target_path = token
 
-    return target_path, mode, milestone_threshold, dry_run
+    return target_path, task_id, mode
 
 
 def run_run(args: list[str]) -> None:
-    """Run phases autonomously or in supervised mode."""
+    """Run a specific task by ID with the specified mode."""
     console = Console()
-    target_path, mode, milestone_threshold, dry_run = _parse_run_args(args)
+    target_path, task_id, mode = _parse_run_args(args)
 
-    # Auto-detect target: use provided path, or default to current directory
     if target_path:
-        target_root = _resolve_target_project_from_args(console, ["run", target_path])
+        target_root = Path(target_path).expanduser().resolve()
     else:
         target_root = Path.cwd().resolve()
 
@@ -596,60 +614,78 @@ def run_run(args: list[str]) -> None:
         )
         raise SystemExit(1)
 
-    console.print(
-        Panel.fit(f"Running phases in {mode.value} mode\nTarget: {target_root}", title="Autobots Run", border_style="cyan")
-    )
+    _ensure_api_key(console)
 
-    require_operational_context(console, target_root, "run")
-
-    console.print(
-        Panel.fit(
-            f"Running phases in {mode.value} mode",
-            title="Autobots Run",
-            border_style="cyan",
-        )
-    )
-
-    workspace = TargetProjectWorkspace(target_root)
-    engine = AutonomyEngine(mode=mode, api_key=None)
-
-    def event_handler(message: str):
-        console.print(f"[bold cyan]Swarm[/bold cyan] {message}")
-
-    result = engine.execute(workspace, mode=mode, milestone_threshold=milestone_threshold, event_handler=event_handler)
-
-    if dry_run:
-        console.print(Panel.fit("Dry run - no changes made", title="Preview", border_style="yellow"))
-        return
-
-    table = Table(title="Execution Summary")
-    table.add_column("Status")
-    table.add_column("Phases Completed")
-    table.add_row(result.status, str(len(result.phases_completed)))
-    console.print(table)
-
-    if result.phases_completed:
-        completed_list = "\n".join(f"- {phase}" for phase in result.phases_completed)
-        console.print(Panel.fit(completed_list, title="Completed Phases", border_style="green"))
-
-    if result.blocker:
+    if task_id:
         console.print(
             Panel.fit(
-                f"Type: {result.blocker.blocker_type.value}\n"
-                f"Message: {result.blocker.message}\n"
-                f"Hint: {result.blocker.resolution_hint or 'None'}",
-                title="Execution Blocked",
-                border_style="red",
+                f"Running task {task_id} in {mode} mode\nTarget: {target_root}",
+                title="Autobots Run",
+                border_style="cyan",
             )
         )
 
-    if result.status == "approval_required":
-        console.print(
-            Panel.fit(
-                f"Approval required before phase: {result.current_phase}",
-                title="Approval Gate",
-                border_style="yellow",
+        result = plan_runner.run_task(str(target_root), task_id, mode=mode)
+
+        if "error" in result:
+            console.print(
+                Panel.fit(f"Error: {result['error']}", title="Task Failed", border_style="red")
             )
+            raise SystemExit(1)
+
+        table = Table(title="Task Execution Summary")
+        table.add_column("Property")
+        table.add_column("Value")
+        table.add_row("Task ID", result.get("task_id", ""))
+        table.add_row("Status", result.get("status", ""))
+        table.add_row("Cluster", result.get("cluster", ""))
+        console.print(table)
+    else:
+        from .executor.task_registry import get_next_pending_task, get_phase_status
+        from .planning.core import parse_roadmap
+
+        roadmap_path = str(target_root / "context" / "roadmap.md")
+        phases = parse_roadmap(roadmap_path)
+
+        if not phases:
+            console.print(
+                Panel.fit("No phases found. Run 'autobots plan' first.", title="Run Error", border_style="red")
+            )
+            raise SystemExit(1)
+
+        for phase in phases:
+            if phase["complete"]:
+                continue
+            phase_id = phase.get("phase_id", "")
+            next_task = get_next_pending_task(str(target_root), phase_id)
+            if next_task:
+                console.print(
+                    Panel.fit(
+                        f"Running next pending task: {next_task['task_id']}\n"
+                        f"Phase: {phase_id} - {phase['phase']}\n"
+                        f"Mode: {mode}",
+                        title="Autobots Run",
+                        border_style="cyan",
+                    )
+                )
+                result = plan_runner.run_task(str(target_root), next_task["task_id"], mode=mode)
+                if "error" in result:
+                    console.print(
+                        Panel.fit(f"Error: {result['error']}", title="Task Failed", border_style="red")
+                    )
+                    raise SystemExit(1)
+
+                table = Table(title="Task Execution Summary")
+                table.add_column("Property")
+                table.add_column("Value")
+                table.add_row("Task ID", result.get("task_id", ""))
+                table.add_row("Status", result.get("status", ""))
+                table.add_row("Cluster", result.get("cluster", ""))
+                console.print(table)
+                return
+
+        console.print(
+            Panel.fit("No pending tasks found. Run 'autobots plan' first.", title="Run", border_style="yellow")
         )
 
 
@@ -713,10 +749,9 @@ def run_resume(args: list[str]) -> None:
 
 
 def run_status(args: list[str]) -> None:
-    """Show current execution status."""
+    """Show current task and phase status from task-registry.json."""
     console = Console()
 
-    # Auto-detect target: use provided path, or default to current directory
     target_path = args[1] if len(args) > 1 and not args[1].startswith("--") else None
     if target_path:
         target_root = Path(target_path).expanduser().resolve()
@@ -730,65 +765,67 @@ def run_status(args: list[str]) -> None:
         raise SystemExit(1)
 
     console.print(
-        Panel.fit(f"Showing status for:\n{target_root}", title="Autobots Status", border_style="cyan")
+        Panel.fit(f"Status for:\n{target_root}", title="Autobots Status", border_style="cyan")
     )
 
-    require_operational_context(console, target_root, "status")
+    phases_status = get_all_phases_status(str(target_root))
 
-    workspace = TargetProjectWorkspace(target_root)
-    from .executor import ExecutionModeManager, StateManager
-
-    mode_manager = ExecutionModeManager()
-    checkpoint = mode_manager.load_checkpoint(target_root)
-    state_manager = StateManager(target_root)
-    session = state_manager.get_session()
-    stats = state_manager.get_session_stats()
-
-    if session:
-        table = Table(title="Session Status")
-        table.add_column("Property")
-        table.add_column("Value")
-        table.add_row("Session ID", session.session_id)
-        table.add_row("Mode", session.mode)
-        table.add_row("State", session.state)
-        table.add_row("Phases Completed", str(len(session.phases_completed)))
-        table.add_row("Files Changed", str(session.total_files_changed))
-        table.add_row("Audit Entries", str(stats.get("audit_entries", 0)))
-        if session.current_phase:
-            table.add_row("Current Phase", session.current_phase)
-        console.print(table)
-
-    if checkpoint:
-        table = Table(title="Checkpoint Status")
-        table.add_column("Property")
-        table.add_column("Value")
-        table.add_row("Session ID", checkpoint.session_id)
-        table.add_row("Mode", checkpoint.mode)
-        table.add_row("Current Phase", f"{checkpoint.current_phase_index + 1}: {checkpoint.current_phase_title}")
-        table.add_row("Phases Completed", str(len(checkpoint.phases_completed)))
-        table.add_row("State", checkpoint.state)
-        console.print(table)
-
-        if checkpoint.phases_completed:
-            completed_list = "\n".join(f"- {phase}" for phase in checkpoint.phases_completed)
-            console.print(Panel.fit(completed_list, title="Completed Phases", border_style="green"))
-
+    if not phases_status:
         console.print(
-            Panel.fit(
-                f"Run 'autobots resume' to continue from this checkpoint",
-                title="Resume Available",
-                border_style="cyan",
-            )
+            Panel.fit("No tasks planned. Run 'autobots plan' first.", title="Status", border_style="yellow")
         )
-    else:
-        router = AutobotRouter()
-        roadmap_text, progress_text = router.read_phase_documents(workspace)
-        phases = router.find_next_phase(progress_text)
+        return
 
-        if phases:
-            console.print(Panel.fit("No checkpoint found but phases are pending. Run 'autobots run' to start.", title="Status", border_style="yellow"))
-        else:
-            console.print(Panel.fit("No checkpoint found. All phases are complete.", title="Status", border_style="green"))
+    phases_table = Table(title="Phase Overview")
+    phases_table.add_column("Phase", style="cyan")
+    phases_table.add_column("Name")
+    phases_table.add_column("Status")
+    phases_table.add_column("Progress")
+
+    for phase in phases_status:
+        status_icon = {
+            "complete": "[green][x][/green]",
+            "in_progress": "[yellow][*][/yellow]",
+            "failed": "[red][!][/red]",
+            "pending": "[ ]",
+        }.get(phase["status"], "[ ]")
+
+        progress = f"{phase['completed']}/{phase['total']}"
+        phases_table.add_row(
+            phase["phase_id"],
+            phase["phase_name"],
+            status_icon,
+            progress,
+        )
+
+    console.print(phases_table)
+
+    for phase in phases_status:
+        if phase["status"] in ("in_progress", "pending"):
+            tasks = phase.get("tasks", [])
+            if tasks:
+                tasks_table = Table(title=f"Tasks: {phase['phase_id']} - {phase['phase_name']}")
+                tasks_table.add_column("Task ID", style="cyan")
+                tasks_table.add_column("Description")
+                tasks_table.add_column("Status")
+                tasks_table.add_column("Cluster")
+
+                for task in tasks:
+                    task_status_icon = {
+                        "pending": "[ ]",
+                        "active": "[*]",
+                        "completed": "[x]",
+                        "failed": "[!]",
+                    }.get(task.get("status", "pending"), "[ ]")
+
+                    tasks_table.add_row(
+                        task.get("task_id", ""),
+                        task.get("description", "")[:50],
+                        task_status_icon,
+                        task.get("cluster", "") or "-",
+                    )
+
+                console.print(tasks_table)
 
 
 def run_list() -> None:
@@ -797,10 +834,10 @@ def run_list() -> None:
 
     commands = [
         ("init", "Check required context files for a target project"),
-        ("plan", "Generate or update roadmap.md and progress-tracker.md with implementation phases"),
-        ("run", "Execute phases autonomously (--autonomous), supervised (--supervised), or by milestones (--milestone)"),
+        ("plan", "Read roadmap.md, select next phase, create task IDs in task-registry.json"),
+        ("run", "Run task by ID: autobots run <taskId> [--supervised|--autonomous|--milestone]"),
         ("resume", "Resume execution from the last checkpoint"),
-        ("status", "Show current session and checkpoint status"),
+        ("status", "Show all phase and task statuses from task-registry.json"),
         ("engage", "Interactive swarm execution with operator approval at each phase"),
         ("validate-models", "Test live model contracts and validate API connectivity"),
         ("list", "Show this help information"),

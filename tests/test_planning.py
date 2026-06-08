@@ -25,7 +25,7 @@ class PlanningTests(unittest.TestCase):
             self.assertIn("tests", scan.test_roots)
             self.assertEqual(scan.frameworks, ())
 
-    def test_write_plan_refreshes_roadmap_and_progress_tracker(self) -> None:
+    def test_write_plan_refreshes_progress_tracker_but_not_roadmap(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             (root / "pyproject.toml").write_text("[project]\nname='demo'\n", encoding="utf-8")
@@ -34,13 +34,9 @@ class PlanningTests(unittest.TestCase):
 
             _, _, artifacts = write_plan(workspace, goal="Add a planning workflow")
 
-            roadmap = (root / "context" / "roadmap.md").read_text(encoding="utf-8")
             progress = (root / "context" / "progress-tracker.md").read_text(encoding="utf-8")
-            self.assertIn("Add a planning workflow", roadmap)
             self.assertIn("P2 | Implement the core change in the primary code paths", progress)
             self.assertIn("validation: python -m unittest discover -s tests -q", progress)
-            self.assertIn("Depends on: P1", roadmap)
-            self.assertIn("Relevant paths: autobots/planning.py", roadmap)
             self.assertEqual(len(artifacts.phases), 3)
 
     def test_write_plan_preserves_matching_completed_tasks(self) -> None:
