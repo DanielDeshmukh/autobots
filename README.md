@@ -12,12 +12,6 @@
   <a href="https://python.org">
     <img src="https://img.shields.io/badge/python-3.11+-brightgreen" alt="Python">
   </a>
-  <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/badge/license-MIT-yellow" alt="License">
-  </a>
-  <a href="https://github.com/DanielDeshmukh/autobots/actions">
-    <img src="https://img.shields.io/badge/tests-465-passing-brightgreen" alt="Tests">
-  </a>
 </p>
 
 Autobots is a Python CLI for running a structured, approval-gated coding swarm against target repositories. It checks target-owned context files, generates phased plans, routes implementation work through hierarchical model clusters, and executes autonomous work with validation, repair, and rollback loops.
