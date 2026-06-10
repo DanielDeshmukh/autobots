@@ -1,3 +1,6 @@
+⭐ If autobot-swarm saved you from wiring up another multi-agent mess — a star helps other devs find it. Takes 2 seconds.
+
+
 <div align="center">
   <a href="https://pypi.org/project/autobot-swarm/">
     <img src="assets/autobots-banner.png" alt="Autobots Banner" width="100%" />
