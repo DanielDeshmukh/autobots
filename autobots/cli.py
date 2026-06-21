@@ -521,25 +521,6 @@ def run_init(args: list[str]) -> None:
     if not target_root.exists() or not target_root.is_dir():
         raise workspace_not_found(str(target_root))
 
-    # Check if target looks like a valid project directory
-    project_indicators = [
-        "pyproject.toml", "setup.py", "setup.cfg", "package.json",
-        "Cargo.toml", "go.mod", "Makefile", "CMakeLists.txt",
-        "src", "lib", "app", "tests", "docs", ".git"
-    ]
-    has_indicator = any((target_root / indicator).exists() for indicator in project_indicators)
-    if not has_indicator:
-        console.print(
-            Panel.fit(
-                f"No project detected in: {target_root}\n\n"
-                f"Expected a directory containing project files (pyproject.toml, package.json, src/, etc.).\n"
-                f"Run 'autobots init <path>' with a valid project directory.",
-                title="No Target Project",
-                border_style="yellow",
-            )
-        )
-        raise SystemExit(1)
-
     # Run interactive onboarding if requested
     if interactive:
         run_onboarding_wizard(target_root, console, skip_api_key)
@@ -555,8 +536,8 @@ def run_init(args: list[str]) -> None:
 
     profile = detect_repo_profile(target_root)
 
-    # Ensure API key is available for future operations
-    _ensure_api_key(console, target_root)
+    # Skip API key check for init - it's just checking context files
+    # _ensure_api_key(console, target_root)
 
     selected_files = _parse_init_file_args(tokens)
     missing_files = missing_core_context_files(target_root)
@@ -2491,6 +2472,28 @@ def main(argv: list[str] | None = None) -> int:
         pass
 
     command = args[0]
+
+    # Check if target looks like a valid project directory (except for init which creates context)
+    if command != "init":
+        project_indicators = [
+            "pyproject.toml", "setup.py", "setup.cfg", "package.json",
+            "Cargo.toml", "go.mod", "Makefile", "CMakeLists.txt",
+            "src", "lib", "app", "tests", "docs", ".git"
+        ]
+        target_root = Path.cwd().resolve()
+        has_indicator = any((target_root / indicator).exists() for indicator in project_indicators)
+        if not has_indicator:
+            console.print(
+                Panel.fit(
+                    f"No project detected in: {target_root}\n\n"
+                    f"Expected a directory containing project files (pyproject.toml, package.json, src/, etc.).\n"
+                    f"Run 'autobots init <path>' with a valid project directory.",
+                    title="No Target Project",
+                    border_style="yellow",
+                )
+            )
+            return 1
+
     try:
         if command == "init":
             run_init(args)
