@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
+
+logger = logging.getLogger("autobots")
 
 
 @dataclass(frozen=True)
@@ -455,7 +458,12 @@ class ClusterCatalog:
         if not path.exists():
             return {}
 
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            logger.warning("Failed to load extra registry from %s: %s", path, exc)
+            return {}
+
         if not isinstance(payload, dict):
             return {}
 
