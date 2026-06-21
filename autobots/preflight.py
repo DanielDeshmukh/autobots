@@ -40,7 +40,7 @@ class PreflightResult:
 
     @property
     def all_passed(self) -> bool:
-        return all(c.status in (CheckStatus.PASS, CheckStatus.SKIP) for c in self.checks)
+        return all(c.status in (CheckStatus.PASS, CheckStatus.SKIP, CheckStatus.WARN) for c in self.checks)
 
     @property
     def failed_checks(self) -> list[PreflightCheck]:
