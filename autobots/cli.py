@@ -42,6 +42,7 @@ from .preflight import (
 
 # Global verbose flag — when True, router logs full prompts/responses
 VERBOSE = False
+QUIET = False
 from .errors import (
     AutobotsError,
     ModelError,
@@ -519,6 +520,25 @@ def run_init(args: list[str]) -> None:
 
     if not target_root.exists() or not target_root.is_dir():
         raise workspace_not_found(str(target_root))
+
+    # Check if target looks like a valid project directory
+    project_indicators = [
+        "pyproject.toml", "setup.py", "setup.cfg", "package.json",
+        "Cargo.toml", "go.mod", "Makefile", "CMakeLists.txt",
+        "src", "lib", "app", "tests", "docs", ".git"
+    ]
+    has_indicator = any((target_root / indicator).exists() for indicator in project_indicators)
+    if not has_indicator:
+        console.print(
+            Panel.fit(
+                f"No project detected in: {target_root}\n\n"
+                f"Expected a directory containing project files (pyproject.toml, package.json, src/, etc.).\n"
+                f"Run 'autobots init <path>' with a valid project directory.",
+                title="No Target Project",
+                border_style="yellow",
+            )
+        )
+        raise SystemExit(1)
 
     # Run interactive onboarding if requested
     if interactive:
@@ -2450,11 +2470,14 @@ def main(argv: list[str] | None = None) -> int:
         run_list()
         return 0
 
-    global VERBOSE
+    global VERBOSE, QUIET
     VERBOSE = "--verbose" in args
-    args = [a for a in args if a != "--verbose"]
+    QUIET = "--quiet" in args or "-q" in args
+    args = [a for a in args if a not in ("--verbose", "--quiet", "-q")]
 
     console = Console()
+    if QUIET:
+        console = Console(quiet=True)
 
     if "--version" in args or "-V" in args:
         from autobots import __version__
@@ -2512,6 +2535,19 @@ def main(argv: list[str] | None = None) -> int:
         elif command == "list":
             run_list()
         else:
+            import difflib
+            known_commands = [
+                "init", "plan", "run", "resume", "status", "engage",
+                "validate-models", "publish", "undo", "snapshots", "catalog",
+                "doctor", "diff", "logs", "explain", "stats", "config",
+                "completions", "marketplace", "dashboard", "list"
+            ]
+            matches = difflib.get_close_matches(command, known_commands, n=1, cutoff=0.5)
+            if matches:
+                console.print(f"[yellow]Unknown command: {command}[/yellow]")
+                console.print(f"[cyan]Did you mean '{matches[0]}'?[/cyan]\n")
+            else:
+                console.print(f"[yellow]Unknown command: {command}[/yellow]\n")
             run_list()
             return 1
     except KeyboardInterrupt:
