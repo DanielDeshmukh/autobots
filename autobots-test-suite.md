@@ -80,18 +80,18 @@
 
 ## 1. Environment & Prerequisites
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-001 | Run `python --version` on a machine with Python 3.10 (below stated 3.11 minimum), then `pip install autobot-swarm` | Either a clear, immediate version error before install proceeds, or graceful degradation — never a cryptic mid-install traceback | P0 |
-| AB-002 | Install on Python 3.11.0 exactly (floor version) | Installs and `autobots doctor` passes | P1 |
-| AB-003 | Install on Python 3.13 (latest) | Installs and runs without deprecation-driven crashes | P1 |
-| AB-004 | Install with no `NVIDIA_API_KEY` set anywhere | `autobots doctor` flags this clearly before any command tries to call the model | P0 |
-| AB-005 | Install on a machine with no internet access after pip packages are cached | Local-only commands (`init`, `status`, `explain`, `logs`) still work | P1 |
-| AB-006 | Check disk space requirements documented vs actual installed footprint | Footprint matches or is smaller than documented; no surprise multi-GB installs | P2 |
-| AB-007 | Install inside a fresh Docker container (slim Python image, no build tools) | Either installs cleanly or fails with an actionable message naming the missing system dependency | P0 |
-| AB-008 | Install behind a corporate proxy with `HTTP_PROXY`/`HTTPS_PROXY` set | pip respects proxy vars; no hardcoded bypass | P2 |
-| AB-009 | Check for conflicting global packages (e.g. another tool also named `autobots` or a CLI shadowing the entrypoint) | `autobots` resolves to the correct binary; doc warns about PATH collisions if relevant | P2 |
-| AB-010 | Run on a path containing spaces and non-ASCII characters (e.g. `/home/user/Projeçtos Novos/`) | No path-quoting crashes anywhere in CLI, config loading, or file writes | P0 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-001 | Run `python --version` on a machine with Python 3.10 (below stated 3.11 minimum), then `pip install autobot-swarm` | Either a clear, immediate version error before install proceeds, or graceful degradation — never a cryptic mid-install traceback | P0 | ✅ PASS |
+| AB-002 | Install on Python 3.11.0 exactly (floor version) | Installs and `autobots doctor` passes | P1 | ✅ PASS |
+| AB-003 | Install on Python 3.13 (latest) | Installs and runs without deprecation-driven crashes | P1 | ✅ PASS |
+| AB-004 | Install with no `NVIDIA_API_KEY` set anywhere | `autobots doctor` flags this clearly before any command tries to call the model | P0 | ✅ PASS |
+| AB-005 | Install on a machine with no internet access after pip packages are cached | Local-only commands (`init`, `status`, `explain`, `logs`) still work | P1 | ✅ PASS |
+| AB-006 | Check disk space requirements documented vs actual installed footprint | Footprint matches or is smaller than documented; no surprise multi-GB installs | P2 | ✅ PASS |
+| AB-007 | Install inside a fresh Docker container (slim Python image, no build tools) | Either installs cleanly or fails with an actionable message naming the missing system dependency | P0 | ⬜ NOT RUN |
+| AB-008 | Install behind a corporate proxy with `HTTP_PROXY`/`HTTPS_PROXY` set | pip respects proxy vars; no hardcoded bypass | P2 | ⬜ NOT RUN |
+| AB-009 | Check for conflicting global packages (e.g. another tool also named `autobots` or a CLI shadowing the entrypoint) | `autobots` resolves to the correct binary; doc warns about PATH collisions if relevant | P2 | ✅ PASS |
+| AB-010 | Run on a path containing spaces and non-ASCII characters (e.g. `/home/user/Projeçtos Novos/`) | No path-quoting crashes anywhere in CLI, config loading, or file writes | P0 | ✅ PASS |
 
 ## 2. Installation
 
