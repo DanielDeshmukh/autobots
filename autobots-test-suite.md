@@ -108,7 +108,7 @@
 | AB-019 | Check all declared dependencies in `setup.cfg`/`pyproject.toml` actually get installed (no missing transitive deps causing first-run ImportError) | `autobots --help` runs immediately post-install with zero ImportErrors | P0 | ✅ PASS |
 | AB-020 | Install size/time on a slow connection (throttle to 1 Mbps) | No timeout failures during install; reasonable install time | P2 | ✅ PASS |
 | AB-021 | Confirm package on PyPI matches GitHub source (no stale/ahead-of-source PyPI release) | Version numbers and CLI behavior match between `pip install` and `git clone` + editable install | P0 | ✅ PASS |
-| AB-022 | Verify LICENSE file is actually included in the installed package/sdist | `pip show -f autobot-swarm` lists LICENSE | P2 | ❌ FAIL |
+| AB-022 | Verify LICENSE file is actually included in the installed package/sdist | `pip show -f autobot-swarm` lists LICENSE | P2 | ✅ PASS |
 | AB-023 | Install two different versions in two different venvs side-by-side on the same machine | No cross-contamination via global config or cache dirs | P1 | ✅ PASS |
 | AB-024 | Run `pip uninstall autobot-swarm` then immediately `autobots` | Clean "command not found", not a half-broken shim | P2 | ✅ PASS |
 
