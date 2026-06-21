@@ -485,6 +485,20 @@ def run_init(args: list[str]) -> None:
     """Check context files for a target project."""
     console = Console()
 
+    if "--help" in args or "-h" in args:
+        console.print(
+            "[bold]Usage:[/bold] autobots init [target] [--interactive|--wizard] [--skip-api-key]\n\n"
+            "[bold]Arguments:[/bold]\n"
+            "  target    Path to target project directory (default: current directory)\n\n"
+            "[bold]Options:[/bold]\n"
+            "  --interactive, --wizard    Run interactive onboarding wizard\n"
+            "  --skip-api-key             Skip API key prompt during onboarding\n\n"
+            "[bold]Examples:[/bold]\n"
+            "  autobots init ./my-project\n"
+            "  autobots init --interactive"
+        )
+        return
+
     # Parse arguments
     interactive = "--interactive" in args or "--wizard" in args
     skip_api_key = "--skip-api-key" in args
@@ -870,6 +884,23 @@ def _parse_run_args(args: list[str]) -> tuple[str | None, str | None, str]:
 def run_run(args: list[str]) -> None:
     """Run a specific task by ID with the specified mode."""
     console = Console()
+
+    if "--help" in args or "-h" in args:
+        console.print(
+            "[bold]Usage:[/bold] autobots run [target] [taskId] [--supervised|--autonomous|--milestone]\n\n"
+            "[bold]Arguments:[/bold]\n"
+            "  target    Path to target project directory (default: current directory)\n"
+            "  taskId    Task ID to execute (e.g. P1-T1)\n\n"
+            "[bold]Modes:[/bold]\n"
+            "  --supervised    Operator approval at each phase (default)\n"
+            "  --autonomous    No approval required\n"
+            "  --milestone     Approval every N phases (configurable)\n\n"
+            "[bold]Examples:[/bold]\n"
+            "  autobots run ./my-project P1-T1\n"
+            "  autobots run ./my-project P1-T1 --autonomous"
+        )
+        return
+
     target_path, task_id, mode = _parse_run_args(args)
 
     if target_path:
@@ -2424,6 +2455,11 @@ def main(argv: list[str] | None = None) -> int:
     args = [a for a in args if a != "--verbose"]
 
     console = Console()
+
+    if "--version" in args or "-V" in args:
+        from autobots import __version__
+        print(f"autobots {__version__}")
+        return 0
 
     try:
         config = load_config()
