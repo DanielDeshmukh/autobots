@@ -44,3 +44,4 @@ include = ["autobots*"]
 
 [tool.setuptools.package-data]
 autobots = ["skills/nvidia/*.md"]
+"*" = ["LICENSE"]
