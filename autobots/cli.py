@@ -42,6 +42,7 @@ from .preflight import (
 
 # Global verbose flag — when True, router logs full prompts/responses
 VERBOSE = False
+QUIET = False
 from .errors import (
     AutobotsError,
     ModelError,
@@ -485,6 +486,20 @@ def run_init(args: list[str]) -> None:
     """Check context files for a target project."""
     console = Console()
 
+    if "--help" in args or "-h" in args:
+        console.print(
+            "[bold]Usage:[/bold] autobots init [target] [--interactive|--wizard] [--skip-api-key]\n\n"
+            "[bold]Arguments:[/bold]\n"
+            "  target    Path to target project directory (default: current directory)\n\n"
+            "[bold]Options:[/bold]\n"
+            "  --interactive, --wizard    Run interactive onboarding wizard\n"
+            "  --skip-api-key             Skip API key prompt during onboarding\n\n"
+            "[bold]Examples:[/bold]\n"
+            "  autobots init ./my-project\n"
+            "  autobots init --interactive"
+        )
+        return
+
     # Parse arguments
     interactive = "--interactive" in args or "--wizard" in args
     skip_api_key = "--skip-api-key" in args
@@ -505,6 +520,25 @@ def run_init(args: list[str]) -> None:
 
     if not target_root.exists() or not target_root.is_dir():
         raise workspace_not_found(str(target_root))
+
+    # Check if target looks like a valid project directory
+    project_indicators = [
+        "pyproject.toml", "setup.py", "setup.cfg", "package.json",
+        "Cargo.toml", "go.mod", "Makefile", "CMakeLists.txt",
+        "src", "lib", "app", "tests", "docs", ".git"
+    ]
+    has_indicator = any((target_root / indicator).exists() for indicator in project_indicators)
+    if not has_indicator:
+        console.print(
+            Panel.fit(
+                f"No project detected in: {target_root}\n\n"
+                f"Expected a directory containing project files (pyproject.toml, package.json, src/, etc.).\n"
+                f"Run 'autobots init <path>' with a valid project directory.",
+                title="No Target Project",
+                border_style="yellow",
+            )
+        )
+        raise SystemExit(1)
 
     # Run interactive onboarding if requested
     if interactive:
@@ -870,6 +904,23 @@ def _parse_run_args(args: list[str]) -> tuple[str | None, str | None, str]:
 def run_run(args: list[str]) -> None:
     """Run a specific task by ID with the specified mode."""
     console = Console()
+
+    if "--help" in args or "-h" in args:
+        console.print(
+            "[bold]Usage:[/bold] autobots run [target] [taskId] [--supervised|--autonomous|--milestone]\n\n"
+            "[bold]Arguments:[/bold]\n"
+            "  target    Path to target project directory (default: current directory)\n"
+            "  taskId    Task ID to execute (e.g. P1-T1)\n\n"
+            "[bold]Modes:[/bold]\n"
+            "  --supervised    Operator approval at each phase (default)\n"
+            "  --autonomous    No approval required\n"
+            "  --milestone     Approval every N phases (configurable)\n\n"
+            "[bold]Examples:[/bold]\n"
+            "  autobots run ./my-project P1-T1\n"
+            "  autobots run ./my-project P1-T1 --autonomous"
+        )
+        return
+
     target_path, task_id, mode = _parse_run_args(args)
 
     if target_path:
@@ -2419,11 +2470,19 @@ def main(argv: list[str] | None = None) -> int:
         run_list()
         return 0
 
-    global VERBOSE
+    global VERBOSE, QUIET
     VERBOSE = "--verbose" in args
-    args = [a for a in args if a != "--verbose"]
+    QUIET = "--quiet" in args or "-q" in args
+    args = [a for a in args if a not in ("--verbose", "--quiet", "-q")]
 
     console = Console()
+    if QUIET:
+        console = Console(quiet=True)
+
+    if "--version" in args or "-V" in args:
+        from autobots import __version__
+        print(f"autobots {__version__}")
+        return 0
 
     try:
         config = load_config()
@@ -2476,6 +2535,19 @@ def main(argv: list[str] | None = None) -> int:
         elif command == "list":
             run_list()
         else:
+            import difflib
+            known_commands = [
+                "init", "plan", "run", "resume", "status", "engage",
+                "validate-models", "publish", "undo", "snapshots", "catalog",
+                "doctor", "diff", "logs", "explain", "stats", "config",
+                "completions", "marketplace", "dashboard", "list"
+            ]
+            matches = difflib.get_close_matches(command, known_commands, n=1, cutoff=0.5)
+            if matches:
+                console.print(f"[yellow]Unknown command: {command}[/yellow]")
+                console.print(f"[cyan]Did you mean '{matches[0]}'?[/cyan]\n")
+            else:
+                console.print(f"[yellow]Unknown command: {command}[/yellow]\n")
             run_list()
             return 1
     except KeyboardInterrupt:

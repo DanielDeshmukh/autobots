@@ -154,18 +154,18 @@
 
 ## 5. CLI Entry, Help & Version
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-055 | `autobots --help` with zero args/config | Lists all 20+ commands with one-line descriptions, no crash even without API key or context files | P0 |
-| AB-056 | `autobots --version` | Prints exact version matching the installed package | P0 |
-| AB-057 | `autobots <unknown-command>` | Clear "unknown command, did you mean X" suggestion, not a raw exception | P0 |
-| AB-058 | `autobots run --help` and every other subcommand `--help` | Each subcommand has its own accurate, complete help text matching the README flag tables | P1 |
-| AB-059 | Run `autobots` with no subcommand at all | Either shows help or the `engage` startup screen — never a silent no-op or crash | P1 |
-| AB-060 | Run any command from outside a project directory (e.g. `$HOME`) | Clear "no target project detected" rather than accidentally operating on `$HOME` | P0 |
-| AB-061 | Run any command targeting a directory with no read permission | Permission error surfaced clearly, not a generic traceback | P1 |
-| AB-062 | Tab-completion sanity check before formally testing Section 30 — does `autobots <TAB>` work at all out of the box without manual completion setup | Either works out of the box or README clearly states the one-time setup step | P2 |
-| AB-063 | Pipe `autobots status` output into another tool (`autobots status | cat`) | Output remains usable (no broken ANSI codes) when not attached to a TTY | P1 |
-| AB-064 | Run any command with `--quiet`/`-q` if supported, or confirm no such flag exists and document that gap | Confirm verbosity levels are consistent and documented; flag the gap if `-q` doesn't exist | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-055 | `autobots --help` with zero args/config | Lists all 20+ commands with one-line descriptions, no crash even without API key or context files | P0 | PASS |
+| AB-056 | `autobots --version` | Prints exact version matching the installed package | P0 | PASS (FIXED) |
+| AB-057 | `autobots <unknown-command>` | Clear "unknown command, did you mean X" suggestion, not a raw exception | P0 | PASS (FIXED) |
+| AB-058 | `autobots run --help` and every other subcommand `--help` | Each subcommand has its own accurate, complete help text matching the README flag tables | P1 | PASS (FIXED) |
+| AB-059 | Run `autobots` with no subcommand at all | Either shows help or the `engage` startup screen — never a silent no-op or crash | P1 | PASS |
+| AB-060 | Run any command from outside a project directory (e.g. `$HOME`) | Clear "no target project detected" rather than accidentally operating on `$HOME` | P0 | PASS (FIXED) |
+| AB-061 | Run any command targeting a directory with no read permission | Permission error surfaced clearly, not a generic traceback | P1 | PASS |
+| AB-062 | Tab-completion sanity check before formally testing Section 30 — does `autobots <TAB>` work at all out of the box without manual completion setup | Either works out of the box or README clearly states the one-time setup step | P2 | PASS |
+| AB-063 | Pipe `autobots status` output into another tool (`autobots status | cat`) | Output remains usable (no broken ANSI codes) when not attached to a TTY | P1 | PASS |
+| AB-064 | Run any command with `--quiet`/`-q` if supported, or confirm no such flag exists and document that gap | Confirm verbosity levels are consistent and documented; flag the gap if `-q` doesn't exist | P2 | PASS (FIXED) |
 
 ## 6. `autobots init`
 
