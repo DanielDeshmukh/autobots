@@ -380,7 +380,7 @@ test_framework = "{test_framework}"
 """
 
     config_path.write_text(config_content.strip() + "\n", encoding="utf-8")
-    console.print(f"[green]✓[/green] Wrote configuration to {config_path.name}")
+    console.print(f"[green]OK[/green] Wrote configuration to {config_path.name}")
 
     # Save API key to .env if provided
     if api_key:
@@ -408,7 +408,7 @@ def _save_api_key_to_env(api_key: str, console: Console) -> None:
 
     content = "\n".join(lines).strip() + "\n"
     ENGINE_ENV_PATH.write_text(content, encoding="utf-8")
-    console.print("[green]✓[/green] Saved API key to .env")
+    console.print("[green]OK[/green] Saved API key to .env")
 
 
 def _scaffold_context_files(
@@ -455,9 +455,9 @@ def _scaffold_context_files(
         created_files.append(filename)
 
     if created_files:
-        console.print(f"[green]✓[/green] Created {len(created_files)} context files:")
+        console.print(f"[green]OK[/green] Created {len(created_files)} context files:")
         for f in created_files:
-            console.print(f"  • context/{f}")
+            console.print(f"  - context/{f}")
     else:
         console.print("[dim]Context files already exist, skipping.[/dim]")
 

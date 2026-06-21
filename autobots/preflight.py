@@ -168,13 +168,13 @@ def check_primary_model(model_id: str | None, api_key: str | None, base_url: str
             return PreflightCheck(
                 name="Primary model",
                 status=CheckStatus.PASS,
-                message=f"{model_id} · responsive",
+                message=f"{model_id} - responsive",
             )
         else:
             return PreflightCheck(
                 name="Primary model",
                 status=CheckStatus.WARN,
-                message=f"{model_id} · empty response",
+                message=f"{model_id} - empty response",
             )
 
     except Exception as e:
@@ -183,13 +183,13 @@ def check_primary_model(model_id: str | None, api_key: str | None, base_url: str
             return PreflightCheck(
                 name="Primary model",
                 status=CheckStatus.FAIL,
-                message=f"{model_id} · not found",
+                message=f"{model_id} - not found",
                 details="Model ID may be incorrect or model not available",
             )
         return PreflightCheck(
             name="Primary model",
             status=CheckStatus.FAIL,
-            message=f"{model_id} · error",
+            message=f"{model_id} - error",
             details=error_msg[:200],
         )
 
@@ -207,7 +207,7 @@ def check_workspace_writable(workspace: Path | None) -> PreflightCheck:
         return PreflightCheck(
             name="Workspace",
             status=CheckStatus.FAIL,
-            message=f"{workspace} · not found",
+            message=f"{workspace} - not found",
             details="Target directory does not exist",
         )
 
@@ -215,7 +215,7 @@ def check_workspace_writable(workspace: Path | None) -> PreflightCheck:
         return PreflightCheck(
             name="Workspace",
             status=CheckStatus.FAIL,
-            message=f"{workspace} · not a directory",
+            message=f"{workspace} - not a directory",
         )
 
     # Check write permission
@@ -226,13 +226,13 @@ def check_workspace_writable(workspace: Path | None) -> PreflightCheck:
         return PreflightCheck(
             name="Workspace",
             status=CheckStatus.PASS,
-            message=f"{workspace} · writable",
+            message=f"{workspace} - writable",
         )
     except PermissionError:
         return PreflightCheck(
             name="Workspace",
             status=CheckStatus.FAIL,
-            message=f"{workspace} · not writable",
+            message=f"{workspace} - not writable",
             details="Insufficient permissions to write to directory",
         )
 
@@ -271,7 +271,7 @@ def check_config_valid(config: Any, config_file: Path | None = None) -> Prefligh
     return PreflightCheck(
         name="Config",
         status=CheckStatus.PASS,
-        message=f"{config_name} · valid",
+        message=f"{config_name} - valid",
     )
 
 
@@ -371,14 +371,14 @@ def render_preflight_result(result: PreflightResult, console: Console | None = N
         console = Console()
 
     status_icons = {
-        CheckStatus.PASS: "[green]✓[/green]",
-        CheckStatus.FAIL: "[red]✗[/red]",
-        CheckStatus.WARN: "[yellow]⚠[/yellow]",
-        CheckStatus.SKIP: "[dim]○[/dim]",
+        CheckStatus.PASS: "[green]OK[/green]",
+        CheckStatus.FAIL: "[red]FAIL[/red]",
+        CheckStatus.WARN: "[yellow]WARN[/yellow]",
+        CheckStatus.SKIP: "[dim]SKIP[/dim]",
     }
 
     table = Table(show_header=False, box=None, padding=(0, 2))
-    table.add_column("Status", width=3)
+    table.add_column("Status", width=6)
     table.add_column("Check", style="cyan")
     table.add_column("Result")
 

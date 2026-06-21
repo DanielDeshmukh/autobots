@@ -322,7 +322,7 @@ def render_engage_screen(config) -> None:
 
     # 2. Tagline
     version = getattr(config, "version", "0.1.5") if hasattr(config, "version") else "0.1.5"
-    console.print(f"  hierarchical coding swarm  ·  v{version}", style=DIM)
+    console.print(f"  hierarchical coding swarm  -  v{version}", style=DIM)
     console.print()
 
     # 3. Status row

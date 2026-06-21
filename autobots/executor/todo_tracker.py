@@ -28,8 +28,8 @@ class TaskState(enum.Enum):
 
 
 _SYMBOLS = {
-    TaskState.COMPLETED: "[✓]",
-    TaskState.ACTIVE: "[•]",
+    TaskState.COMPLETED: "[OK]",
+    TaskState.ACTIVE: "[>>]",
     TaskState.PENDING: "[ ]",
 }
 

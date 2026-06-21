@@ -247,7 +247,7 @@ class StageExecutor:
                     full_response.append(delta)
                     elapsed = time.time() - start_time
                     char_count = sum(len(r) for r in full_response)
-                    status.update(f"[dim]Receiving response · {char_count} chars · {elapsed:.1f}s[/dim]")
+                    status.update(f"[dim]Receiving response - {char_count} chars - {elapsed:.1f}s[/dim]")
 
                 # Extract usage from final chunk
                 if chunk.usage:

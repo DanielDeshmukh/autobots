@@ -562,9 +562,9 @@ def run_init(args: list[str]) -> None:
     import os
     api_key = os.getenv("NVIDIA_API_KEY", "").strip()
     if api_key:
-        console.print("[green]✓[/green] NVIDIA API key: configured")
+        console.print("[green]OK[/green] NVIDIA API key: configured")
     else:
-        console.print("[yellow]⚠[/yellow] NVIDIA API key: not set (required for swarm operations)")
+        console.print("[yellow]WARN[/yellow] NVIDIA API key: not set (required for swarm operations)")
 
 
 def _parse_init_file_args(tokens: list[str]) -> tuple[str, ...] | None:
@@ -1051,7 +1051,7 @@ def run_status(args: list[str]) -> None:
 
     console.print(
         Panel.fit(
-            f"Project: [bold]{target_root.name}[/bold]  ·  Branch: [cyan]{branch}[/cyan]",
+            f"Project: [bold]{target_root.name}[/bold]  -  Branch: [cyan]{branch}[/cyan]",
             title="Autobots Status",
             border_style="cyan",
         )
@@ -1106,18 +1106,18 @@ def run_status(args: list[str]) -> None:
             tasks = phase.get("tasks", [])
             for task in tasks:
                 task_icon = {
-                    "pending": "[dim]⏳[/dim]",
-                    "active": "[yellow]⟳[/yellow]",
-                    "completed": "[green]✓[/green]",
-                    "failed": "[red]✗[/red]",
-                }.get(task.get("status", "pending"), "[dim]⏳[/dim]")
+                    "pending": "[dim][~][/dim]",
+                    "active": "[yellow][>>][/yellow]",
+                    "completed": "[green][OK][/green]",
+                    "failed": "[red][!!][/red]",
+                }.get(task.get("status", "pending"), "[dim][~][/dim]")
 
                 task_desc = task.get("description", "")[:40]
                 task_id = task.get("task_id", "")
                 console.print(f"    ├─ {task_id}  {task_desc:<40} {task_icon}")
 
     console.print()
-    console.print(f"  Total tasks: {total_tasks}  ·  Done: {completed_tasks}  ·  Running: {running_tasks}  ·  Failed: {failed_tasks}")
+    console.print(f"  Total tasks: {total_tasks}  -  Done: {completed_tasks}  -  Running: {running_tasks}  -  Failed: {failed_tasks}")
 
     # Estimate remaining time from audit trail
     from .executor.state import StateManager
@@ -1784,7 +1784,7 @@ def run_config(args: list[str]) -> None:
                 field = error.get("field", "unknown")
                 message = error.get("message", "")
                 suggestion = error.get("suggestion", "")
-                error_lines.append(f"  [red]•[/red] {field}: {message}")
+                error_lines.append(f"  [red]-[/red] {field}: {message}")
                 if suggestion:
                     error_lines.append(f"    [dim]→ {suggestion}[/dim]")
             console.print(Panel.fit("\n".join(error_lines), title="Config Validation", border_style="red"))
@@ -1795,7 +1795,7 @@ def run_config(args: list[str]) -> None:
                 field = warn.get("field", "unknown")
                 message = warn.get("message", "")
                 suggestion = warn.get("suggestion", "")
-                console.print(f"  [yellow]•[/yellow] {field}: {message}")
+                console.print(f"  [yellow]-[/yellow] {field}: {message}")
                 if suggestion:
                     console.print(f"    [dim]→ {suggestion}[/dim]")
 
@@ -1993,7 +1993,7 @@ def run_marketplace(args: list[str]) -> None:
             if installed:
                 console.print(
                     Panel.fit(
-                        f"Installed {len(installed)} files:\n" + "\n".join(f"  • {f}" for f in installed),
+                        f"Installed {len(installed)} files:\n" + "\n".join(f"  - {f}" for f in installed),
                         title=f"Installed {name}",
                         border_style="green",
                     )

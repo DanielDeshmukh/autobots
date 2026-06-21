@@ -34,7 +34,7 @@ class ConfigValidationError(Exception):
             field_name = error.get("field", "unknown")
             message = error.get("message", "invalid value")
             suggestion = error.get("suggestion", "")
-            lines.append(f"  • {field_name}: {message}")
+            lines.append(f"  - {field_name}: {message}")
             if suggestion:
                 lines.append(f"    → {suggestion}")
         return "\n".join(lines)
