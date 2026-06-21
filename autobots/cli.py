@@ -574,6 +574,32 @@ def run_init(args: list[str]) -> None:
         )
     )
 
+    # Show guidance on what to write in context files
+    if missing_files:
+        guidance = (
+            "[bold]Next steps:[/bold]\n\n"
+            "Each context file should describe your project:\n"
+            "  [cyan]architecture.md[/cyan]     - Tech stack, patterns, directory structure\n"
+            "  [cyan]roadmap.md[/cyan]           - Phases and tasks for Autobots to execute\n"
+            "  [cyan]ui-components.md[/cyan]     - UI component library and design system\n"
+            "  [cyan]progress-tracker.md[/cyan]  - Current phase/task status (auto-updated)\n"
+            "  [cyan]project-briefing.md[/cyan]  - Project overview, goals, constraints\n"
+            "  [cyan]security-auth.md[/cyan]     - Auth patterns, security requirements\n\n"
+            "[bold]Example roadmap.md:[/bold]\n"
+            "  ### P1: Setup\n"
+            "  - Initialize project structure\n"
+            "  - Acceptance checks:\n"
+            "    - [ ] src/ directory exists\n"
+            "    - [ ] pyproject.toml configured"
+        )
+        console.print(
+            Panel.fit(
+                guidance,
+                title="Writing Context Files",
+                border_style="cyan",
+            )
+        )
+
     # Show API key status
     import os
     api_key = os.getenv("NVIDIA_API_KEY", "").strip()
@@ -581,6 +607,10 @@ def run_init(args: list[str]) -> None:
         console.print("[green]OK[/green] NVIDIA API key: configured")
     else:
         console.print("[yellow]WARN[/yellow] NVIDIA API key: not set (required for swarm operations)")
+
+    # Return non-zero exit code if context is incomplete (for CI/scripting)
+    if missing_files:
+        raise SystemExit(1)
 
 
 def _parse_init_file_args(tokens: list[str]) -> tuple[str, ...] | None:

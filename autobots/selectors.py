@@ -145,7 +145,21 @@ def require_safety_branch(console, target_root: Path, safety_branch: str | None 
 
 def missing_core_context_files(target_root: Path) -> list[str]:
     context_dir = target_root / "context"
-    return [filename for filename in CORE_CONTEXT_FILES if not (context_dir / filename).exists()]
+    missing = []
+    for filename in CORE_CONTEXT_FILES:
+        filepath = context_dir / filename
+        if not filepath.exists():
+            missing.append(filename)
+        else:
+            # Check if file is empty or whitespace-only
+            try:
+                content = filepath.read_text(encoding="utf-8").strip()
+                if not content:
+                    missing.append(filename)
+            except (OSError, UnicodeDecodeError):
+                # If we can't read it, treat it as missing
+                missing.append(filename)
+    return missing
 
 
 def require_operational_context(console, target_root: Path, command_name: str) -> None:
