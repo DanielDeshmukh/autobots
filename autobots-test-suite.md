@@ -114,20 +114,20 @@
 
 ## 3. API Key & Secrets Handling
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-025 | Set key via `.env` file only, run any model-calling command | Key is read and used | P0 |
-| AB-026 | Set key via `$env:NVIDIA_API_KEY` / `export NVIDIA_API_KEY` shell var only | Key is read and used, takes correct precedence vs `.env` if both set | P0 |
-| AB-027 | Set conflicting keys in `.env` AND shell env simultaneously | Documented precedence order is followed consistently (and is actually documented) | P1 |
-| AB-028 | Run any command with an invalid/expired API key | Clear "authentication failed" message, not a raw stack trace or generic 401 dump | P0 |
-| AB-029 | Run with API key containing leading/trailing whitespace (common copy-paste error) | Either trimmed automatically or a specific "key format invalid" error, never silent auth failure with no explanation | P1 |
-| AB-030 | Check that `autobots logs`, `--verbose` output, and crash reports never print the raw API key | Key is always redacted/masked in any log, error, or audit trail output | P0 |
-| AB-031 | Check `.env` is auto-added to a generated `.gitignore` on `autobots init` | `.env` never gets committed by default workflow | P0 |
-| AB-032 | Revoke the API key mid-run (simulate by swapping env var during a long autonomous run) | Run fails the current phase gracefully with a clear auth error and a resumable checkpoint, not silent hang or corrupted state | P0 |
-| AB-033 | Run `autobots doctor` with no key set at all | First and most prominent failure reported is the missing key, not buried under other checks | P0 |
-| AB-034 | Store key in `$HOME/.autobots.toml` if the config format allows secrets there (it shouldn't) | Confirm secrets are never expected/encouraged in version-controllable TOML config | P1 |
-| AB-035 | Multi-user machine: User A's shell env key should not leak into User B's run via shared cache/config dirs | No cross-user key leakage through `$HOME`-adjacent shared paths | P0 |
-| AB-036 | Rotate key, run `autobots validate-models` | Correctly validates against the new key without requiring a fresh install/cache clear | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-025 | Set key via `.env` file only, run any model-calling command | Key is read and used | P0 | ✅ PASS |
+| AB-026 | Set key via `$env:NVIDIA_API_KEY` / `export NVIDIA_API_KEY` shell var only | Key is read and used, takes correct precedence vs `.env` if both set | P0 | ✅ PASS |
+| AB-027 | Set conflicting keys in `.env` AND shell env simultaneously | Documented precedence order is followed consistently (and is actually documented) | P1 | ✅ PASS |
+| AB-028 | Run any command with an invalid/expired API key | Clear "authentication failed" message, not a raw stack trace or generic 401 dump | P0 | ✅ PASS |
+| AB-029 | Run with API key containing leading/trailing whitespace (common copy-paste error) | Either trimmed automatically or a specific "key format invalid" error, never silent auth failure with no explanation | P1 | ✅ PASS |
+| AB-030 | Check that `autobots logs`, `--verbose` output, and crash reports never print the raw API key | Key is always redacted/masked in any log, error, or audit trail output | P0 | ✅ PASS |
+| AB-031 | Check `.env` is auto-added to a generated `.gitignore` on `autobots init` | `.env` never gets committed by default workflow | P0 | ✅ PASS |
+| AB-032 | Revoke the API key mid-run (simulate by swapping env var during a long autonomous run) | Run fails the current phase gracefully with a clear auth error and a resumable checkpoint, not silent hang or corrupted state | P0 | ⬜ NOT RUN |
+| AB-033 | Run `autobots doctor` with no key set at all | First and most prominent failure reported is the missing key, not buried under other checks | P0 | ✅ PASS |
+| AB-034 | Store key in `$HOME/.autobots.toml` if the config format allows secrets there (it shouldn't) | Confirm secrets are never expected/encouraged in version-controllable TOML config | P1 | ✅ PASS |
+| AB-035 | Multi-user machine: User A's shell env key should not leak into User B's run via shared cache/config dirs | No cross-user key leakage through `$HOME`-adjacent shared paths | P0 | ✅ PASS |
+| AB-036 | Rotate key, run `autobots validate-models` | Correctly validates against the new key without requiring a fresh install/cache clear | P1 | ⬜ NOT RUN |
 
 ## 4. TOML Configuration
 
