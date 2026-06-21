@@ -359,8 +359,8 @@ def _write_config(
     config_content = f"""[autobots]
 # Autobots configuration for {project_name}
 
-# NVIDIA API key (can also be set via NVIDIA_API_KEY env var)
-{"api_key = \"" + api_key + "\"" if api_key else "# api_key = \"your-key-here\""}
+# NVIDIA API key is stored in .env (gitignored), not here.
+# Set via: autobots init --interactive or manually in .env file
 
 # Model selection: balanced | speed | quality
 model_selection_profile = "balanced"

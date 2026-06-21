@@ -227,3 +227,4 @@ test_api.py
 context/.autobots-locks/
 publish_artifacts/
 .tmp_cli_*/
+.autobots.toml
