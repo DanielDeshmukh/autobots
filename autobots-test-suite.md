@@ -131,26 +131,26 @@
 
 ## 4. TOML Configuration
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-037 | No `.autobots.toml`/`autobots.toml` present anywhere | Sensible documented defaults apply (`balanced`, `supervised`, etc.), no crash | P0 |
-| AB-038 | Config present in project root only | Loaded and applied correctly | P0 |
-| AB-039 | Config present in `$HOME` only | Loaded and applied correctly | P1 |
-| AB-040 | Config present in BOTH project root and `$HOME` with conflicting values | Documented precedence (project should win) is followed and is actually documented in README | P1 |
-| AB-041 | `model_selection_profile` set to an invalid string (e.g. `"fastest"`) | `autobots config validate` catches it with a specific message naming valid options | P0 |
-| AB-042 | `default_mode` set to invalid value | Same — caught with actionable error, not silently defaulted without warning | P0 |
-| AB-043 | `milestone_threshold` set to `0` or negative | Rejected with clear validation error, not divide-by-zero or infinite-approval-loop | P0 |
-| AB-044 | `temperature` set outside valid range (e.g. `5.0` or `-1`) | Caught by config validate before being sent to the model API | P1 |
-| AB-045 | `max_tokens` set absurdly high (e.g. `10000000`) | Either clamped with a warning or rejected, not blindly sent and silently truncated by the API with no indication | P1 |
-| AB-046 | Malformed TOML syntax (missing closing bracket, bad indentation) | Specific line-number parse error, not a raw Python tomllib traceback | P0 |
-| AB-047 | `model_registry_path` pointing to a non-existent file | Clear "registry file not found at X" error | P1 |
-| AB-048 | `model_registry_path` pointing to a file with invalid JSON | Specific parse error pointing at the bad registry file | P1 |
-| AB-049 | Custom `[autobots.extra_clusters]` defined with a cluster name colliding with a built-in cluster (e.g. `Optimus`) | Either merge behavior is defined and documented, or a collision error is raised — not silent overwrite | P1 |
-| AB-050 | Extra cluster defined with an empty model list `[]` | Validated and rejected, since it would route tasks nowhere | P1 |
-| AB-051 | `parallel_planning = true` with `disable_live_catalog = true` simultaneously | Confirm these flags don't have an undocumented incompatibility that silently breaks planning | P2 |
-| AB-052 | Config file is read-only (chmod 444) on a run that doesn't need to write to it | Read-only config does not block execution | P2 |
-| AB-053 | Config file modified mid-run (user edits `autobots.toml` while `autobots run` is executing) | Either changes are ignored until next invocation (documented), or hot-reload is explicit and safe — no torn reads | P1 |
-| AB-054 | Unicode/emoji values accidentally pasted into a TOML string field | Doesn't crash the TOML parser or downstream prompt injection into the model call | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-037 | No `.autobots.toml`/`autobots.toml` present anywhere | Sensible documented defaults apply (`balanced`, `supervised`, etc.), no crash | P0 | PASS |
+| AB-038 | Config present in project root only | Loaded and applied correctly | P0 | PASS |
+| AB-039 | Config present in `$HOME` only | Loaded and applied correctly | P1 | PASS |
+| AB-040 | Config present in BOTH project root and `$HOME` with conflicting values | Documented precedence (project should win) is followed and is actually documented in README | P1 | PASS |
+| AB-041 | `model_selection_profile` set to an invalid string (e.g. `"fastest"`) | `autobots config validate` catches it with a specific message naming valid options | P0 | PASS |
+| AB-042 | `default_mode` set to invalid value | Same — caught with actionable error, not silently defaulted without warning | P0 | PASS |
+| AB-043 | `milestone_threshold` set to `0` or negative | Rejected with clear validation error, not divide-by-zero or infinite-approval-loop | P0 | PASS |
+| AB-044 | `temperature` set outside valid range (e.g. `5.0` or `-1`) | Caught by config validate before being sent to the model API | P1 | NOT RUN |
+| AB-045 | `max_tokens` set absurdly high (e.g. `10000000`) | Either clamped with a warning or rejected, not blindly sent and silently truncated by the API with no indication | P1 | NOT RUN |
+| AB-046 | Malformed TOML syntax (missing closing bracket, bad indentation) | Specific line-number parse error, not a raw Python tomllib traceback | P0 | PASS |
+| AB-047 | `model_registry_path` pointing to a non-existent file | Clear "registry file not found at X" error | P1 | PASS |
+| AB-048 | `model_registry_path` pointing to a file with invalid JSON | Specific parse error pointing at the bad registry file | P1 | PASS (FIXED) |
+| AB-049 | Custom `[autobots.extra_clusters]` defined with a cluster name colliding with a built-in cluster (e.g. `Optimus`) | Either merge behavior is defined and documented, or a collision error is raised — not silent overwrite | P1 | GAP |
+| AB-050 | Extra cluster defined with an empty model list `[]` | Validated and rejected, since it would route tasks nowhere | P1 | GAP |
+| AB-051 | `parallel_planning = true` with `disable_live_catalog = true` simultaneously | Confirm these flags don't have an undocumented incompatibility that silently breaks planning | P2 | PASS |
+| AB-052 | Config file is read-only (chmod 444) on a run that doesn't need to write to it | Read-only config does not block execution | P2 | PASS |
+| AB-053 | Config file modified mid-run (user edits `autobots.toml` while `autobots run` is executing) | Either changes are ignored until next invocation (documented), or hot-reload is explicit and safe — no torn reads | P1 | PASS |
+| AB-054 | Unicode/emoji values accidentally pasted into a TOML string field | Doesn't crash the TOML parser or downstream prompt injection into the model call | P2 | PASS |
 
 ## 5. CLI Entry, Help & Version
 
