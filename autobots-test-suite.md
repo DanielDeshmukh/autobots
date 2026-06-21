@@ -103,7 +103,7 @@
 | AB-014 | `pip install -e .` development install per README | Editable install works; local edits to source are picked up without reinstall | P1 | ✅ PASS |
 | AB-015 | Install without `--no-build-isolation` flag (README specifies it) | Confirm whether omitting it actually breaks the build, and if so, surface a real error instead of a confusing one | P1 | ✅ PASS |
 | AB-016 | Verify `autobots` entrypoint is on PATH immediately after install with no shell restart | Works in the same shell session that ran pip install | P1 | ✅ PASS |
-| AB-017 | Install in a `pipx`-managed environment | Works the same as plain pip/venv install | P2 | ⬜ NOT RUN |
+| AB-017 | Install in a `pipx`-managed environment | Works the same as plain pip/venv install | P2 | ✅ PASS |
 | AB-018 | Install with `pip install --user` (no venv, no admin) | Works without permission errors | P1 | ✅ PASS |
 | AB-019 | Check all declared dependencies in `setup.cfg`/`pyproject.toml` actually get installed (no missing transitive deps causing first-run ImportError) | `autobots --help` runs immediately post-install with zero ImportErrors | P0 | ✅ PASS |
 | AB-020 | Install size/time on a slow connection (throttle to 1 Mbps) | No timeout failures during install; reasonable install time | P2 | ✅ PASS |
