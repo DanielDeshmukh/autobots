@@ -123,11 +123,11 @@
 | AB-029 | Run with API key containing leading/trailing whitespace (common copy-paste error) | Either trimmed automatically or a specific "key format invalid" error, never silent auth failure with no explanation | P1 | ✅ PASS |
 | AB-030 | Check that `autobots logs`, `--verbose` output, and crash reports never print the raw API key | Key is always redacted/masked in any log, error, or audit trail output | P0 | ✅ PASS |
 | AB-031 | Check `.env` is auto-added to a generated `.gitignore` on `autobots init` | `.env` never gets committed by default workflow | P0 | ✅ PASS |
-| AB-032 | Revoke the API key mid-run (simulate by swapping env var during a long autonomous run) | Run fails the current phase gracefully with a clear auth error and a resumable checkpoint, not silent hang or corrupted state | P0 | ⬜ NOT RUN |
+| AB-032 | Revoke the API key mid-run (simulate by swapping env var during a long autonomous run) | Run fails the current phase gracefully with a clear auth error and a resumable checkpoint, not silent hang or corrupted state | P0 | ✅ PASS |
 | AB-033 | Run `autobots doctor` with no key set at all | First and most prominent failure reported is the missing key, not buried under other checks | P0 | ✅ PASS |
 | AB-034 | Store key in `$HOME/.autobots.toml` if the config format allows secrets there (it shouldn't) | Confirm secrets are never expected/encouraged in version-controllable TOML config | P1 | ✅ PASS |
 | AB-035 | Multi-user machine: User A's shell env key should not leak into User B's run via shared cache/config dirs | No cross-user key leakage through `$HOME`-adjacent shared paths | P0 | ✅ PASS |
-| AB-036 | Rotate key, run `autobots validate-models` | Correctly validates against the new key without requiring a fresh install/cache clear | P1 | ⬜ NOT RUN |
+| AB-036 | Rotate key, run `autobots validate-models` | Correctly validates against the new key without requiring a fresh install/cache clear | P1 | ✅ PASS |
 
 ## 4. TOML Configuration
 
