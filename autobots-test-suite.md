@@ -95,22 +95,22 @@
 
 ## 2. Installation
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-011 | `pip install autobot-swarm` on a totally clean venv | Installs successfully, `autobots --version` reports 0.1.9 (or current) | P0 |
-| AB-012 | `pip install autobot-swarm==0.1.0` (oldest published version) | Either installs cleanly for users pinning old versions, or fails with a clear deprecation message — not a silent partial install | P2 |
-| AB-013 | Reinstall over an existing installation (`pip install --upgrade autobot-swarm`) | No leftover stale `.pyc`/config from the old version causes command mismatches | P1 |
-| AB-014 | `pip install -e .` development install per README | Editable install works; local edits to source are picked up without reinstall | P1 |
-| AB-015 | Install without `--no-build-isolation` flag (README specifies it) | Confirm whether omitting it actually breaks the build, and if so, surface a real error instead of a confusing one | P1 |
-| AB-016 | Verify `autobots` entrypoint is on PATH immediately after install with no shell restart | Works in the same shell session that ran pip install | P1 |
-| AB-017 | Install in a `pipx`-managed environment | Works the same as plain pip/venv install | P2 |
-| AB-018 | Install with `pip install --user` (no venv, no admin) | Works without permission errors | P1 |
-| AB-019 | Check all declared dependencies in `setup.cfg`/`pyproject.toml` actually get installed (no missing transitive deps causing first-run ImportError) | `autobots --help` runs immediately post-install with zero ImportErrors | P0 |
-| AB-020 | Install size/time on a slow connection (throttle to 1 Mbps) | No timeout failures during install; reasonable install time | P2 |
-| AB-021 | Confirm package on PyPI matches GitHub source (no stale/ahead-of-source PyPI release) | Version numbers and CLI behavior match between `pip install` and `git clone` + editable install | P0 |
-| AB-022 | Verify LICENSE file is actually included in the installed package/sdist | `pip show -f autobot-swarm` lists LICENSE | P2 |
-| AB-023 | Install two different versions in two different venvs side-by-side on the same machine | No cross-contamination via global config or cache dirs | P1 |
-| AB-024 | Run `pip uninstall autobot-swarm` then immediately `autobots` | Clean "command not found", not a half-broken shim | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-011 | `pip install autobot-swarm` on a totally clean venv | Installs successfully, `autobots --version` reports 0.1.9 (or current) | P0 | ✅ PASS |
+| AB-012 | `pip install autobot-swarm==0.1.0` (oldest published version) | Either installs cleanly for users pinning old versions, or fails with a clear deprecation message — not a silent partial install | P2 | ✅ PASS |
+| AB-013 | Reinstall over an existing installation (`pip install --upgrade autobot-swarm`) | No leftover stale `.pyc`/config from the old version causes command mismatches | P1 | ✅ PASS |
+| AB-014 | `pip install -e .` development install per README | Editable install works; local edits to source are picked up without reinstall | P1 | ✅ PASS |
+| AB-015 | Install without `--no-build-isolation` flag (README specifies it) | Confirm whether omitting it actually breaks the build, and if so, surface a real error instead of a confusing one | P1 | ✅ PASS |
+| AB-016 | Verify `autobots` entrypoint is on PATH immediately after install with no shell restart | Works in the same shell session that ran pip install | P1 | ✅ PASS |
+| AB-017 | Install in a `pipx`-managed environment | Works the same as plain pip/venv install | P2 | ⬜ NOT RUN |
+| AB-018 | Install with `pip install --user` (no venv, no admin) | Works without permission errors | P1 | ✅ PASS |
+| AB-019 | Check all declared dependencies in `setup.cfg`/`pyproject.toml` actually get installed (no missing transitive deps causing first-run ImportError) | `autobots --help` runs immediately post-install with zero ImportErrors | P0 | ✅ PASS |
+| AB-020 | Install size/time on a slow connection (throttle to 1 Mbps) | No timeout failures during install; reasonable install time | P2 | ✅ PASS |
+| AB-021 | Confirm package on PyPI matches GitHub source (no stale/ahead-of-source PyPI release) | Version numbers and CLI behavior match between `pip install` and `git clone` + editable install | P0 | ✅ PASS |
+| AB-022 | Verify LICENSE file is actually included in the installed package/sdist | `pip show -f autobot-swarm` lists LICENSE | P2 | ❌ FAIL |
+| AB-023 | Install two different versions in two different venvs side-by-side on the same machine | No cross-contamination via global config or cache dirs | P1 | ✅ PASS |
+| AB-024 | Run `pip uninstall autobot-swarm` then immediately `autobots` | Clean "command not found", not a half-broken shim | P2 | ✅ PASS |
 
 ## 3. API Key & Secrets Handling
 
