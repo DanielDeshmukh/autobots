@@ -630,16 +630,16 @@
 
 ## 33. Skill Marketplace
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-391 | `autobots marketplace` lists available built-in skill packs (FastAPI, Django, React, Next.js per README) | Listing is accurate and matches what's actually installable | P0 |
-| AB-392 | Install a skill pack via marketplace command | Pack's content is correctly injected into relevant cluster prompts afterward | P0 |
-| AB-393 | Install a skill pack, then verify it shows in `autobots catalog`/relevant listing as active | Discoverable post-install, not invisible | P1 |
-| AB-394 | Install a skill pack that conflicts/overlaps with an existing one (e.g. two different React conventions packs) | Clear conflict handling, not silent last-one-wins with no warning | P1 |
-| AB-395 | Marketplace works offline (bundled packs) vs requires network (remote packs) — confirm which is which and that this is documented | No confusing failures from assuming network when bundled, or vice versa | P1 |
-| AB-396 | Uninstall a skill pack | Cleanly removes its injection from future prompts | P1 |
-| AB-397 | A third-party/community skill pack format — is it documented well enough for someone OTHER than the README author to publish one | Real extensibility, not just a hardcoded internal list dressed up as a "marketplace" | P1 |
-| AB-398 | Marketplace skill pack content security — is there any vetting/sandboxing for what a downloaded pack can contain (since it gets injected directly into model prompts) | At minimum, documented trust model for third-party packs | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-391 | `autobots marketplace` lists available built-in skill packs (FastAPI, Django, React, Next.js per README) | Listing is accurate and matches what's actually installable | P0 | PASS |
+| AB-392 | Install a skill pack via marketplace command | Pack's content is correctly injected into relevant cluster prompts afterward | P0 | PASS |
+| AB-393 | Install a skill pack, then verify it shows in `autobots catalog`/relevant listing as active | Discoverable post-install, not invisible | P1 | PASS |
+| AB-394 | Install a skill pack that conflicts/overlaps with an existing one (e.g. two different React conventions packs) | Clear conflict handling, not silent last-one-wins with no warning | P1 | PASS |
+| AB-395 | Marketplace works offline (bundled packs) vs requires network (remote packs) — confirm which is which and that this is documented | No confusing failures from assuming network when bundled, or vice versa | P1 | PASS |
+| AB-396 | Uninstall a skill pack | Cleanly removes its injection from future prompts | P1 | PASS |
+| AB-397 | A third-party/community skill pack format — is it documented well enough for someone OTHER than the README author to publish one | Real extensibility, not just a hardcoded internal list dressed up as a "marketplace" | P1 | PASS |
+| AB-398 | Marketplace skill pack content security — is there any vetting/sandboxing for what a downloaded pack can contain (since it gets injected directly into model prompts) | At minimum, documented trust model for third-party packs | P1 | PASS |
 
 ## 34. Web Dashboard
 
