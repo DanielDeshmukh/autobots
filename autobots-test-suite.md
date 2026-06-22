@@ -329,26 +329,26 @@
 
 ## 14. `autobots run --supervised`
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-185 | Run with a complete roadmap, approve every phase | Each phase pauses for explicit approval before proceeding to the next | P0 |
-| AB-186 | At an approval prompt, reject/decline a phase | Run halts cleanly without partially applying that phase's changes | P0 |
-| AB-187 | At an approval prompt, request to see the diff before approving | Diff is shown clearly (file-by-file), not just a vague "phase 3 ready" message | P0 |
-| AB-188 | Approve a phase, then Ctrl+C during the actual file-write step | No half-written files; either fully applied or fully rolled back, never a torn write | P0 |
-| AB-189 | Run supervised with zero context files present (bypassing init somehow) | Hard-blocked from running, consistent with `autobots init` requirements | P0 |
-| AB-190 | Run supervised on a roadmap where phase 2 depends on phase 1, but phase 1 is rejected | Phase 2 is not offered for approval / is marked blocked, not silently attempted anyway | P0 |
-| AB-191 | Run supervised, approve a phase, inspect actual files written vs what the diff preview showed | Diff preview exactly matches what gets written — no last-second drift | P0 |
-| AB-192 | Supervised run interrupted by terminal closing (SIGHUP) mid-approval-wait | State is checkpointed at the last completed phase, resumable via `autobots resume` | P0 |
-| AB-193 | Approval prompt response handling for invalid input (typing "maybe" instead of y/n) | Re-prompts cleanly, doesn't crash or default to either approve or reject silently | P1 |
-| AB-194 | Run supervised against a roadmap with 1 single phase | Works correctly for the trivial case, not just multi-phase | P1 |
-| AB-195 | Run supervised, approve a phase that the model itself flags low confidence on (if such signaling exists) | Low-confidence phases are surfaced distinctly to the approver | P2 |
-| AB-196 | Time-to-first-approval-prompt on a typical small task | Reasonably fast (this is the "first impression" moment — should not feel like Claude Code/OpenCode is faster by a mile) | P1 |
-| AB-197 | Run supervised twice on the identical roadmap+context (determinism check at low temperature) | Reasonably consistent results, not wildly divergent outputs each time | P2 |
-| AB-198 | Supervised run where a phase's generated code references a function from a LATER, not-yet-executed phase | Either the planning step prevents this ordering issue, or execution handles forward references gracefully | P1 |
-| AB-199 | Approve all phases successfully through to completion | `progress-tracker.md` correctly shows 100% complete, matches `autobots status` | P0 |
-| AB-200 | Run supervised on a roadmap referencing a file that was manually deleted by the user between `plan` and `run` | Clear error about the missing target file, not a confusing write failure | P1 |
-| AB-201 | Compare the supervised approval UX directly against Claude Code's permission-prompt UX | Information density and clarity of "what am I approving" should be at parity, not a regression | P0 |
-| AB-202 | Approve a phase, then the validation step (Section 17) fails immediately after — confirm the approved-but-failed state is communicated clearly | User isn't left wondering whether their approval "worked" | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-185 | Run with a complete roadmap, approve every phase | Each phase pauses for explicit approval before proceeding to the next | P0 | PASS |
+| AB-186 | At an approval prompt, reject/decline a phase | Run halts cleanly without partially applying that phase's changes | P0 | PASS |
+| AB-187 | At an approval prompt, request to see the diff before approving | Diff is shown clearly (file-by-file), not just a vague "phase 3 ready" message | P0 | CODE-VERIFIED |
+| AB-188 | Approve a phase, then Ctrl+C during the actual file-write step | No half-written files; either fully applied or fully rolled back, never a torn write | P0 | CODE-VERIFIED |
+| AB-189 | Run supervised with zero context files present (bypassing init somehow) | Hard-blocked from running, consistent with `autobots init` requirements | P0 | PASS |
+| AB-190 | Run supervised on a roadmap where phase 2 depends on phase 1, but phase 1 is rejected | Phase 2 is not offered for approval / is marked blocked, not silently attempted anyway | P0 | PASS |
+| AB-191 | Run supervised, approve a phase, inspect actual files written vs what the diff preview showed | Diff preview exactly matches what gets written — no last-second drift | P0 | CODE-VERIFIED |
+| AB-192 | Supervised run interrupted by terminal closing (SIGHUP) mid-approval-wait | State is checkpointed at the last completed phase, resumable via `autobots resume` | P0 | PASS |
+| AB-193 | Approval prompt response handling for invalid input (typing "maybe" instead of y/n) | Re-prompts cleanly, doesn't crash or default to either approve or reject silently | P1 | PASS (design-verified) |
+| AB-194 | Run supervised against a roadmap with 1 single phase | Works correctly for the trivial case, not just multi-phase | P1 | PASS |
+| AB-195 | Run supervised, approve a phase that the model itself flags low confidence on (if such signaling exists) | Low-confidence phases are surfaced distinctly to the approver | P2 | CODE-VERIFIED |
+| AB-196 | Time-to-first-approval-prompt on a typical small task | Reasonably fast (this is the "first impression" moment — should not feel like Claude Code/OpenCode is faster by a mile) | P1 | DEFERRED |
+| AB-197 | Run supervised twice on the identical roadmap+context (determinism check at low temperature) | Reasonably consistent results, not wildly divergent outputs each time | P2 | DEFERRED |
+| AB-198 | Supervised run where a phase's generated code references a function from a LATER, not-yet-executed phase | Either the planning step prevents this ordering issue, or execution handles forward references gracefully | P1 | CODE-VERIFIED |
+| AB-199 | Approve all phases successfully through to completion | `progress-tracker.md` correctly shows 100% complete, matches `autobots status` | P0 | PASS |
+| AB-200 | Run supervised on a roadmap referencing a file that was manually deleted by the user between `plan` and `run` | Clear error about the missing target file, not a confusing write failure | P1 | CODE-VERIFIED |
+| AB-201 | Compare the supervised approval UX directly against Claude Code's permission-prompt UX | Information density and clarity of "what am I approving" should be at parity, not a regression | P0 | DEFERRED |
+| AB-202 | Approve a phase, then the validation step (Section 17) fails immediately after — confirm the approved-but-failed state is communicated clearly | User isn't left wondering whether their approval "worked" | P1 | CODE-VERIFIED |
 
 ## 15. `autobots run --milestone`
 
