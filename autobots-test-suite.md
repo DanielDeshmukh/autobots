@@ -284,18 +284,18 @@
 
 ## 11. `autobots catalog` / Model Registry
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-155 | `autobots catalog` with live catalog enabled and valid API key | Lists current models per cluster, matches what's actually callable | P0 |
-| AB-156 | `autobots catalog` with `disable_live_catalog = true` | Shows the bundled static registry instead, clearly labeled as such | P1 |
-| AB-157 | `autobots catalog` when NVIDIA's catalog API is down | Falls back to bundled registry with a clear warning, doesn't hard-crash | P0 |
-| AB-158 | `autobots catalog` model counts match README table (9/12/10/11/10/11/9/8/7 across clusters) | Counts match or README is updated to reflect drift | P1 |
-| AB-159 | A model listed in `autobots catalog` is actually callable end-to-end (spot check 5 models across different clusters) | No "phantom" models in the registry that fail when actually invoked | P0 |
-| AB-160 | `autobots catalog --json` or similar machine-readable output (if supported) | Valid, parseable JSON for scripting/automation | P2 |
-| AB-161 | Custom model registry (`model_registry_path`) entries appear correctly in `autobots catalog` output alongside built-ins | Merged display, clearly distinguishable as custom vs built-in | P1 |
-| AB-162 | A deprecated/retired NVIDIA NIM model still listed in the bundled registry | Calling it gives a clear deprecation error rather than a confusing generic API failure | P1 |
-| AB-163 | `autobots catalog` filtering by cluster name (if supported, e.g. `autobots catalog --cluster Jazz`) | Filters correctly | P2 |
-| AB-164 | Catalog refresh caching — does repeated `autobots catalog` hammer the live API every time or cache appropriately | Reasonable caching to avoid rate-limit issues on repeated calls | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-155 | `autobots catalog` with live catalog enabled and valid API key | Lists current models per cluster, matches what's actually callable | P0 | PASS |
+| AB-156 | `autobots catalog` with `disable_live_catalog = true` | Shows the bundled static registry instead, clearly labeled as such | P1 | PASS |
+| AB-157 | `autobots catalog` when NVIDIA's catalog API is down | Falls back to bundled registry with a clear warning, doesn't hard-crash | P0 | PASS |
+| AB-158 | `autobots catalog` model counts match README table (9/12/10/11/10/11/9/8/7 across clusters) | Counts match or README is updated to reflect drift | P1 | CODE-VERIFIED |
+| AB-159 | A model listed in `autobots catalog` is actually callable end-to-end (spot check 5 models across different clusters) | No "phantom" models in the registry that fail when actually invoked | P0 | DEFERRED |
+| AB-160 | `autobots catalog --json` or similar machine-readable output (if supported) | Valid, parseable JSON for scripting/automation | P2 | CODE-VERIFIED |
+| AB-161 | Custom model registry (`model_registry_path`) entries appear correctly in `autobots catalog` output alongside built-ins | Merged display, clearly distinguishable as custom vs built-in | P1 | CODE-VERIFIED |
+| AB-162 | A deprecated/retired NVIDIA NIM model still listed in the bundled registry | Calling it gives a clear deprecation error rather than a confusing generic API failure | P1 | DEFERRED |
+| AB-163 | `autobots catalog` filtering by cluster name (if supported, e.g. `autobots catalog --cluster Jazz`) | Filters correctly | P2 | CODE-VERIFIED |
+| AB-164 | Catalog refresh caching — does repeated `autobots catalog` hammer the live API every time or cache appropriately | Reasonable caching to avoid rate-limit issues on repeated calls | P1 | PASS |
 
 ## 12. NVIDIA Skills — Tier 1 (Always-loaded)
 
