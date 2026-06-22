@@ -367,22 +367,22 @@
 
 ## 16. `autobots run --autonomous`
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-213 | Full autonomous run on a well-scoped, well-tested roadmap | Completes all phases with zero human intervention, ends in a clean state matching `progress-tracker.md` | P0 |
-| AB-214 | Autonomous run where phase 4 of 10 fails validation 3+ times (max_verification_attempts exceeded) | Stops cleanly, reports exactly which phase and why, doesn't silently skip and continue to phase 5 | P0 |
-| AB-215 | Autonomous run on a roadmap that would delete/overwrite an existing file with no acceptance criteria checking content preservation | Confirm there's still SOME guardrail (snapshot before write per README) even with zero human gates | P0 |
-| AB-216 | Kill the process (`kill -9`) mid-autonomous-run | No corrupted git state, no half-written files outside of what snapshots can roll back | P0 |
-| AB-217 | Autonomous run against a roadmap targeting files outside the project root (path traversal in a phase definition, e.g. `../../etc/passwd`) | Blocked by workspace safety (cross-reference Section 19), never writes outside project root regardless of autonomy level | P0 |
-| AB-218 | Autonomous run cost — compare actual `autobots stats` cost against the upfront estimate (if any) | No order-of-magnitude surprise bills | P0 |
-| AB-219 | Long-running autonomous run (1hr+, 20+ phases) — memory/resource usage over time | No unbounded memory growth (audit trail, context accumulation) over a long run | P1 |
-| AB-220 | Autonomous run where the safety branch check fails partway (user switched branches manually mid-run in another terminal) | Detected and run halts safely rather than committing to the wrong branch | P0 |
-| AB-221 | Autonomous run git auto-commit behavior — verify commits are made per-phase with meaningful messages, not one giant squashed commit at the end with no granularity | Commit granularity allows `git bisect`/review of individual phases | P1 |
-| AB-222 | Two autonomous runs targeting the same project started in two separate terminals simultaneously | Workspace locking (Section 19) prevents this, doesn't corrupt state with concurrent writes | P0 |
-| AB-223 | Autonomous run where a generated phase tries to run a genuinely destructive command (`rm -rf`, `DROP TABLE`) as part of "validation commands" | Blocked by the command policy whitelist (Section 23) even in fully autonomous mode | P0 |
-| AB-224 | Compare time-to-completion of autonomous mode against doing the same task manually with Claude Code/OpenCode's auto-accept mode | Should be competitive, not dramatically slower for equivalent scope | P1 |
-| AB-225 | Autonomous run that completes successfully — confirm test suite (if testing-strategy.md defines one) actually passes at the end, not just that "validation commands" ran without erroring | Real green test suite, not just "the linter didn't crash" | P0 |
-| AB-226 | Autonomous mode explicitly disabled via config (if such a hard-lock exists) but `--autonomous` flag passed anyway | Config-level lock (if it exists) takes precedence over CLI flag, or the absence of this safety feature is a known documented gap | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-213 | Full autonomous run on a well-scoped, well-tested roadmap | Completes all phases with zero human intervention, ends in a clean state matching `progress-tracker.md` | P0 | PASS |
+| AB-214 | Autonomous run where phase 4 of 10 fails validation 3+ times (max_verification_attempts exceeded) | Stops cleanly, reports exactly which phase and why, doesn't silently skip and continue to phase 5 | P0 | PASS |
+| AB-215 | Autonomous run on a roadmap that would delete/overwrite an existing file with no acceptance criteria checking content preservation | Confirm there's still SOME guardrail (snapshot before write per README) even with zero human gates | P0 | PASS |
+| AB-216 | Kill the process (`kill -9`) mid-autonomous-run | No corrupted git state, no half-written files outside of what snapshots can roll back | P0 | PASS |
+| AB-217 | Autonomous run against a roadmap targeting files outside the project root (path traversal in a phase definition, e.g. `../../etc/passwd`) | Blocked by workspace safety (cross-reference Section 19), never writes outside project root regardless of autonomy level | P0 | PASS |
+| AB-218 | Autonomous run cost — compare actual `autobots stats` cost against the upfront estimate (if any) | No order-of-magnitude surprise bills | P0 | DEFERRED |
+| AB-219 | Long-running autonomous run (1hr+, 20+ phases) — memory/resource usage over time | No unbounded memory growth (audit trail, context accumulation) over a long run | P1 | DEFERRED |
+| AB-220 | Autonomous run where the safety branch check fails partway (user switched branches manually mid-run in another terminal) | Detected and run halts safely rather than committing to the wrong branch | P0 | PASS |
+| AB-221 | Autonomous run git auto-commit behavior — verify commits are made per-phase with meaningful messages, not one giant squashed commit at the end with no granularity | Commit granularity allows `git bisect`/review of individual phases | P1 | PASS |
+| AB-222 | Two autonomous runs targeting the same project started in two separate terminals simultaneously | Workspace locking (Section 19) prevents this, doesn't corrupt state with concurrent writes | P0 | PASS |
+| AB-223 | Autonomous run where a generated phase tries to run a genuinely destructive command (`rm -rf`, `DROP TABLE`) as part of "validation commands" | Blocked by the command policy whitelist (Section 23) even in fully autonomous mode | P0 | PASS |
+| AB-224 | Compare time-to-completion of autonomous mode against doing the same task manually with Claude Code/OpenCode's auto-accept mode | Should be competitive, not dramatically slower for equivalent scope | P1 | DEFERRED |
+| AB-225 | Autonomous run that completes successfully — confirm test suite (if testing-strategy.md defines one) actually passes at the end, not just that "validation commands" ran without erroring | Real green test suite, not just "the linter didn't crash" | P0 | DEFERRED |
+| AB-226 | Autonomous mode explicitly disabled via config (if such a hard-lock exists) but `--autonomous` flag passed anyway | Config-level lock (if it exists) takes precedence over CLI flag, or the absence of this safety feature is a known documented gap | P2 | PASS |
 
 ## 17. Validation, Repair & Retry Loops
 
