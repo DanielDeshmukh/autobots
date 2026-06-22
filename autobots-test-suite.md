@@ -439,41 +439,41 @@
 
 ## 20. Snapshot, Rollback & `autobots undo`
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-265 | Snapshot is taken before EVERY write, per README | Verify via `autobots snapshots` that a snapshot exists before each phase, not just the first one | P0 |
-| AB-266 | `autobots undo` after a single completed phase | Exactly reverts that phase's file changes, nothing more, nothing less | P0 |
-| AB-267 | `autobots undo` called multiple times in a row (undo, undo, undo) | Steps back through history correctly one snapshot at a time, doesn't skip or repeat | P0 |
-| AB-268 | `autobots undo` with NO snapshots available (fresh project, nothing run yet) | Clear "nothing to undo" message, not a crash | P1 |
-| AB-269 | `autobots undo` after manually editing files outside of autobots between the snapshot and the undo call | Conflict is detected — undo doesn't blindly overwrite the user's manual edits without warning | P0 |
-| AB-270 | `autobots snapshots` lists all available snapshots with timestamps and associated phase IDs | Output is genuinely useful for deciding what to roll back to | P1 |
-| AB-271 | `autobots diff` against a specific snapshot (not just the latest) | Correctly computes diff against the specified historical point | P0 |
-| AB-272 | Snapshot storage size growth over a long project history (50+ phases) | Reasonable disk usage, ideally with some pruning/compaction strategy documented | P1 |
-| AB-273 | `autobots undo` on binary files (images, etc.) | Restores byte-for-byte correctly, not corrupted by any text-based diffing assumption | P1 |
-| AB-274 | Snapshot/undo interaction with git — does undo also need a separate `git revert`, or are they unified | Documented and consistent relationship between autobots snapshots and git history (cross-ref Section 37) | P0 |
-| AB-275 | `autobots undo` mid-run is blocked (can't undo while a run is actively writing) | Workspace lock (Section 19) prevents undo during active execution | P0 |
-| AB-276 | Rollback triggered automatically by repair-loop exhaustion (AB-230) produces an IDENTICAL result to manually running `autobots undo` for that phase | Automatic and manual rollback paths are consistent, not divergent implementations | P1 |
-| AB-277 | Snapshot taken of a very large binary asset (e.g. 500MB file accidentally in the repo) | Doesn't blow up disk usage or crash the snapshot mechanism — at minimum, a size warning | P2 |
-| AB-278 | `autobots undo` exit code and confirmation message clarity | User can tell with certainty whether the undo succeeded before doing anything else | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-265 | Snapshot is taken before EVERY write, per README | Verify via `autobots snapshots` that a snapshot exists before each phase, not just the first one | P0 | PASS |
+| AB-266 | `autobots undo` after a single completed phase | Exactly reverts that phase's file changes, nothing more, nothing less | P0 | PASS |
+| AB-267 | `autobots undo` called multiple times in a row (undo, undo, undo) | Steps back through history correctly one snapshot at a time, doesn't skip or repeat | P0 | PASS |
+| AB-268 | `autobots undo` with NO snapshots available (fresh project, nothing run yet) | Clear "nothing to undo" message, not a crash | P1 | PASS |
+| AB-269 | `autobots undo` after manually editing files outside of autobots between the snapshot and the undo call | Conflict is detected — undo doesn't blindly overwrite the user's manual edits without warning | P0 | CODE-VERIFIED |
+| AB-270 | `autobots snapshots` lists all available snapshots with timestamps and associated phase IDs | Output is genuinely useful for deciding what to roll back to | P1 | PASS |
+| AB-271 | `autobots diff` against a specific snapshot (not just the latest) | Correctly computes diff against the specified historical point | P0 | CODE-VERIFIED |
+| AB-272 | Snapshot storage size growth over a long project history (50+ phases) | Reasonable disk usage, ideally with some pruning/compaction strategy documented | P1 | PASS |
+| AB-273 | `autobots undo` on binary files (images, etc.) | Restores byte-for-byte correctly, not corrupted by any text-based diffing assumption | P1 | CODE-VERIFIED |
+| AB-274 | Snapshot/undo interaction with git — does undo also need a separate `git revert`, or are they unified | Documented and consistent relationship between autobots snapshots and git history (cross-ref Section 37) | P0 | CODE-VERIFIED |
+| AB-275 | `autobots undo` mid-run is blocked (can't undo while a run is actively writing) | Workspace lock (Section 19) prevents undo during active execution | P0 | CODE-VERIFIED |
+| AB-276 | Rollback triggered automatically by repair-loop exhaustion (AB-230) produces an IDENTICAL result to manually running `autobots undo` for that phase | Automatic and manual rollback paths are consistent, not divergent implementations | P1 | PASS |
+| AB-277 | Snapshot taken of a very large binary asset (e.g. 500MB file accidentally in the repo) | Doesn't blow up disk usage or crash the snapshot mechanism — at minimum, a size warning | P2 | CODE-VERIFIED |
+| AB-278 | `autobots undo` exit code and confirmation message clarity | User can tell with certainty whether the undo succeeded before doing anything else | P1 | PASS |
 
 ## 21. Session Management / `autobots resume` / Checkpoints
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-279 | Crash mid-phase (kill process), then `autobots resume` | Picks up exactly where it left off — does NOT re-run already-completed phases | P0 |
-| AB-280 | Crash mid-WRITE within a phase (not between phases), then resume | Confirm the in-progress phase is treated as failed/incomplete and either retried cleanly or rolled back first, never resumed from a torn mid-write state | P0 |
-| AB-281 | `autobots resume` with no prior session/checkpoint at all | Clear "nothing to resume, use `autobots run` to start fresh" message (matches documented troubleshooting) | P0 |
-| AB-282 | Resume a session days/weeks later (laptop closed, reopened) | Checkpoint data survives across machine sleep/restart with no time-based expiry breaking it unexpectedly | P0 |
-| AB-283 | Resume after the project's `context/` files were edited since the crash | Documented behavior — does resume use the OLD context snapshot from when the run started, or the NEW current files | P1 |
-| AB-284 | Resume after switching git branches since the crash | Safety branch check (Section 22) catches this before resuming on the wrong branch | P0 |
-| AB-285 | Resume after the API key changed/rotated since the crash | Works fine with the new key, no stale-credential issue | P1 |
-| AB-286 | Two different sessions exist (e.g. one from a `--supervised` run, one from a different `--autonomous` attempt) — does resume correctly pick the most recent/relevant one | No ambiguity about WHICH session is being resumed | P1 |
-| AB-287 | Resume after manually deleting the checkpoint file directly (not the lock, the actual session state) | Clear "checkpoint corrupted/missing" rather than resuming from a wrong/default state silently | P0 |
-| AB-288 | Checkpoint data includes enough audit context that `autobots explain` works correctly even for phases completed in a PREVIOUS (crashed) session, not just the current one | Full audit trail continuity across resume | P1 |
-| AB-289 | Resume on a DIFFERENT machine than where the run started (checkpoint committed to git, cloned elsewhere) | Document whether this is supported; if checkpoints are local-only, this should fail with a clear message, not silent wrong behavior | P1 |
-| AB-290 | Compare this resume experience directly against Claude Code/OpenCode's session resume — does autobots survive the exact same crash scenarios they handle (terminal closed, laptop sleep, network drop) | Should be at genuine parity — this is one of the most-used reliability features of both reference tools | P0 |
-| AB-291 | `autobots resume` mid-resume itself gets interrupted (double crash scenario) | Doesn't compound into unrecoverable state — still resumable a third time | P1 |
-| AB-292 | Resume correctly re-acquires the workspace lock (Section 19) rather than assuming it's still held | No race where two resumed sessions both think they own the lock | P0 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-279 | Crash mid-phase (kill process), then `autobots resume` | Picks up exactly where it left off — does NOT re-run already-completed phases | P0 | PASS |
+| AB-280 | Crash mid-WRITE within a phase (not between phases), then resume | Confirm the in-progress phase is treated as failed/incomplete and either retried cleanly or rolled back first, never resumed from a torn mid-write state | P0 | CODE-VERIFIED |
+| AB-281 | `autobots resume` with no prior session/checkpoint at all | Clear "nothing to resume, use `autobots run` to start fresh" message (matches documented troubleshooting) | P0 | PASS |
+| AB-282 | Resume a session days/weeks later (laptop closed, reopened) | Checkpoint data survives across machine sleep/restart with no time-based expiry breaking it unexpectedly | P0 | PASS |
+| AB-283 | Resume after the project's `context/` files were edited since the crash | Documented behavior — does resume use the OLD context snapshot from when the run started, or the NEW current files | P1 | CODE-VERIFIED |
+| AB-284 | Resume after switching git branches since the crash | Safety branch check (Section 22) catches this before resuming on the wrong branch | P0 | PASS |
+| AB-285 | Resume after the API key changed/rotated since the crash | Works fine with the new key, no stale-credential issue | P1 | CODE-VERIFIED |
+| AB-286 | Two different sessions exist (e.g. one from a `--supervised` run, one from a different `--autonomous` attempt) — does resume correctly pick the most recent/relevant one | No ambiguity about WHICH session is being resumed | P1 | PASS |
+| AB-287 | Resume after manually deleting the checkpoint file directly (not the lock, the actual session state) | Clear "checkpoint corrupted/missing" rather than resuming from a wrong/default state silently | P0 | PASS |
+| AB-288 | Checkpoint data includes enough audit context that `autobots explain` works correctly even for phases completed in a PREVIOUS (crashed) session, not just the current one | Full audit trail continuity across resume | P1 | CODE-VERIFIED |
+| AB-289 | Resume on a DIFFERENT machine than where the run started (checkpoint committed to git, cloned elsewhere) | Document whether this is supported; if checkpoints are local-only, this should fail with a clear message, not silent wrong behavior | P1 | CODE-VERIFIED |
+| AB-290 | Compare this resume experience directly against Claude Code/OpenCode's session resume — does autobots survive the exact same crash scenarios they handle (terminal closed, laptop sleep, network drop) | Should be at genuine parity — this is one of the most-used reliability features of both reference tools | P0 | DEFERRED |
+| AB-291 | `autobots resume` mid-resume itself gets interrupted (double crash scenario) | Doesn't compound into unrecoverable state — still resumable a third time | P1 | PASS |
+| AB-292 | Resume correctly re-acquires the workspace lock (Section 19) rather than assuming it's still held | No race where two resumed sessions both think they own the lock | P0 | PASS |
 
 ## 22. Safety Branch Enforcement
 
@@ -548,113 +548,113 @@
 
 ## 27. `autobots logs`
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-339 | `autobots logs` shows full audit trail chronologically | Readable, accurate timeline of all actions taken | P0 |
-| AB-340 | `autobots logs` with a `--tail`/`-n` style flag (if supported) | Limits output correctly | P2 |
-| AB-341 | `autobots logs` for a project with no activity yet | Clean empty state message | P1 |
-| AB-342 | `autobots logs` never leaks API keys/secrets (cross-ref AB-030) | Confirmed redacted | P0 |
-| AB-343 | `autobots logs` searchable/filterable by phase ID or cluster (if supported) | Works as documented | P2 |
-| AB-344 | `autobots logs` file size/rotation on a very long-lived project | Doesn't grow unbounded without any rotation/archival strategy | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-339 | `autobots logs` shows full audit trail chronologically | Readable, accurate timeline of all actions taken | P0 | PASS |
+| AB-340 | `autobots logs` with a `--tail`/`-n` style flag (if supported) | Limits output correctly | P2 | PASS |
+| AB-341 | `autobots logs` for a project with no activity yet | Clean empty state message | P1 | PASS |
+| AB-342 | `autobots logs` never leaks API keys/secrets (cross-ref AB-030) | Confirmed redacted | P0 | PASS |
+| AB-343 | `autobots logs` searchable/filterable by phase ID or cluster (if supported) | Works as documented | P2 | PASS |
+| AB-344 | `autobots logs` file size/rotation on a very long-lived project | Doesn't grow unbounded without any rotation/archival strategy | P2 | PASS |
 
 ## 28. `autobots doctor` Preflight
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-345 | `autobots doctor` on a fully healthy setup | All checks pass with green confirmation, fast | P0 |
-| AB-346 | `autobots doctor` checks API connectivity specifically (not just key presence) | Actually pings/validates the key works, doesn't just check it's a non-empty string | P0 |
-| AB-347 | `autobots doctor` checks git repo status | Confirms repo exists, on correct branch state | P0 |
-| AB-348 | `autobots doctor` checks config validity | Surfaces TOML errors here too (overlap with `config validate`, confirm consistent results between the two commands) | P1 |
-| AB-349 | `autobots doctor` checks dependency versions (Python version, required packages) | Flags any version mismatches clearly | P1 |
-| AB-350 | `autobots doctor` with MULTIPLE simultaneous problems (no key + wrong branch + bad config) | Lists ALL problems at once, not just the first one found (so the user doesn't have to run doctor 3 times to find all 3 issues) | P0 |
-| AB-351 | `autobots doctor --fix` (if an auto-fix mode exists) | Safely fixes only what's safely fixable (e.g. creating `.gitignore` entry), never auto-fixes something destructive without confirmation | P1 |
-| AB-352 | `autobots doctor` exit code reflects pass/fail for CI use | Correct exit codes | P1 |
-| AB-353 | `autobots doctor` run time | Fast enough to run habitually before every session (this is the "is everything okay" check users will run reflexively, like `git status`) | P1 |
-| AB-354 | `autobots doctor` checks disk space availability for snapshots | Warns if disk space is critically low before a run that will create many snapshots | P2 |
-| AB-355 | `autobots doctor` checks for stale lock files (cross-ref AB-256) and offers guidance | Proactively surfaces this common gotcha rather than making the user discover it via a failed run | P1 |
-| AB-356 | Compare `autobots doctor` thoroughness directly against `claude doctor` / OpenCode's equivalent health check | Should cover an equal or greater surface area of "things that silently break a session" | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-345 | `autobots doctor` on a fully healthy setup | All checks pass with green confirmation, fast | P0 | PASS |
+| AB-346 | `autobots doctor` checks API connectivity specifically (not just key presence) | Actually pings/validates the key works, doesn't just check it's a non-empty string | P0 | PASS |
+| AB-347 | `autobots doctor` checks git repo status | Confirms repo exists, on correct branch state | P0 | PASS |
+| AB-348 | `autobots doctor` checks config validity | Surfaces TOML errors here too (overlap with `config validate`, confirm consistent results between the two commands) | P1 | PASS |
+| AB-349 | `autobots doctor` checks dependency versions (Python version, required packages) | Flags any version mismatches clearly | P1 | PASS |
+| AB-350 | `autobots doctor` with MULTIPLE simultaneous problems (no key + wrong branch + bad config) | Lists ALL problems at once, not just the first one found (so the user doesn't have to run doctor 3 times to find all 3 issues) | P0 | PASS |
+| AB-351 | `autobots doctor --fix` (if an auto-fix mode exists) | Safely fixes only what's safely fixable (e.g. creating `.gitignore` entry), never auto-fixes something destructive without confirmation | P1 | PASS |
+| AB-352 | `autobots doctor` exit code reflects pass/fail for CI use | Correct exit codes | P1 | PASS |
+| AB-353 | `autobots doctor` run time | Fast enough to run habitually before every session (this is the "is everything okay" check users will run reflexively, like `git status`) | P1 | PASS |
+| AB-354 | `autobots doctor` checks disk space availability for snapshots | Warns if disk space is critically low before a run that will create many snapshots | P2 | PASS |
+| AB-355 | `autobots doctor` checks for stale lock files (cross-ref AB-256) and offers guidance | Proactively surfaces this common gotcha rather than making the user discover it via a failed run | P1 | PASS |
+| AB-356 | Compare `autobots doctor` thoroughness directly against `claude doctor` / OpenCode's equivalent health check | Should cover an equal or greater surface area of "things that silently break a session" | P1 | DEFERRED |
 
 ## 29. `autobots config validate`
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-357 | Valid config | Passes cleanly | P0 |
-| AB-358 | Config with a typo'd key name (e.g. `tempurature` instead of `temperature`) | Flagged as an unrecognized key, not silently ignored (silent ignoring is how users end up confused why a setting "isn't working") | P0 |
-| AB-359 | Config with correct keys but wrong value TYPES (e.g. `max_tokens = "four thousand"` as a string) | Type validation error with the expected type named | P0 |
-| AB-360 | Config validate run standalone vs config validation that happens automatically at the start of `autobots run` | Same validation logic, consistent results (no case where `config validate` passes but `run` immediately fails on a config issue, or vice versa) | P0 |
-| AB-361 | Empty config file (0 bytes) | Treated as "use all defaults," not an error | P1 |
-| AB-362 | Config validate exit code | Correct for CI/pre-commit hook usage | P1 |
-| AB-363 | Config with deprecated keys from an older autobots version | Clear deprecation warning with migration guidance, not silent ignore or hard failure | P1 |
-| AB-364 | Config validate output format is consistent/parseable enough to use in a pre-commit hook | Usable in automation, not just human-readable prose | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-357 | Valid config | Passes cleanly | P0 | PASS |
+| AB-358 | Config with a typo'd key name (e.g. `tempurature` instead of `temperature`) | Flagged as an unrecognized key, not silently ignored (silent ignoring is how users end up confused why a setting "isn't working") | P0 | PASS |
+| AB-359 | Config with correct keys but wrong value TYPES (e.g. `max_tokens = "four thousand"` as a string) | Type validation error with the expected type named | P0 | PASS |
+| AB-360 | Config validate run standalone vs config validation that happens automatically at the start of `autobots run` | Same validation logic, consistent results (no case where `config validate` passes but `run` immediately fails on a config issue, or vice versa) | P0 | PASS |
+| AB-361 | Empty config file (0 bytes) | Treated as "use all defaults," not an error | P1 | PASS |
+| AB-362 | Config validate exit code | Correct for CI/pre-commit hook usage | P1 | PASS |
+| AB-363 | Config with deprecated keys from an older autobots version | Clear deprecation warning with migration guidance, not silent ignore or hard failure | P1 | PASS |
+| AB-364 | Config validate output format is consistent/parseable enough to use in a pre-commit hook | Usable in automation, not just human-readable prose | P2 | PASS |
 
 ## 30. Shell Completions
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-365 | `autobots completions bash` generates a valid completion script | Sourcing it enables `autobots <TAB>` completion in bash | P1 |
-| AB-366 | `autobots completions zsh` | Same for zsh | P1 |
-| AB-367 | `autobots completions fish` | Same for fish | P1 |
-| AB-368 | Completions cover subcommand flags too (e.g. `autobots run --<TAB>` suggests `--supervised`, `--milestone`, `--autonomous`, `--verbose`) | Flag-level completion works, not just top-level command names | P2 |
-| AB-369 | Completions stay in sync after a version upgrade (regenerate and diff against old) | No stale completions suggesting removed/renamed commands | P2 |
-| AB-370 | README/doctor mentions HOW to install completions (source location, shell config line to add) | First-time setup instructions exist and are accurate | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-365 | `autobots completions bash` generates a valid completion script | Sourcing it enables `autobots <TAB>` completion in bash | P1 | PASS |
+| AB-366 | `autobots completions zsh` | Same for zsh | P1 | PASS |
+| AB-367 | `autobots completions fish` | Same for fish | P1 | PASS |
+| AB-368 | Completions cover subcommand flags too (e.g. `autobots run --<TAB>` suggests `--supervised`, `--milestone`, `--autonomous`, `--verbose`) | Flag-level completion works, not just top-level command names | P2 | PASS |
+| AB-369 | Completions stay in sync after a version upgrade (regenerate and diff against old) | No stale completions suggesting removed/renamed commands | P2 | PASS |
+| AB-370 | README/doctor mentions HOW to install completions (source location, shell config line to add) | First-time setup instructions exist and are accurate | P1 | PASS |
 
 ## 31. Context Budget Management
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-371 | Context (project files + roadmap + skills) approaching the target model's context limit | Warning issued before the call is made, not after an API rejection | P0 |
-| AB-372 | Context exceeding the limit | Truncation occurs with a CLEAR indication of what was cut and why, not silent invisible truncation that could cause the model to act on incomplete information | P0 |
-| AB-373 | Truncation strategy — confirm it drops the LEAST relevant content first (e.g. trims a huge architecture.md before dropping the actual task instructions) | Sensible priority order, verified by inspecting `--verbose` prompt output before/after truncation kicks in | P0 |
-| AB-374 | Different models in different clusters have different context limits — budget management adapts per-model, not a single hardcoded limit applied everywhere | Verify across at least 2 clusters with known different limits | P1 |
-| AB-375 | Context budget warning appears in `autobots plan` BEFORE committing to a roadmap that will definitely blow the budget at execution time | Proactive warning at planning time, not just a surprise failure during run | P1 |
-| AB-376 | Extremely small task with minimal context still includes mandatory Tier 1 skills — confirm this doesn't itself trigger unnecessary truncation warnings on trivial tasks | No false-positive budget warnings for normal-sized tasks | P2 |
-| AB-377 | Context budget calculation accounts for the MODEL'S response token reservation too (not just input) | `max_tokens` reserved space is subtracted correctly from available input budget | P1 |
-| AB-378 | Budget management behavior is configurable/overridable (if at all) for advanced users who want to force a larger context at the cost of more truncation risk | If no override exists, confirm that's an acceptable, documented constraint | P2 |
-| AB-379 | Multi-file diff context (when reviewing a large multi-file phase) under budget pressure | Diffs are summarized sensibly rather than the whole review silently failing | P1 |
-| AB-380 | Compare context-budget handling directly against how Claude Code/OpenCode handle large-repo context windows | Should not regress UX — those tools are explicitly designed not to silently drop relevant context without telling the user | P0 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-371 | Context (project files + roadmap + skills) approaching the target model's context limit | Warning issued before the call is made, not after an API rejection | P0 | PASS |
+| AB-372 | Context exceeding the limit | Truncation occurs with a CLEAR indication of what was cut and why, not silent invisible truncation that could cause the model to act on incomplete information | P0 | PASS |
+| AB-373 | Truncation strategy — confirm it drops the LEAST relevant content first (e.g. trims a huge architecture.md before dropping the actual task instructions) | Sensible priority order, verified by inspecting `--verbose` prompt output before/after truncation kicks in | P0 | PASS |
+| AB-374 | Different models in different clusters have different context limits — budget management adapts per-model, not a single hardcoded limit applied everywhere | Verify across at least 2 clusters with known different limits | P1 | PASS |
+| AB-375 | Context budget warning appears in `autobots plan` BEFORE committing to a roadmap that will definitely blow the budget at execution time | Proactive warning at planning time, not just a surprise failure during run | P1 | CODE-VERIFIED |
+| AB-376 | Extremely small task with minimal context still includes mandatory Tier 1 skills — confirm this doesn't itself trigger unnecessary truncation warnings on trivial tasks | No false-positive budget warnings for normal-sized tasks | P2 | PASS |
+| AB-377 | Context budget calculation accounts for the MODEL'S response token reservation too (not just input) | `max_tokens` reserved space is subtracted correctly from available input budget | P1 | PASS |
+| AB-378 | Budget management behavior is configurable/overridable (if at all) for advanced users who want to force a larger context at the cost of more truncation risk | If no override exists, confirm that's an acceptable, documented constraint | P2 | CODE-VERIFIED |
+| AB-379 | Multi-file diff context (when reviewing a large multi-file phase) under budget pressure | Diffs are summarized sensibly rather than the whole review silently failing | P1 | PASS |
+| AB-380 | Compare context-budget handling directly against how Claude Code/OpenCode handle large-repo context windows | Should not regress UX — those tools are explicitly designed not to silently drop relevant context without telling the user | P0 | DEFERRED |
 
 ## 32. Plugin System
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-381 | Register a simple "before" hook (e.g. logs a message before each phase) | Hook fires reliably at the correct point in the lifecycle | P0 |
-| AB-382 | Register an "after" hook | Fires reliably after phase completion | P0 |
-| AB-383 | Plugin hook throws an exception | Run continues gracefully (or fails clearly, documented either way) rather than the plugin crash taking down the entire run silently with a confusing error | P0 |
-| AB-384 | Plugin hook attempts a slow/blocking operation (e.g. network call with no timeout) | Doesn't hang the entire run indefinitely — some timeout protection exists | P1 |
-| AB-385 | Multiple plugins registered, both hooking the same event | Execute in a defined, documented order | P1 |
-| AB-386 | Plugin hook attempts to modify the in-flight phase data (if the API allows it) | Documented whether mutation is supported/safe, or hooks are strictly read-only/observational | P1 |
-| AB-387 | Plugin loading from a malformed/broken plugin file | Clear error identifying which plugin failed to load, doesn't block ALL plugins or the whole CLI from starting | P0 |
-| AB-388 | Plugin system documentation/examples exist for a third-party developer to actually write one without reading autobots source code | At least one working example plugin in docs/repo | P1 |
-| AB-389 | Plugin hooks have access to enough context to be useful (phase ID, cluster, file changes) without being able to access secrets (API key) | Confirm secrets aren't passed into the plugin hook context | P0 |
-| AB-390 | Uninstalling/removing a plugin cleanly | No orphaned references causing errors on next run | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-381 | Register a simple "before" hook (e.g. logs a message before each phase) | Hook fires reliably at the correct point in the lifecycle | P0 | PASS |
+| AB-382 | Register an "after" hook | Fires reliably after phase completion | P0 | PASS |
+| AB-383 | Plugin hook throws an exception | Run continues gracefully (or fails clearly, documented either way) rather than the plugin crash taking down the entire run silently with a confusing error | P0 | PASS |
+| AB-384 | Plugin hook attempts a slow/blocking operation (e.g. network call with no timeout) | Doesn't hang the entire run indefinitely — some timeout protection exists | P1 | CODE-VERIFIED |
+| AB-385 | Multiple plugins registered, both hooking the same event | Execute in a defined, documented order | P1 | PASS |
+| AB-386 | Plugin hook attempts to modify the in-flight phase data (if the API allows it) | Documented whether mutation is supported/safe, or hooks are strictly read-only/observational | P1 | PASS |
+| AB-387 | Plugin loading from a malformed/broken plugin file | Clear error identifying which plugin failed to load, doesn't block ALL plugins or the whole CLI from starting | P0 | CODE-VERIFIED |
+| AB-388 | Plugin system documentation/examples exist for a third-party developer to actually write one without reading autobots source code | At least one working example plugin in docs/repo | P1 | CODE-VERIFIED |
+| AB-389 | Plugin hooks have access to enough context to be useful (phase ID, cluster, file changes) without being able to access secrets (API key) | Confirm secrets aren't passed into the plugin hook context | P0 | PASS |
+| AB-390 | Uninstalling/removing a plugin cleanly | No orphaned references causing errors on next run | P2 | PASS |
 
 ## 33. Skill Marketplace
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-391 | `autobots marketplace` lists available built-in skill packs (FastAPI, Django, React, Next.js per README) | Listing is accurate and matches what's actually installable | P0 |
-| AB-392 | Install a skill pack via marketplace command | Pack's content is correctly injected into relevant cluster prompts afterward | P0 |
-| AB-393 | Install a skill pack, then verify it shows in `autobots catalog`/relevant listing as active | Discoverable post-install, not invisible | P1 |
-| AB-394 | Install a skill pack that conflicts/overlaps with an existing one (e.g. two different React conventions packs) | Clear conflict handling, not silent last-one-wins with no warning | P1 |
-| AB-395 | Marketplace works offline (bundled packs) vs requires network (remote packs) — confirm which is which and that this is documented | No confusing failures from assuming network when bundled, or vice versa | P1 |
-| AB-396 | Uninstall a skill pack | Cleanly removes its injection from future prompts | P1 |
-| AB-397 | A third-party/community skill pack format — is it documented well enough for someone OTHER than the README author to publish one | Real extensibility, not just a hardcoded internal list dressed up as a "marketplace" | P1 |
-| AB-398 | Marketplace skill pack content security — is there any vetting/sandboxing for what a downloaded pack can contain (since it gets injected directly into model prompts) | At minimum, documented trust model for third-party packs | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-391 | `autobots marketplace` lists available built-in skill packs (FastAPI, Django, React, Next.js per README) | Listing is accurate and matches what's actually installable | P0 | PASS |
+| AB-392 | Install a skill pack via marketplace command | Pack's content is correctly injected into relevant cluster prompts afterward | P0 | PASS |
+| AB-393 | Install a skill pack, then verify it shows in `autobots catalog`/relevant listing as active | Discoverable post-install, not invisible | P1 | PASS |
+| AB-394 | Install a skill pack that conflicts/overlaps with an existing one (e.g. two different React conventions packs) | Clear conflict handling, not silent last-one-wins with no warning | P1 | PASS |
+| AB-395 | Marketplace works offline (bundled packs) vs requires network (remote packs) — confirm which is which and that this is documented | No confusing failures from assuming network when bundled, or vice versa | P1 | PASS |
+| AB-396 | Uninstall a skill pack | Cleanly removes its injection from future prompts | P1 | PASS |
+| AB-397 | A third-party/community skill pack format — is it documented well enough for someone OTHER than the README author to publish one | Real extensibility, not just a hardcoded internal list dressed up as a "marketplace" | P1 | PASS |
+| AB-398 | Marketplace skill pack content security — is there any vetting/sandboxing for what a downloaded pack can contain (since it gets injected directly into model prompts) | At minimum, documented trust model for third-party packs | P1 | PASS |
 
 ## 34. Web Dashboard
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-399 | `autobots dashboard` launches a server on port 8080 as documented | Accessible at `localhost:8080`, loads without error | P0 |
-| AB-400 | Dashboard shows live status during an active run (open dashboard, then run in another terminal) | Real-time updates, not requiring manual refresh, and not stale | P0 |
-| AB-401 | Port 8080 already in use by another process | Clear "port in use" error with a suggestion (e.g. `--port` flag), not a silent failure to start | P0 |
-| AB-402 | Dashboard accessible from another device on the same network (if intended) vs localhost-only | Confirm binding behavior matches intent — localhost-only by default is the safer choice and should be the default unless explicitly opened | P0 |
-| AB-403 | Dashboard requires no authentication by default — confirm this is acceptable given it may show cost/audit data, or that auth is at least optional | Document the security posture clearly since this is a local web server exposing project data | P1 |
-| AB-404 | Dashboard graceful shutdown (Ctrl+C) | Releases the port cleanly, doesn't leave a zombie process | P1 |
-| AB-405 | Dashboard with a very large project (many phases/snapshots) | Page loads in reasonable time, doesn't try to render thousands of DOM rows naively | P2 |
-| AB-406 | Dashboard works in major browsers (Chrome, Firefox, Safari) without JS console errors | Cross-browser sanity check | P2 |
-| AB-407 | Dashboard correctly reflects a FAILED/rolled-back run state, not just successful progress | Same accuracy bar as `autobots status` (cross-ref AB-318) | P1 |
-| AB-408 | Dashboard during a `--milestone` run shows the upcoming checkpoint clearly | Useful information density matching what a CLI user would want visually | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-399 | `autobots dashboard` launches a server on port 8080 as documented | Accessible at `localhost:8080`, loads without error | P0 | PASS |
+| AB-400 | Dashboard shows live status during an active run (open dashboard, then run in another terminal) | Real-time updates, not requiring manual refresh, and not stale | P0 | PASS |
+| AB-401 | Port 8080 already in use by another process | Clear "port in use" error with a suggestion (e.g. `--port` flag), not a silent failure to start | P0 | PASS |
+| AB-402 | Dashboard accessible from another device on the same network (if intended) vs localhost-only | Confirm binding behavior matches intent — localhost-only by default is the safer choice and should be the default unless explicitly opened | P0 | PASS |
+| AB-403 | Dashboard requires no authentication by default — confirm this is acceptable given it may show cost/audit data, or that auth is at least optional | Document the security posture clearly since this is a local web server exposing project data | P1 | PASS |
+| AB-404 | Dashboard graceful shutdown (Ctrl+C) | Releases the port cleanly, doesn't leave a zombie process | P1 | PASS |
+| AB-405 | Dashboard with a very large project (many phases/snapshots) | Page loads in reasonable time, doesn't try to render thousands of DOM rows naively | P2 | PASS |
+| AB-406 | Dashboard works in major browsers (Chrome, Firefox, Safari) without JS console errors | Cross-browser sanity check | P2 | DEFERRED |
+| AB-407 | Dashboard correctly reflects a FAILED/rolled-back run state, not just successful progress | Same accuracy bar as `autobots status` (cross-ref AB-318) | P1 | PASS |
+| AB-408 | Dashboard during a `--milestone` run shows the upcoming checkpoint clearly | Useful information density matching what a CLI user would want visually | P2 | CODE-VERIFIED |
 
 ## 35. Response Streaming
 
