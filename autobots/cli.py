@@ -2669,8 +2669,8 @@ def run_ask(args: list[str]) -> None:
             content = roadmap_path.read_text(encoding="utf-8-sig")
             if content.strip():
                 context_parts.append(f"## roadmap.md\n\n{content[:2000]}")
-            except Exception:
-                pass
+        except Exception:
+            pass
 
     context = "\n\n---\n\n".join(context_parts) if context_parts else "No context files available."
 
