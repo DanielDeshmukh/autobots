@@ -477,16 +477,16 @@
 
 ## 22. Safety Branch Enforcement
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-293 | `autobots run` on `main`/`master` directly with default `safety_branch = "autobots-safety"` config | Blocked with the exact documented error: "Execution blocked. Switch to autobots-safety branch." | P0 |
-| AB-294 | `git checkout -b autobots-safety`, then run | Proceeds normally | P0 |
-| AB-295 | Custom `safety_branch` name configured (e.g. `"ai-changes"`) | Enforcement uses the custom name, not hardcoded to `autobots-safety` | P1 |
-| AB-296 | On the correct safety branch, but with unpushed/uncommitted changes already present before the run starts | Confirm whether pre-existing dirty state is snapshotted/preserved correctly, not silently lost | P0 |
-| AB-297 | Branch switched away from safety branch mid-run by the user in a separate terminal | Detected before the next write occurs, run halts (cross-ref AB-220) | P0 |
-| AB-298 | Safety branch check in a repo with NO commits yet (brand new repo, no branches at all) | Clear guidance to make an initial commit/branch first, not a confusing git error | P1 |
-| AB-299 | Detached HEAD state when running `autobots run` | Blocked with a clear "not on a branch" message distinct from the wrong-branch message | P1 |
-| AB-300 | Safety branch feature can be disabled entirely (if such an escape hatch exists) — confirm it requires explicit, hard-to-accidentally-trigger configuration | If disabling is possible, it should not be a default or easily-fat-fingered option | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-293 | `autobots run` on `main`/`master` directly with default `safety_branch = "autobots-safety"` config | Blocked with the exact documented error: "Execution blocked. Switch to autobots-safety branch." | P0 | PASS |
+| AB-294 | `git checkout -b autobots-safety`, then run | Proceeds normally | P0 | PASS |
+| AB-295 | Custom `safety_branch` name configured (e.g. `"ai-changes"`) | Enforcement uses the custom name, not hardcoded to `autobots-safety` | P1 | PASS |
+| AB-296 | On the correct safety branch, but with unpushed/uncommitted changes already present before the run starts | Confirm whether pre-existing dirty state is snapshotted/preserved correctly, not silently lost | P0 | PASS |
+| AB-297 | Branch switched away from safety branch mid-run by the user in a separate terminal | Detected before the next write occurs, run halts (cross-ref AB-220) | P0 | PASS |
+| AB-298 | Safety branch check in a repo with NO commits yet (brand new repo, no branches at all) | Clear guidance to make an initial commit/branch first, not a confusing git error | P1 | PASS |
+| AB-299 | Detached HEAD state when running `autobots run` | Blocked with a clear "not on a branch" message distinct from the wrong-branch message | P1 | PASS |
+| AB-300 | Safety branch feature can be disabled entirely (if such an escape hatch exists) — confirm it requires explicit, hard-to-accidentally-trigger configuration | If disabling is possible, it should not be a default or easily-fat-fingered option | P1 | PASS |
 
 ## 23. Command Policy / Security Whitelist
 
