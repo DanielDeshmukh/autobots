@@ -600,18 +600,18 @@
 
 ## 31. Context Budget Management
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-371 | Context (project files + roadmap + skills) approaching the target model's context limit | Warning issued before the call is made, not after an API rejection | P0 |
-| AB-372 | Context exceeding the limit | Truncation occurs with a CLEAR indication of what was cut and why, not silent invisible truncation that could cause the model to act on incomplete information | P0 |
-| AB-373 | Truncation strategy — confirm it drops the LEAST relevant content first (e.g. trims a huge architecture.md before dropping the actual task instructions) | Sensible priority order, verified by inspecting `--verbose` prompt output before/after truncation kicks in | P0 |
-| AB-374 | Different models in different clusters have different context limits — budget management adapts per-model, not a single hardcoded limit applied everywhere | Verify across at least 2 clusters with known different limits | P1 |
-| AB-375 | Context budget warning appears in `autobots plan` BEFORE committing to a roadmap that will definitely blow the budget at execution time | Proactive warning at planning time, not just a surprise failure during run | P1 |
-| AB-376 | Extremely small task with minimal context still includes mandatory Tier 1 skills — confirm this doesn't itself trigger unnecessary truncation warnings on trivial tasks | No false-positive budget warnings for normal-sized tasks | P2 |
-| AB-377 | Context budget calculation accounts for the MODEL'S response token reservation too (not just input) | `max_tokens` reserved space is subtracted correctly from available input budget | P1 |
-| AB-378 | Budget management behavior is configurable/overridable (if at all) for advanced users who want to force a larger context at the cost of more truncation risk | If no override exists, confirm that's an acceptable, documented constraint | P2 |
-| AB-379 | Multi-file diff context (when reviewing a large multi-file phase) under budget pressure | Diffs are summarized sensibly rather than the whole review silently failing | P1 |
-| AB-380 | Compare context-budget handling directly against how Claude Code/OpenCode handle large-repo context windows | Should not regress UX — those tools are explicitly designed not to silently drop relevant context without telling the user | P0 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-371 | Context (project files + roadmap + skills) approaching the target model's context limit | Warning issued before the call is made, not after an API rejection | P0 | PASS |
+| AB-372 | Context exceeding the limit | Truncation occurs with a CLEAR indication of what was cut and why, not silent invisible truncation that could cause the model to act on incomplete information | P0 | PASS |
+| AB-373 | Truncation strategy — confirm it drops the LEAST relevant content first (e.g. trims a huge architecture.md before dropping the actual task instructions) | Sensible priority order, verified by inspecting `--verbose` prompt output before/after truncation kicks in | P0 | PASS |
+| AB-374 | Different models in different clusters have different context limits — budget management adapts per-model, not a single hardcoded limit applied everywhere | Verify across at least 2 clusters with known different limits | P1 | PASS |
+| AB-375 | Context budget warning appears in `autobots plan` BEFORE committing to a roadmap that will definitely blow the budget at execution time | Proactive warning at planning time, not just a surprise failure during run | P1 | CODE-VERIFIED |
+| AB-376 | Extremely small task with minimal context still includes mandatory Tier 1 skills — confirm this doesn't itself trigger unnecessary truncation warnings on trivial tasks | No false-positive budget warnings for normal-sized tasks | P2 | PASS |
+| AB-377 | Context budget calculation accounts for the MODEL'S response token reservation too (not just input) | `max_tokens` reserved space is subtracted correctly from available input budget | P1 | PASS |
+| AB-378 | Budget management behavior is configurable/overridable (if at all) for advanced users who want to force a larger context at the cost of more truncation risk | If no override exists, confirm that's an acceptable, documented constraint | P2 | CODE-VERIFIED |
+| AB-379 | Multi-file diff context (when reviewing a large multi-file phase) under budget pressure | Diffs are summarized sensibly rather than the whole review silently failing | P1 | PASS |
+| AB-380 | Compare context-budget handling directly against how Claude Code/OpenCode handle large-repo context windows | Should not regress UX — those tools are explicitly designed not to silently drop relevant context without telling the user | P0 | DEFERRED |
 
 ## 32. Plugin System
 
