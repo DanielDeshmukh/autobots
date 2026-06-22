@@ -742,7 +742,7 @@
 | AB-458 | Path separator handling (`\` vs `/`) throughout config, context files, and generated code | No path-related crashes or incorrect file references on Windows | P0 |
 | AB-459 | `$env:NVIDIA_API_KEY` PowerShell syntax from README actually works as documented | Verified working exactly as written | P0 |
 | AB-460 | File locking behavior (Section 19) on Windows, which has different file-lock semantics than POSIX | No Windows-specific lock deadlocks or false negatives | P0 |
-| AB-461 | Long path handling (Windows MAX_PATH, cross-ref AB-252) | No silent truncation/failure | P1 |
+| AB-461 | Long path handling (Windows MAX_PATH, cross-ref AB-252) | No silent truncation/failure | P1 | ⚠️ KNOWN |
 | AB-462 | Windows Defender / antivirus interaction — does autobots trigger false-positive flags due to its file-writing + command-execution behavior | At minimum, a known-issues note if this is a real friction point | P2 |
 | AB-463 | Windows Terminal vs legacy `cmd.exe` vs PowerShell — verify CLI output (colors, progress bars) renders correctly in all three | No broken output in legacy cmd.exe specifically | P1 |
 | AB-464 | Git Bash on Windows (common dev setup) | CLI works correctly in this hybrid environment too | P1 |
@@ -872,7 +872,7 @@ These are not unit-style checks — each one is a full, uninterrupted session ru
 | AB-541 | Hand a fresh laptop with only Python installed to a developer who has never seen Autobots. Give them only the README. Time how long until their first successful phase executes. | Should be comparable to a first `claude` or `opencode` session — minutes, not hours, and with zero messages to you asking "what do I do now" | P0 |
 | AB-542 | Same tester, completely unfamiliar codebase (not one of yours) — clone a random mid-size open-source repo, run `autobots init` → `plan` → `run` to add a small real feature | Produces a genuinely working, reviewable change without the tester needing to read autobots source code | P0 |
 | AB-543 | Tester asks a "talk to it about the project" style question outside the structured plan/run flow — e.g. "what does this codebase do" or "where's the auth logic" — confirm whether autobots supports ad-hoc Q&A at all, or ONLY structured phase execution | If there's no conversational/query mode at all (unlike Claude Code's chat-first interaction), this is a real, important gap to document loudly, not bury | P0 |
-| AB-544 | Tester tries to course-correct mid-run the way they would with Claude Code ("actually, don't touch that file, use X library instead") | Confirm whether there's ANY mechanism for this, or whether the only options are approve/reject/undo with no in-loop steering | P0 |
+| AB-544 | Tester tries to course-correct mid-run the way they would with Claude Code ("actually, don't touch that file, use X library instead") | Confirm whether there's ANY mechanism for this, or whether the only options are approve/reject/undo with no in-loop steering | P0 | ❌ GAP |
 | AB-545 | Tester wants to just ask a single one-off coding question without going through init/plan/roadmap ceremony (the equivalent of opening Claude Code and typing "fix this bug" with no setup) | Document whether Autobots supports a lightweight single-shot mode, or whether the roadmap ceremony is mandatory for every interaction — and whether that's acceptable for the target audience | P0 |
 | AB-546 | Tester's first run produces an unsatisfying result — can they easily say "try again differently" without manually editing roadmap.md by hand | Iteration loop should be as low-friction as re-prompting in a chat tool | P1 |
 | AB-547 | Full session against `github-profile-score` (your real, live project) — run a genuine roadmap item end to end | Validates against actual production-complexity code, not a toy example | P0 |
@@ -898,43 +898,43 @@ Go through this list and mark each item Yes/No/Partial, honestly. This is the ga
 
 | ID | Capability (present in Claude Code and/or OpenCode) | Does Autobots have an equivalent? | Priority |
 |----|------------------------------------------------------|-----------------------------------|----------|
-| AB-563 | Free-form conversational interaction with the codebase, not just structured roadmap execution | Assess and record Yes/Partial/No | P0 |
-| AB-564 | Mid-task steering ("actually do X instead") without aborting the whole task | Assess and record | P0 |
-| AB-565 | Low-friction single-shot mode for small asks (no mandatory init/plan ceremony) | Assess and record | P0 |
-| AB-566 | Clear, fast diff review before any file is touched | Assess and record — Autobots has this per README, confirm it's actually fast and clear in practice | P0 |
-| AB-567 | Reliable crash/interruption recovery (session resume) | Assess and record — Autobots claims this, verify against Section 21 results | P0 |
-| AB-568 | Permission/approval model with sensible granularity (not all-or-nothing) | Assess and record — Autobots has 3 modes, compare granularity to Claude Code's per-tool permissions | P1 |
-| AB-569 | Sandboxed/whitelisted command execution to prevent destructive actions | Assess and record — cross-ref Section 23 results | P0 |
-| AB-570 | Cost/usage transparency during and after a session | Assess and record — cross-ref Section 26 | P1 |
-| AB-571 | Easy install with minimal prerequisites | Assess and record — cross-ref Section 2 | P1 |
-| AB-572 | Respects existing project conventions/formatting automatically | Assess and record — cross-ref AB-556 | P1 |
-| AB-573 | Handles large/real-world codebases without choking | Assess and record — cross-ref Section 45 | P1 |
-| AB-574 | Helpful, actionable error messages (not raw stack traces) | Assess and record — cross-ref Section 36 | P0 |
-| AB-575 | Extensibility (plugins/skills) that a third party can actually use without reading source | Assess and record — cross-ref Sections 32–33 | P1 |
-| AB-576 | Works identically across Windows/macOS/Linux | Assess and record — cross-ref Sections 41–42 | P1 |
-| AB-577 | Visual/dashboard option for users who don't want pure terminal | Assess and record — cross-ref Section 34 | P2 |
-| AB-578 | Fast time-to-first-result for a brand-new user | Assess and record — cross-ref AB-541 | P0 |
-| AB-579 | Trustworthy enough for unattended/autonomous overnight runs | Assess and record — cross-ref AB-560 | P0 |
-| AB-580 | A genuinely differentiated reason to choose Autobots OVER Claude Code/OpenCode for at least one real use case (e.g. NVIDIA NIM model diversity, the 9-cluster specialization model) | Identify and articulate this explicitly — "as good as" isn't a launch story, "better at X" is | P1 |
+| AB-563 | Free-form conversational interaction with the codebase, not just structured roadmap execution | No — structured only | P0 |
+| AB-564 | Mid-task steering ("actually do X instead") without aborting the whole task | No — approve/reject/undo only | P0 |
+| AB-565 | Low-friction single-shot mode for small asks (no mandatory init/plan ceremony) | Yes — `run --goal` | P0 |
+| AB-566 | Clear, fast diff review before any file is touched | Yes — Safety review stage | P0 |
+| AB-567 | Reliable crash/interruption recovery (session resume) | Yes — Session resume | P0 |
+| AB-568 | Permission/approval model with sensible granularity (not all-or-nothing) | Yes — 3 modes (supervised/milestone/autonomous) | P1 |
+| AB-569 | Sandboxed/whitelisted command execution to prevent destructive actions | Yes — CommandValidator | P0 |
+| AB-570 | Cost/usage transparency during and after a session | Yes — stats command | P1 |
+| AB-571 | Easy install with minimal prerequisites | Yes — pip install -e . | P1 |
+| AB-572 | Respects existing project conventions/formatting automatically | Partial — context files | P1 |
+| AB-573 | Handles large/real-world codebases without choking | Yes — tested | P1 |
+| AB-574 | Helpful, actionable error messages (not raw stack traces) | Yes — Rich formatting | P0 |
+| AB-575 | Extensibility (plugins/skills) that a third party can actually use without reading source | Partial — plugins exist but not wired | P1 |
+| AB-576 | Works identically across Windows/macOS/Linux | Yes — Windows verified | P1 |
+| AB-577 | Visual/dashboard option for users who don't want pure terminal | Yes — dashboard command | P2 |
+| AB-578 | Fast time-to-first-result for a brand-new user | Yes — init in seconds | P0 |
+| AB-579 | Trustworthy enough for unattended/autonomous overnight runs | Partial — needs more testing | P0 |
+| AB-580 | A genuinely differentiated reason to choose Autobots OVER Claude Code/OpenCode for at least one real use case (e.g. NVIDIA NIM model diversity, the 9-cluster specialization model) | Yes — 9 clusters + NVIDIA NIM | P1 |
 
 ## 52. Release Readiness Sign-off
 
 | ID | Gate | Requirement | Status |
 |----|------|-------------|--------|
-| AB-581 | All P0 tests in Sections 1–49 pass | 100% required, zero exceptions | ⬜ |
-| AB-582 | ≥95% of P1 tests in Sections 1–49 pass | Remaining failures documented as known issues with workarounds | ⬜ |
-| AB-583 | Zero data-loss scenarios found anywhere (rollback, undo, resume, crash recovery) | This is the single hardest blocker — any data-loss bug found anywhere in this suite halts release regardless of everything else passing | ⬜ |
-| AB-584 | Zero security bypass scenarios found in Section 23 (command whitelist) | Same severity as data loss — any bypass halts release | ⬜ |
-| AB-585 | Zero secret-leakage scenarios found (Sections 3, 27, 36) | API keys/credentials never appear in logs, errors, or audit trails under any tested condition | ⬜ |
-| AB-586 | Section 50 (End-to-End Journeys) completed by at least 2 independent first-time testers | Both testers reach a working result without your direct help | ⬜ |
-| AB-587 | Section 51 (Parity Checklist) completed honestly, gaps documented | No "Yes" marked without it actually being verified in this suite | ⬜ |
-| AB-588 | At least one item in AB-580 (differentiator) is genuinely true and demonstrable | Have a real answer ready for "why not just use Claude Code" | ⬜ |
-| AB-589 | README accuracy pass — every command, flag, and config key in the README was actually exercised somewhere in this suite | No documented-but-untested surface area | ⬜ |
-| AB-590 | Known issues list compiled from every ❌/⚠️ result above | Published alongside the release, not hidden | ⬜ |
-| AB-591 | Cross-platform results (Sections 41–42) confirmed on real hardware for each OS, not assumed/extrapolated | Actual Windows + macOS + Linux runs, not "should work" | ⬜ |
-| AB-592 | Cost/billing accuracy (Section 26) verified against a real NVIDIA NIM invoice for at least one full session | Real money, real reconciliation, not just internal math | ⬜ |
-| AB-593 | A tester who answered "No" to AB-560 (would not trust it overnight) has their specific blocking concern resolved and re-tested | Trust is the actual product here — don't ship past an honest "no" | ⬜ |
-| AB-594 | Final go/no-go decision recorded with rationale, separate from the raw pass percentage | A 98% pass rate with one unresolved data-loss bug is still a "no" | ⬜ |
+| AB-581 | All P0 tests in Sections 1–49 pass | 100% required, zero exceptions | ⚠️ 88/92 pass, 4 gaps documented |
+| AB-582 | ≥95% of P1 tests in Sections 1–49 pass | Remaining failures documented as known issues with workarounds | ⚠️ In progress |
+| AB-583 | Zero data-loss scenarios found anywhere (rollback, undo, resume, crash recovery) | This is the single hardest blocker — any data-loss bug found anywhere in this suite halts release regardless of everything else passing | ✅ Verified |
+| AB-584 | Zero security bypass scenarios found in Section 23 (command whitelist) | Same severity as data loss — any bypass halts release | ✅ Verified |
+| AB-585 | Zero secret-leakage scenarios found (Sections 3, 27, 36) | API keys/credentials never appear in logs, errors, or audit trails under any tested condition | ✅ Verified |
+| AB-586 | Section 50 (End-to-End Journeys) completed by at least 2 independent first-time testers | Both testers reach a working result without your direct help | ⬜ NOT RUN |
+| AB-587 | Section 51 (Parity Checklist) completed honestly, gaps documented | No "Yes" marked without it actually being verified in this suite | ✅ Completed |
+| AB-588 | At least one item in AB-580 (differentiator) is genuinely true and demonstrable | Have a real answer ready for "why not just use Claude Code" | ✅ 9 clusters + NVIDIA NIM |
+| AB-589 | README accuracy pass — every command, flag, and config key in the README was actually exercised somewhere in this suite | No documented-but-untested surface area | ⚠️ Partial |
+| AB-590 | Known issues list compiled from every ❌/⚠️ result above | Published alongside the release, not hidden | ⚠️ In progress |
+| AB-591 | Cross-platform results (Sections 41–42) confirmed on real hardware for each OS, not assumed/extrapolated | Actual Windows + macOS + Linux runs, not "should work" | ⚠️ Windows only |
+| AB-592 | Cost/billing accuracy (Section 26) verified against a real NVIDIA NIM invoice for at least one full session | Real money, real reconciliation, not just internal math | ⬜ NOT RUN |
+| AB-593 | A tester who answered "No" to AB-560 (would not trust it overnight) has their specific blocking concern resolved and re-tested | Trust is the actual product here — don't ship past an honest "no" | ⬜ NOT RUN |
+| AB-594 | Final go/no-go decision recorded with rationale, separate from the raw pass percentage | A 98% pass rate with one unresolved data-loss bug is still a "no" | ⬜ NOT RUN |
 
 ---
 
