@@ -643,18 +643,18 @@
 
 ## 34. Web Dashboard
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-399 | `autobots dashboard` launches a server on port 8080 as documented | Accessible at `localhost:8080`, loads without error | P0 |
-| AB-400 | Dashboard shows live status during an active run (open dashboard, then run in another terminal) | Real-time updates, not requiring manual refresh, and not stale | P0 |
-| AB-401 | Port 8080 already in use by another process | Clear "port in use" error with a suggestion (e.g. `--port` flag), not a silent failure to start | P0 |
-| AB-402 | Dashboard accessible from another device on the same network (if intended) vs localhost-only | Confirm binding behavior matches intent — localhost-only by default is the safer choice and should be the default unless explicitly opened | P0 |
-| AB-403 | Dashboard requires no authentication by default — confirm this is acceptable given it may show cost/audit data, or that auth is at least optional | Document the security posture clearly since this is a local web server exposing project data | P1 |
-| AB-404 | Dashboard graceful shutdown (Ctrl+C) | Releases the port cleanly, doesn't leave a zombie process | P1 |
-| AB-405 | Dashboard with a very large project (many phases/snapshots) | Page loads in reasonable time, doesn't try to render thousands of DOM rows naively | P2 |
-| AB-406 | Dashboard works in major browsers (Chrome, Firefox, Safari) without JS console errors | Cross-browser sanity check | P2 |
-| AB-407 | Dashboard correctly reflects a FAILED/rolled-back run state, not just successful progress | Same accuracy bar as `autobots status` (cross-ref AB-318) | P1 |
-| AB-408 | Dashboard during a `--milestone` run shows the upcoming checkpoint clearly | Useful information density matching what a CLI user would want visually | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-399 | `autobots dashboard` launches a server on port 8080 as documented | Accessible at `localhost:8080`, loads without error | P0 | PASS |
+| AB-400 | Dashboard shows live status during an active run (open dashboard, then run in another terminal) | Real-time updates, not requiring manual refresh, and not stale | P0 | PASS |
+| AB-401 | Port 8080 already in use by another process | Clear "port in use" error with a suggestion (e.g. `--port` flag), not a silent failure to start | P0 | PASS |
+| AB-402 | Dashboard accessible from another device on the same network (if intended) vs localhost-only | Confirm binding behavior matches intent — localhost-only by default is the safer choice and should be the default unless explicitly opened | P0 | PASS |
+| AB-403 | Dashboard requires no authentication by default — confirm this is acceptable given it may show cost/audit data, or that auth is at least optional | Document the security posture clearly since this is a local web server exposing project data | P1 | PASS |
+| AB-404 | Dashboard graceful shutdown (Ctrl+C) | Releases the port cleanly, doesn't leave a zombie process | P1 | PASS |
+| AB-405 | Dashboard with a very large project (many phases/snapshots) | Page loads in reasonable time, doesn't try to render thousands of DOM rows naively | P2 | PASS |
+| AB-406 | Dashboard works in major browsers (Chrome, Firefox, Safari) without JS console errors | Cross-browser sanity check | P2 | DEFERRED |
+| AB-407 | Dashboard correctly reflects a FAILED/rolled-back run state, not just successful progress | Same accuracy bar as `autobots status` (cross-ref AB-318) | P1 | PASS |
+| AB-408 | Dashboard during a `--milestone` run shows the upcoming checkpoint clearly | Useful information density matching what a CLI user would want visually | P2 | CODE-VERIFIED |
 
 ## 35. Response Streaming
 
