@@ -559,20 +559,20 @@
 
 ## 28. `autobots doctor` Preflight
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-345 | `autobots doctor` on a fully healthy setup | All checks pass with green confirmation, fast | P0 |
-| AB-346 | `autobots doctor` checks API connectivity specifically (not just key presence) | Actually pings/validates the key works, doesn't just check it's a non-empty string | P0 |
-| AB-347 | `autobots doctor` checks git repo status | Confirms repo exists, on correct branch state | P0 |
-| AB-348 | `autobots doctor` checks config validity | Surfaces TOML errors here too (overlap with `config validate`, confirm consistent results between the two commands) | P1 |
-| AB-349 | `autobots doctor` checks dependency versions (Python version, required packages) | Flags any version mismatches clearly | P1 |
-| AB-350 | `autobots doctor` with MULTIPLE simultaneous problems (no key + wrong branch + bad config) | Lists ALL problems at once, not just the first one found (so the user doesn't have to run doctor 3 times to find all 3 issues) | P0 |
-| AB-351 | `autobots doctor --fix` (if an auto-fix mode exists) | Safely fixes only what's safely fixable (e.g. creating `.gitignore` entry), never auto-fixes something destructive without confirmation | P1 |
-| AB-352 | `autobots doctor` exit code reflects pass/fail for CI use | Correct exit codes | P1 |
-| AB-353 | `autobots doctor` run time | Fast enough to run habitually before every session (this is the "is everything okay" check users will run reflexively, like `git status`) | P1 |
-| AB-354 | `autobots doctor` checks disk space availability for snapshots | Warns if disk space is critically low before a run that will create many snapshots | P2 |
-| AB-355 | `autobots doctor` checks for stale lock files (cross-ref AB-256) and offers guidance | Proactively surfaces this common gotcha rather than making the user discover it via a failed run | P1 |
-| AB-356 | Compare `autobots doctor` thoroughness directly against `claude doctor` / OpenCode's equivalent health check | Should cover an equal or greater surface area of "things that silently break a session" | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-345 | `autobots doctor` on a fully healthy setup | All checks pass with green confirmation, fast | P0 | PASS |
+| AB-346 | `autobots doctor` checks API connectivity specifically (not just key presence) | Actually pings/validates the key works, doesn't just check it's a non-empty string | P0 | PASS |
+| AB-347 | `autobots doctor` checks git repo status | Confirms repo exists, on correct branch state | P0 | PASS |
+| AB-348 | `autobots doctor` checks config validity | Surfaces TOML errors here too (overlap with `config validate`, confirm consistent results between the two commands) | P1 | PASS |
+| AB-349 | `autobots doctor` checks dependency versions (Python version, required packages) | Flags any version mismatches clearly | P1 | PASS |
+| AB-350 | `autobots doctor` with MULTIPLE simultaneous problems (no key + wrong branch + bad config) | Lists ALL problems at once, not just the first one found (so the user doesn't have to run doctor 3 times to find all 3 issues) | P0 | PASS |
+| AB-351 | `autobots doctor --fix` (if an auto-fix mode exists) | Safely fixes only what's safely fixable (e.g. creating `.gitignore` entry), never auto-fixes something destructive without confirmation | P1 | PASS |
+| AB-352 | `autobots doctor` exit code reflects pass/fail for CI use | Correct exit codes | P1 | PASS |
+| AB-353 | `autobots doctor` run time | Fast enough to run habitually before every session (this is the "is everything okay" check users will run reflexively, like `git status`) | P1 | PASS |
+| AB-354 | `autobots doctor` checks disk space availability for snapshots | Warns if disk space is critically low before a run that will create many snapshots | P2 | PASS |
+| AB-355 | `autobots doctor` checks for stale lock files (cross-ref AB-256) and offers guidance | Proactively surfaces this common gotcha rather than making the user discover it via a failed run | P1 | PASS |
+| AB-356 | Compare `autobots doctor` thoroughness directly against `claude doctor` / OpenCode's equivalent health check | Should cover an equal or greater surface area of "things that silently break a session" | P1 | DEFERRED |
 
 ## 29. `autobots config validate`
 
