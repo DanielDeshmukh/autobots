@@ -2686,6 +2686,9 @@ def run_ask(args: list[str]) -> None:
 
     # Call model
     from .config import load_config
+    from dotenv import load_dotenv
+    load_dotenv(target_root / ".env")
+    load_dotenv(ENGINE_ROOT / ".env")
     config = load_config(target_root)
     api_key = os.getenv("NVIDIA_API_KEY") or config.api_key
 
