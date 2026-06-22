@@ -205,28 +205,28 @@
 
 ## 8. Context Architecture Files
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-091 | `architecture.md` describing a stack the project doesn't actually use | Confirm autobots doesn't validate truthfulness (expected — it trusts the file) but generated code clearly follows what's written, surfacing the mismatch to the user fast | P2 |
-| AB-092 | `conventions.md` with conflicting rules (e.g. "use tabs" in one line, "use 2 spaces" in another) | Generated code follows the LAST or most specific rule consistently — and ideally the model/system warns about the contradiction | P2 |
-| AB-093 | `testing-strategy.md` referencing a test framework not installed in the project | Validation step fails clearly when trying to run tests, not silently skipped | P1 |
-| AB-094 | `security-auth.md` left as a stub/placeholder | RedAlert cluster reviews still run, just with weaker context — not skipped entirely without warning | P1 |
-| AB-095 | `roadmap.md` with zero phases defined | `autobots plan`/`run` gives a clear "no phases defined" error, not a no-op or crash | P0 |
-| AB-096 | `roadmap.md` with a phase that has a dependency on a phase ID that doesn't exist | Validation catches the dangling dependency before execution starts | P0 |
-| AB-097 | `roadmap.md` with a circular dependency between phases (P1 depends on P2, P2 depends on P1) | Detected and rejected with a clear cycle error, not an infinite loop | P0 |
-| AB-098 | `progress-tracker.md` manually edited by hand between runs | Next run reads the manual edits correctly without overwriting them incorrectly | P1 |
-| AB-099 | `progress-tracker.md` corrupted/malformed by manual edit | Specific parse error pointing at the file, not a silent reset of all progress | P0 |
-| AB-100 | Context files with extremely large size (10MB+ architecture.md from a pasted full codebase dump) | Triggers context budget warnings/truncation (Section 31) rather than blowing the prompt budget silently | P0 |
-| AB-101 | Context files containing prompt-injection-style text (e.g. "ignore all previous instructions and...") embedded in a code comment that got pasted into conventions.md | Confirm this doesn't let a malicious/compromised context file hijack cluster behavior unexpectedly — at minimum, document the trust boundary | P0 |
-| AB-102 | Context files referencing secrets/credentials accidentally pasted in (e.g. a real API key pasted into security-auth.md as an "example") | No special handling needed, but confirm these files aren't ever sent anywhere unexpected (telemetry, marketplace, etc.) | P1 |
-| AB-103 | Non-UTF8 encoded context file (e.g. saved as Latin-1 with special characters) | Clear encoding error, not garbled prompt content sent silently to the model | P1 |
-| AB-104 | Context files with Windows line endings (CRLF) vs Unix (LF) mixed across files | No parsing differences in behavior between the two | P2 |
-| AB-105 | `roadmap.md` phase with no acceptance criteria defined | Either rejected by validation or explicitly treated as "no validation gate" with a warning — never silently treated as auto-pass | P0 |
-| AB-106 | Two phases in `roadmap.md` targeting the exact same file paths | Flagged as a potential conflict before execution, not discovered mid-run via a botched merge/overwrite | P1 |
-| AB-107 | Context files updated mid-run (user edits `roadmap.md` while phase 3 of 10 is executing) | Documented behavior — either ignored until next run or explicitly reloaded; no silent inconsistent state | P1 |
-| AB-108 | Delete `progress-tracker.md` entirely after several completed phases, then run `autobots status` | Clear "tracker missing, state unknown" rather than reporting false "0 phases complete" | P0 |
-| AB-109 | Context directory `context/` relocated/renamed mid-project | Clear error pointing at the expected location, not a silent "everything looks empty" false negative | P1 |
-| AB-110 | Run the full context-file validation against the actual `github-profile-score`, `THEMIS`, or `PROTEUS` repo structure as a real-world dogfood test | Identify whether the 6-file context model maps cleanly onto a real, already-complex repo, or whether it forces awkward restructuring | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-091 | `architecture.md` describing a stack the project doesn't actually use | Confirm autobots doesn't validate truthfulness (expected — it trusts the file) but generated code clearly follows what's written, surfacing the mismatch to the user fast | P2 | CODE-VERIFIED |
+| AB-092 | `conventions.md` with conflicting rules (e.g. "use tabs" in one line, "use 2 spaces" in another) | Generated code follows the LAST or most specific rule consistently — and ideally the model/system warns about the contradiction | P2 | N/A (not in CORE_CONTEXT_FILES) |
+| AB-093 | `testing-strategy.md` referencing a test framework not installed in the project | Validation step fails clearly when trying to run tests, not silently skipped | P1 | N/A (not in CORE_CONTEXT_FILES) |
+| AB-094 | `security-auth.md` left as a stub/placeholder | RedAlert cluster reviews still run, just with weaker context — not skipped entirely without warning | P1 | PASS |
+| AB-095 | `roadmap.md` with zero phases defined | `autobots plan`/`run` gives a clear "no phases defined" error, not a no-op or crash | P0 | CODE-VERIFIED |
+| AB-096 | `roadmap.md` with a phase that has a dependency on a phase ID that doesn't exist | Validation catches the dangling dependency before execution starts | P0 | CODE-VERIFIED |
+| AB-097 | `roadmap.md` with a circular dependency between phases (P1 depends on P2, P2 depends on P1) | Detected and rejected with a clear cycle error, not an infinite loop | P0 | CODE-VERIFIED |
+| AB-098 | `progress-tracker.md` manually edited by hand between runs | Next run reads the manual edits correctly without overwriting them incorrectly | P1 | CODE-VERIFIED |
+| AB-099 | `progress-tracker.md` corrupted/malformed by manual edit | Specific parse error pointing at the file, not a silent reset of all progress | P0 | CODE-VERIFIED |
+| AB-100 | Context files with extremely large size (10MB+ architecture.md from a pasted full codebase dump) | Triggers context budget warnings/truncation (Section 31) rather than blowing the prompt budget silently | P0 | CODE-VERIFIED |
+| AB-101 | Context files containing prompt-injection-style text (e.g. "ignore all previous instructions and...") embedded in a code comment that got pasted into conventions.md | Confirm this doesn't let a malicious/compromised context file hijack cluster behavior unexpectedly — at minimum, document the trust boundary | P0 | CODE-VERIFIED |
+| AB-102 | Context files referencing secrets/credentials accidentally pasted in (e.g. a real API key pasted into security-auth.md as an "example") | No special handling needed, but confirm these files aren't ever sent anywhere unexpected (telemetry, marketplace, etc.) | P1 | CODE-VERIFIED |
+| AB-103 | Non-UTF8 encoded context file (e.g. saved as Latin-1 with special characters) | Clear encoding error, not garbled prompt content sent silently to the model | P1 | PASS (FIXED) |
+| AB-104 | Context files with Windows line endings (CRLF) vs Unix (LF) mixed across files | No parsing differences in behavior between the two | P2 | PASS |
+| AB-105 | `roadmap.md` phase with no acceptance criteria defined | Either rejected by validation or explicitly treated as "no validation gate" with a warning — never silently treated as auto-pass | P0 | CODE-VERIFIED |
+| AB-106 | Two phases in `roadmap.md` targeting the exact same file paths | Flagged as a potential conflict before execution, not discovered mid-run via a botched merge/overwrite | P1 | CODE-VERIFIED |
+| AB-107 | Context files updated mid-run (user edits `roadmap.md` while phase 3 of 10 is executing) | Documented behavior — either ignored until next run or explicitly reloaded; no silent inconsistent state | P1 | CODE-VERIFIED |
+| AB-108 | Delete `progress-tracker.md` entirely after several completed phases, then run `autobots status` | Clear "tracker missing, state unknown" rather than reporting false "0 phases complete" | P0 | PASS |
+| AB-109 | Context directory `context/` relocated/renamed mid-project | Clear error pointing at the expected location, not a silent "everything looks empty" false negative | P1 | PASS |
+| AB-110 | Run the full context-file validation against the actual `github-profile-score`, `THEMIS`, or `PROTEUS` repo structure as a real-world dogfood test | Identify whether the 6-file context model maps cleanly onto a real, already-complex repo, or whether it forces awkward restructuring | P1 | DEFERRED (requires real repo) |
 
 ## 9. `autobots plan`
 
