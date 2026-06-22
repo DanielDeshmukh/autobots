@@ -177,16 +177,16 @@
 | AB-068 | Run `autobots init` twice in a row | Idempotent — second run gives identical result, no side effects accumulate | P1 | PASS |
 | AB-069 | Run `autobots init` in a directory that is NOT a git repo | Either works for non-git projects or gives a specific, actionable "not a git repo" error (since `safety_branch` logic assumes git) | P0 | PASS |
 | AB-070 | Run `autobots init` in a git repo with uncommitted changes already present | Doesn't silently stash, discard, or commit existing work | P0 | PASS |
-| AB-071 | Run `autobots init` in a monorepo with multiple potential project roots (e.g. `packages/api`, `packages/web`) | Either auto-detects correctly or asks the user to specify, never guesses silently wrong | P1 | GAP |
+| AB-071 | Run `autobots init` in a monorepo with multiple potential project roots (e.g. `packages/api`, `packages/web`) | Either auto-detects correctly or asks the user to specify, never guesses silently wrong | P1 | PASS (FIXED) |
 | AB-072 | Run `autobots init` against a massive existing codebase (50k+ files) | Completes in reasonable time, doesn't try to read every file into memory | P1 | PASS |
 | AB-073 | Run `autobots init` where `context/` exists but is a file, not a directory | Specific error, not a cryptic OS-level IsADirectoryError | P1 | PASS |
-| AB-074 | Run `autobots init` where one context file is present but empty (0 bytes) | Treated distinctly from "missing" — flagged as "present but empty/invalid" | P1 | GAP |
-| AB-075 | Run `autobots init` where context files exist but contain only whitespace | Same as above — caught as effectively-missing, not silently accepted | P1 | GAP |
-| AB-076 | Run `autobots init` with one context file that's actually a symlink to `/dev/null` | Doesn't crash; treated as empty/invalid | P2 | NOT RUN |
-| AB-077 | Check exit code of `autobots init` when context is incomplete | Non-zero exit code for CI/scripting purposes | P1 | GAP |
+| AB-074 | Run `autobots init` where one context file is present but empty (0 bytes) | Treated distinctly from "missing" — flagged as "present but empty/invalid" | P1 | PASS (FIXED) |
+| AB-075 | Run `autobots init` where context files exist but contain only whitespace | Same as above — caught as effectively-missing, not silently accepted | P1 | PASS (FIXED) |
+| AB-076 | Run `autobots init` with one context file that's actually a symlink to `/dev/null` | Doesn't crash; treated as empty/invalid | P2 | PASS (CODE-VERIFIED) |
+| AB-077 | Check exit code of `autobots init` when context is incomplete | Non-zero exit code for CI/scripting purposes | P1 | PASS (FIXED) |
 | AB-078 | Check exit code of `autobots init` when context is complete | Zero exit code | P1 | PASS |
 | AB-079 | Run `autobots init` on a project where `progress-tracker.md` already has prior phase data from a previous autobots run | Does not wipe existing progress silently | P0 | PASS |
-| AB-080 | Run `autobots init` immediately followed by `autobots plan` with zero manual file editing in between | This is the actual first-five-minutes experience — confirm it doesn't dead-end the user with no guidance on what to write in the 6 context files | P0 | GAP |
+| AB-080 | Run `autobots init` immediately followed by `autobots plan` with zero manual file editing in between | This is the actual first-five-minutes experience — confirm it doesn't dead-end the user with no guidance on what to write in the 6 context files | P0 | PASS (FIXED) |
 
 ## 7. `autobots init --interactive` Wizard
 
@@ -314,18 +314,18 @@
 
 ## 13. NVIDIA Skills — Tier 2 (Conditional)
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-175 | Roadmap goal containing "fine-tuning" loads `nemotron-customize.md` | Verify via `--verbose` prompt dump | P0 |
-| AB-176 | Roadmap goal containing "routing"/"scheduling" loads `cuopt-routing.md` | Loaded correctly | P0 |
-| AB-177 | Roadmap goal containing "Kubernetes"/"K8s" loads `kubernetes-infra.md` | Loaded correctly | P0 |
-| AB-178 | Roadmap goal containing "video"/"edge AI" loads `holoscan.md` | Loaded correctly | P0 |
-| AB-179 | Roadmap goal containing "quantum computing" loads `cudaq.md` | Loaded correctly | P0 |
-| AB-180 | Roadmap goal with NO Tier 2 trigger keywords at all | Zero Tier 2 skills loaded, no wasted token overhead | P1 |
-| AB-181 | Roadmap goal triggering MULTIPLE Tier 2 skills at once (e.g. "pandas dataframe optimization for routing") | Both `cudf.md` and `cuopt-routing.md`/`cuopt-optimization.md` load together correctly | P1 |
-| AB-182 | Keyword detection for Tier 2 — false positive check: does "training a new employee" accidentally trigger `nemotron-customize.md`/`neautomodel-recipe.md` (training keyword) | Keyword matching has enough context-awareness to avoid obviously wrong triggers, or this is a documented known limitation | P2 |
-| AB-183 | Tier 2 skill file missing on disk when its trigger fires | Clear error, not silent prompt gap | P0 |
-| AB-184 | Tier 2 skills don't load for unrelated clusters even if keyword is present (e.g. "quantum" mentioned in a Jazz/UI task) | Conditional loading still respects cluster scoping, not just global keyword match | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-175 | Roadmap goal containing "fine-tuning" loads `nemotron-customize.md` | Verify via `--verbose` prompt dump | P0 | PASS |
+| AB-176 | Roadmap goal containing "routing"/"scheduling" loads `cuopt-routing.md` | Loaded correctly | P0 | PASS |
+| AB-177 | Roadmap goal containing "Kubernetes"/"K8s" loads `kubernetes-infra.md` | Loaded correctly | P0 | PASS |
+| AB-178 | Roadmap goal containing "video"/"edge AI" loads `holoscan.md` | Loaded correctly | P0 | PASS |
+| AB-179 | Roadmap goal containing "quantum computing" loads `cudaq.md` | Loaded correctly | P0 | PASS |
+| AB-180 | Roadmap goal with NO Tier 2 trigger keywords at all | Zero Tier 2 skills loaded, no wasted token overhead | P1 | PASS |
+| AB-181 | Roadmap goal triggering MULTIPLE Tier 2 skills at once (e.g. "pandas dataframe optimization for routing") | Both `cudf.md` and `cuopt-routing.md`/`cuopt-optimization.md` load together correctly | P1 | PASS |
+| AB-182 | Keyword detection for Tier 2 — false positive check: does "training a new employee" accidentally trigger `nemotron-customize.md`/`neautomodel-recipe.md` (training keyword) | Keyword matching has enough context-awareness to avoid obviously wrong triggers, or this is a documented known limitation | P2 | CODE-VERIFIED |
+| AB-183 | Tier 2 skill file missing on disk when its trigger fires | Clear error, not silent prompt gap | P0 | CODE-VERIFIED |
+| AB-184 | Tier 2 skills don't load for unrelated clusters even if keyword is present (e.g. "quantum" mentioned in a Jazz/UI task) | Conditional loading still respects cluster scoping, not just global keyword match | P1 | CODE-VERIFIED |
 
 ## 14. `autobots run --supervised`
 
