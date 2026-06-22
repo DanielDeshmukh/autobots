@@ -4,7 +4,9 @@ import json, os, re
 from pathlib import Path
 from openai import OpenAI
 
-API_KEY = os.getenv("NVIDIA_API_KEY", "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")
+API_KEY = os.environ.get("NVIDIA_API_KEY")
+if not API_KEY:
+    raise SystemExit("Set NVIDIA_API_KEY env var first")
 BASE_URL = "https://integrate.api.nvidia.com/v1"
 MODEL = "meta/llama-3.3-70b-instruct"
 PROJECT = Path(r"D:\Vs Code\VS code\tic-tac-toe")
