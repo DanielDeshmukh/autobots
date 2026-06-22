@@ -439,22 +439,22 @@
 
 ## 20. Snapshot, Rollback & `autobots undo`
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-265 | Snapshot is taken before EVERY write, per README | Verify via `autobots snapshots` that a snapshot exists before each phase, not just the first one | P0 |
-| AB-266 | `autobots undo` after a single completed phase | Exactly reverts that phase's file changes, nothing more, nothing less | P0 |
-| AB-267 | `autobots undo` called multiple times in a row (undo, undo, undo) | Steps back through history correctly one snapshot at a time, doesn't skip or repeat | P0 |
-| AB-268 | `autobots undo` with NO snapshots available (fresh project, nothing run yet) | Clear "nothing to undo" message, not a crash | P1 |
-| AB-269 | `autobots undo` after manually editing files outside of autobots between the snapshot and the undo call | Conflict is detected — undo doesn't blindly overwrite the user's manual edits without warning | P0 |
-| AB-270 | `autobots snapshots` lists all available snapshots with timestamps and associated phase IDs | Output is genuinely useful for deciding what to roll back to | P1 |
-| AB-271 | `autobots diff` against a specific snapshot (not just the latest) | Correctly computes diff against the specified historical point | P0 |
-| AB-272 | Snapshot storage size growth over a long project history (50+ phases) | Reasonable disk usage, ideally with some pruning/compaction strategy documented | P1 |
-| AB-273 | `autobots undo` on binary files (images, etc.) | Restores byte-for-byte correctly, not corrupted by any text-based diffing assumption | P1 |
-| AB-274 | Snapshot/undo interaction with git — does undo also need a separate `git revert`, or are they unified | Documented and consistent relationship between autobots snapshots and git history (cross-ref Section 37) | P0 |
-| AB-275 | `autobots undo` mid-run is blocked (can't undo while a run is actively writing) | Workspace lock (Section 19) prevents undo during active execution | P0 |
-| AB-276 | Rollback triggered automatically by repair-loop exhaustion (AB-230) produces an IDENTICAL result to manually running `autobots undo` for that phase | Automatic and manual rollback paths are consistent, not divergent implementations | P1 |
-| AB-277 | Snapshot taken of a very large binary asset (e.g. 500MB file accidentally in the repo) | Doesn't blow up disk usage or crash the snapshot mechanism — at minimum, a size warning | P2 |
-| AB-278 | `autobots undo` exit code and confirmation message clarity | User can tell with certainty whether the undo succeeded before doing anything else | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-265 | Snapshot is taken before EVERY write, per README | Verify via `autobots snapshots` that a snapshot exists before each phase, not just the first one | P0 | PASS |
+| AB-266 | `autobots undo` after a single completed phase | Exactly reverts that phase's file changes, nothing more, nothing less | P0 | PASS |
+| AB-267 | `autobots undo` called multiple times in a row (undo, undo, undo) | Steps back through history correctly one snapshot at a time, doesn't skip or repeat | P0 | PASS |
+| AB-268 | `autobots undo` with NO snapshots available (fresh project, nothing run yet) | Clear "nothing to undo" message, not a crash | P1 | PASS |
+| AB-269 | `autobots undo` after manually editing files outside of autobots between the snapshot and the undo call | Conflict is detected — undo doesn't blindly overwrite the user's manual edits without warning | P0 | CODE-VERIFIED |
+| AB-270 | `autobots snapshots` lists all available snapshots with timestamps and associated phase IDs | Output is genuinely useful for deciding what to roll back to | P1 | PASS |
+| AB-271 | `autobots diff` against a specific snapshot (not just the latest) | Correctly computes diff against the specified historical point | P0 | CODE-VERIFIED |
+| AB-272 | Snapshot storage size growth over a long project history (50+ phases) | Reasonable disk usage, ideally with some pruning/compaction strategy documented | P1 | PASS |
+| AB-273 | `autobots undo` on binary files (images, etc.) | Restores byte-for-byte correctly, not corrupted by any text-based diffing assumption | P1 | CODE-VERIFIED |
+| AB-274 | Snapshot/undo interaction with git — does undo also need a separate `git revert`, or are they unified | Documented and consistent relationship between autobots snapshots and git history (cross-ref Section 37) | P0 | CODE-VERIFIED |
+| AB-275 | `autobots undo` mid-run is blocked (can't undo while a run is actively writing) | Workspace lock (Section 19) prevents undo during active execution | P0 | CODE-VERIFIED |
+| AB-276 | Rollback triggered automatically by repair-loop exhaustion (AB-230) produces an IDENTICAL result to manually running `autobots undo` for that phase | Automatic and manual rollback paths are consistent, not divergent implementations | P1 | PASS |
+| AB-277 | Snapshot taken of a very large binary asset (e.g. 500MB file accidentally in the repo) | Doesn't blow up disk usage or crash the snapshot mechanism — at minimum, a size warning | P2 | CODE-VERIFIED |
+| AB-278 | `autobots undo` exit code and confirmation message clarity | User can tell with certainty whether the undo succeeded before doing anything else | P1 | PASS |
 
 ## 21. Session Management / `autobots resume` / Checkpoints
 
