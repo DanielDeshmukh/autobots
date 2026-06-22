@@ -350,6 +350,17 @@ Return strict JSON:
         progress_context: str,
         command_payload: dict,
     ) -> str:
+        # Check for active steering instructions
+        steering_section = ""
+        steering_path = workspace.target_root / "context" / ".autobots-steering.md"
+        if steering_path.exists():
+            try:
+                steering_content = steering_path.read_text(encoding="utf-8-sig").strip()
+                if steering_content:
+                    steering_section = f"\n\nACTIVE STEERING INSTRUCTION (MUST FOLLOW):\n{steering_content}\n"
+            except Exception:
+                pass
+
         return f"""
 You are the {plan.primary_cluster} implementation cluster.
 The command tier and support models have already coordinated your mission.
@@ -357,7 +368,7 @@ Act as a collaborative cluster: the lead writes, the reviewer critiques, and sup
 Treat the coordination rules below as hard laws.
 
 {COORDINATION_LAWS}
-
+{steering_section}
 Workspace constraints:
 1. Write to appropriate project roots: src/, app/, lib/, tests/, docs/, scripts/, or context/.
 2. Choose the root that matches the file type and project structure.

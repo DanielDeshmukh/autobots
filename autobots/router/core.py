@@ -221,6 +221,15 @@ class AutobotRouter:
         self._emit(event_handler, f"Optimus secretary {plan.secretary_lead.model_id} updating progress-tracker.md to COMPLETE for {phase.title}.")
         updated_progress = self.mark_phase_complete(progress_text, phase)
         workspace.write_context_file(self.PROGRESS_TRACKER_FILE, updated_progress, lock_owner=f"Optimus/{plan.secretary_lead.model_id}")
+
+        # Clean up steering file after phase completion
+        steering_path = workspace.target_root / "context" / ".autobots-steering.md"
+        if steering_path.exists():
+            try:
+                steering_path.unlink()
+            except Exception:
+                pass
+
         return updated_progress
 
     def _run_verification_loop(
