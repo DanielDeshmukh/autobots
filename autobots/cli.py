@@ -2648,7 +2648,7 @@ def run_ask(args: list[str]) -> None:
 
     # Load context files for context
     from .selectors import missing_core_context_files
-    missing = missing_core_context_files(str(target_root))
+    missing = missing_core_context_files(target_root)
     context_parts = []
 
     # Read available context files
