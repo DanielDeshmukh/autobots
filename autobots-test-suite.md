@@ -424,18 +424,18 @@
 
 ## 19. Workspace Safety & Locking
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-255 | Two `autobots run` invocations against the same project directory simultaneously | Second invocation detects the lock and refuses to start, with a clear message | P0 |
-| AB-256 | Lock file left behind after a hard crash (`kill -9`) — next run attempt | Either stale-lock detection (e.g. PID check) auto-recovers, or a clear manual-unlock instruction is given — never an indefinite false "still running" block | P0 |
-| AB-257 | Lock acquired, then the locking process legitimately finishes — confirm lock is released immediately, not after some delay | Next run can start right away | P0 |
-| AB-258 | Workspace safety check on a project root that's actually a symlink to another location | Resolves correctly, doesn't get confused about what's "inside" the workspace boundary | P1 |
-| AB-259 | Run targeting a path that is a parent directory of another active autobots project | No accidental cross-project interference | P1 |
-| AB-260 | Lock file location — confirm it's project-local (not global), so two DIFFERENT projects can run autobots simultaneously without interference | Two unrelated projects run fine at the same time | P0 |
-| AB-261 | Manually delete the lock file while a run is genuinely still active, then start a second run | Document what happens — ideally still some protection (e.g. PID-based detection independent of the lock file itself) | P1 |
-| AB-262 | Workspace safety check timing — does it lock BEFORE or AFTER context files are read | Locking happens before any mutation-capable step, not after | P1 |
-| AB-263 | Run `autobots status` or `autobots logs` (read-only commands) while a write-lock is held by another run | Read-only commands are NOT blocked by the write lock | P1 |
-| AB-264 | Confirm the workspace boundary genuinely prevents ANY write outside the project root regardless of which command/cluster triggers it (cross-check against AB-217, AB-250) | Single consistent boundary enforcement point, not duplicated/inconsistent logic across different write paths | P0 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-255 | Two `autobots run` invocations against the same project directory simultaneously | Second invocation detects the lock and refuses to start, with a clear message | P0 | PASS |
+| AB-256 | Lock file left behind after a hard crash (`kill -9`) — next run attempt | Either stale-lock detection (e.g. PID check) auto-recovers, or a clear manual-unlock instruction is given — never an indefinite false "still running" block | P0 | PASS |
+| AB-257 | Lock acquired, then the locking process legitimately finishes — confirm lock is released immediately, not after some delay | Next run can start right away | P0 | PASS |
+| AB-258 | Workspace safety check on a project root that's actually a symlink to another location | Resolves correctly, doesn't get confused about what's "inside" the workspace boundary | P1 | PASS |
+| AB-259 | Run targeting a path that is a parent directory of another active autobots project | No accidental cross-project interference | P1 | PASS |
+| AB-260 | Lock file location — confirm it's project-local (not global), so two DIFFERENT projects can run autobots simultaneously without interference | Two unrelated projects run fine at the same time | P0 | PASS |
+| AB-261 | Manually delete the lock file while a run is genuinely still active, then start a second run | Document what happens — ideally still some protection (e.g. PID-based detection independent of the lock file itself) | P1 | PASS |
+| AB-262 | Workspace safety check timing — does it lock BEFORE or AFTER context files are read | Locking happens before any mutation-capable step, not after | P1 | PASS |
+| AB-263 | Run `autobots status` or `autobots logs` (read-only commands) while a write-lock is held by another run | Read-only commands are NOT blocked by the write lock | P1 | PASS |
+| AB-264 | Confirm the workspace boundary genuinely prevents ANY write outside the project root regardless of which command/cluster triggers it (cross-check against AB-217, AB-250) | Single consistent boundary enforcement point, not duplicated/inconsistent logic across different write paths | P0 | PASS |
 
 ## 20. Snapshot, Rollback & `autobots undo`
 
