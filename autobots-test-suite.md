@@ -522,16 +522,16 @@
 
 ## 25. `autobots explain` / Audit Trail
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-323 | `autobots explain P2-T3` on a real completed task ID | Shows full audit trail: what was planned, what model/cluster handled it, what was written, validation results | P0 |
-| AB-324 | `autobots explain` with an invalid/nonexistent task ID | Clear "task ID not found" error, not a crash or empty silent output | P1 |
-| AB-325 | `autobots explain` on a task that went through multiple repair attempts | Shows ALL attempts, not just the final successful one — full history matters for trust | P0 |
-| AB-326 | `autobots explain` on a task that was rolled back | Shows the rollback event clearly in the trail | P1 |
-| AB-327 | `autobots explain` output includes actual prompt sent to the model (or a reasonable summary) when `--verbose` equivalent is requested | Genuine transparency into what the AI was told, matching the "trust but verify" bar Claude Code/OpenCode users expect | P1 |
-| AB-328 | `autobots explain` performance on a project with hundreds of completed tasks | Fast lookup, not a full linear scan that takes seconds | P2 |
-| AB-329 | `autobots explain` cost breakdown for that specific task | Matches the per-task entry in `autobots stats` | P1 |
-| AB-330 | `autobots explain` after a resumed/crashed session (cross-ref AB-288) | Trail is complete across the crash boundary, no gap | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-323 | `autobots explain P2-T3` on a real completed task ID | Shows full audit trail: what was planned, what model/cluster handled it, what was written, validation results | P0 | PASS |
+| AB-324 | `autobots explain` with an invalid/nonexistent task ID | Clear "task ID not found" error, not a crash or empty silent output | P1 | PASS |
+| AB-325 | `autobots explain` on a task that went through multiple repair attempts | Shows ALL attempts, not just the final successful one — full history matters for trust | P0 | PASS |
+| AB-326 | `autobots explain` on a task that was rolled back | Shows the rollback event clearly in the trail | P1 | PASS |
+| AB-327 | `autobots explain` output includes actual prompt sent to the model (or a reasonable summary) when `--verbose` equivalent is requested | Genuine transparency into what the AI was told, matching the "trust but verify" bar Claude Code/OpenCode users expect | P1 | PASS |
+| AB-328 | `autobots explain` performance on a project with hundreds of completed tasks | Fast lookup, not a full linear scan that takes seconds | P2 | PASS |
+| AB-329 | `autobots explain` cost breakdown for that specific task | Matches the per-task entry in `autobots stats` | P1 | PASS |
+| AB-330 | `autobots explain` after a resumed/crashed session (cross-ref AB-288) | Trail is complete across the crash boundary, no gap | P1 | PASS |
 
 ## 26. `autobots stats` / Cost Tracking
 
