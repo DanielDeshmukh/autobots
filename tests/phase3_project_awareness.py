@@ -37,7 +37,7 @@ root "" = project root directory
 root "src" = src/ directory"""
 
 
-SKIP_DIRS = {".git", "node_modules", ".autobots-state", "context", "tests"}
+SKIP_DIRS = {".git", "node_modules", ".autobots-state", "context", "tests", "__pycache__"}
 
 def scan_project(project_dir: Path) -> dict:
     """Scan project and return structured info about existing files."""
@@ -46,9 +46,9 @@ def scan_project(project_dir: Path) -> dict:
         if not f.is_file():
             continue
         rel = str(f.relative_to(project_dir))
-        # Skip hidden dirs, node_modules, context, tests
+        # Skip known non-source directories
         parts = Path(rel).parts
-        if any(p.startswith(".") or p in SKIP_DIRS for p in parts):
+        if any(p in SKIP_DIRS for p in parts):
             continue
         try:
             content = f.read_text(encoding="utf-8")
