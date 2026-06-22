@@ -386,26 +386,26 @@
 
 ## 17. Validation, Repair & Retry Loops
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-227 | Validation command (e.g. `pytest`) fails after a phase's code is written | Ratchet repair cluster engages automatically per the architecture | P0 |
-| AB-228 | Repair loop fixes the issue on attempt 1 | Re-validation passes, phase marked complete, attempt count logged | P0 |
-| AB-229 | Repair loop fails repeatedly up to `max_verification_attempts` (default 3) | Stops at exactly the configured limit, doesn't loop forever or silently exceed it | P0 |
-| AB-230 | Repair loop exhausts attempts — confirm the partially-broken state is rolled back via snapshot, not left in a broken half-fixed state | Project returns to last-known-good state | P0 |
-| AB-231 | Validation command itself is misconfigured (typo in `testing-strategy.md`, e.g. `pytest` vs `pytests`) | Clear "command not found" surfaced distinctly from an actual test failure | P0 |
-| AB-232 | Validation command times out (hangs, e.g. a test with an infinite loop) | Timeout enforced, doesn't hang the entire run indefinitely | P0 |
-| AB-233 | Repair attempt 2 introduces a NEW, different failure than attempt 1 had | Repair loop correctly evaluates against the latest failure, not stale state from attempt 1 | P1 |
-| AB-234 | Validation passes but with warnings (e.g. linter warnings, not errors) | Documented behavior on warnings-vs-errors distinction — confirm warnings don't block completion if not configured to | P1 |
-| AB-235 | Repair loop's generated fix is reviewed by RedAlert (security) before being accepted, per architecture | Confirm repair fixes go through the same security review as original generation, not a bypass shortcut | P0 |
-| AB-236 | Validation runs multiple commands (test + lint + build) where only ONE fails | Repair loop targets the actual failing command's output, not a vague "something failed" | P1 |
-| AB-237 | Repair loop cost — verify each retry attempt is tracked separately in `autobots stats`, not hidden/merged into the original phase cost | Full cost transparency across retries | P1 |
-| AB-238 | Flaky test causes validation to fail on attempt 1 but pass on attempt 2 with NO code changes made by repair (pure flakiness) | Confirm the system doesn't claim credit for "fixing" something that was never broken — or at minimum this edge case is understood | P2 |
-| AB-239 | Validation command requires environment setup (e.g. a database needs to be running) that isn't present | Clear environment-precondition error, distinguished from a code defect | P1 |
-| AB-240 | Repair loop on a phase that legitimately has conflicting acceptance criteria (impossible to satisfy both) | Exhausts attempts and surfaces this clearly rather than the model silently picking one criterion and ignoring the other without telling the user | P1 |
-| AB-241 | `autobots gate` (Section 38) run standalone vs validation-as-part-of-run — confirm they use the same underlying validation logic, not two divergent implementations | Consistent pass/fail results between the two entry points | P1 |
-| AB-242 | Validation step explicitly tests file existence/non-corruption after write (basic sanity), separate from project-level test suite | Confirms at minimum that "the file is syntactically valid" before declaring success | P0 |
-| AB-243 | Repair loop given a validation failure with a massive stack trace (10k+ characters) | Trace is truncated/summarized sensibly for the repair prompt, not blindly dumped causing context overflow | P1 |
-| AB-244 | End-to-end: intentionally seed a roadmap with a phase that WILL fail validation (e.g. ask for an impossible feature), run autonomous, observe the full repair-then-rollback cycle | Entire flow behaves exactly as documented from failure → repair attempts → rollback → clear final report | P0 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-227 | Validation command (e.g. `pytest`) fails after a phase's code is written | Ratchet repair cluster engages automatically per the architecture | P0 | PASS |
+| AB-228 | Repair loop fixes the issue on attempt 1 | Re-validation passes, phase marked complete, attempt count logged | P0 | PASS |
+| AB-229 | Repair loop fails repeatedly up to `max_verification_attempts` (default 3) | Stops at exactly the configured limit, doesn't loop forever or silently exceed it | P0 | PASS |
+| AB-230 | Repair loop exhausts attempts — confirm the partially-broken state is rolled back via snapshot, not left in a broken half-fixed state | Project returns to last-known-good state | P0 | PASS |
+| AB-231 | Validation command itself is misconfigured (typo in `testing-strategy.md`, e.g. `pytest` vs `pytests`) | Clear "command not found" surfaced distinctly from an actual test failure | P0 | PASS |
+| AB-232 | Validation command times out (hangs, e.g. a test with an infinite loop) | Timeout enforced, doesn't hang the entire run indefinitely | P0 | PASS |
+| AB-233 | Repair attempt 2 introduces a NEW, different failure than attempt 1 had | Repair loop correctly evaluates against the latest failure, not stale state from attempt 1 | P1 | CODE-VERIFIED |
+| AB-234 | Validation passes but with warnings (e.g. linter warnings, not errors) | Documented behavior on warnings-vs-errors distinction — confirm warnings don't block completion if not configured to | P1 | PASS |
+| AB-235 | Repair loop's generated fix is reviewed by RedAlert (security) before being accepted, per architecture | Confirm repair fixes go through the same security review as original generation, not a bypass shortcut | P0 | CODE-VERIFIED |
+| AB-236 | Validation runs multiple commands (test + lint + build) where only ONE fails | Repair loop targets the actual failing command's output, not a vague "something failed" | P1 | PASS |
+| AB-237 | Repair loop cost — verify each retry attempt is tracked separately in `autobots stats`, not hidden/merged into the original phase cost | Full cost transparency across retries | P1 | CODE-VERIFIED |
+| AB-238 | Flaky test causes validation to fail on attempt 1 but pass on attempt 2 with NO code changes made by repair (pure flakiness) | Confirm the system doesn't claim credit for "fixing" something that was never broken — or at minimum this edge case is understood | P2 | PASS |
+| AB-239 | Validation command requires environment setup (e.g. a database needs to be running) that isn't present | Clear environment-precondition error, distinguished from a code defect | P1 | CODE-VERIFIED |
+| AB-240 | Repair loop on a phase that legitimately has conflicting acceptance criteria (impossible to satisfy both) | Exhausts attempts and surfaces this clearly rather than the model silently picking one criterion and ignoring the other without telling the user | P1 | CODE-VERIFIED |
+| AB-241 | `autobots gate` (Section 38) run standalone vs validation-as-part-of-run — confirm they use the same underlying validation logic, not two divergent implementations | Consistent pass/fail results between the two entry points | P1 | PASS |
+| AB-242 | Validation step explicitly tests file existence/non-corruption after write (basic sanity), separate from project-level test suite | Confirms at minimum that "the file is syntactically valid" before declaring success | P0 | PASS |
+| AB-243 | Repair loop given a validation failure with a massive stack trace (10k+ characters) | Trace is truncated/summarized sensibly for the repair prompt, not blindly dumped causing context overflow | P1 | CODE-VERIFIED |
+| AB-244 | End-to-end: intentionally seed a roadmap with a phase that WILL fail validation (e.g. ask for an impossible feature), run autonomous, observe the full repair-then-rollback cycle | Entire flow behaves exactly as documented from failure → repair attempts → rollback → clear final report | P0 | DEFERRED |
 
 ## 18. Multi-Root File Writing
 
