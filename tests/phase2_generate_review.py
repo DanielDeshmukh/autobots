@@ -24,25 +24,31 @@ CRITICAL RULES:
 - "content" field MUST be a string with the full file content
 - Use \\n for newlines inside content strings
 - Escape quotes inside content with \\"
-- Include ALL config files the project needs
-- index.html MUST be at project root, not in src/
 - Return ONLY the JSON object, no explanation text
+
+FILE LOCATION RULES:
+- root "" (empty): index.html, package.json, tsconfig.json, vite.config.ts, .gitignore
+- root "src": App.tsx, App.css, main.tsx, and all component files
+- index.html MUST reference src/main.tsx, not main.tsx
 
 Return format:
 {"files":[{"root":"","path":"filename.ext","content":"full file content here"}]}
 
 root "" = project root directory
-root "src" = src/ directory
-Only use roots that make sense for the project type."""
+root "src" = src/ directory"""
 
 REVIEWER_PROMPT = """You are a code reviewer. Review the generated project files for issues.
 
 Check for:
-1. Missing files (index.html, package.json, config files)
-2. Incorrect file locations (index.html should be at root, not src/)
-3. Missing imports or dependencies
-4. Broken code (syntax errors, wrong React usage)
-5. Files that reference each other incorrectly
+1. Missing files (index.html, package.json, tsconfig.json, vite.config.ts)
+2. Incorrect file locations:
+   - index.html, package.json, tsconfig.json, vite.config.ts MUST be at root ""
+   - App.tsx, main.tsx, App.css, components MUST be at root "src"
+3. index.html must reference /src/main.tsx (with src/ prefix)
+4. main.tsx must import from ./App (not App.tsx)
+5. Missing imports or dependencies
+6. Broken code (syntax errors, wrong React usage)
+7. Duplicate files (same file at root and in src/)
 
 Return strict JSON:
 {
@@ -94,7 +100,13 @@ def parse_json(raw: str) -> dict:
         end = candidate.rfind("}")
         if start != -1 and end != -1:
             candidate = candidate[start:end + 1]
-    payload = json.loads(candidate)
+    # Fix common escape issues
+    candidate = candidate.replace("\\\n", "\\n")  # literal backslash-newline -> \n
+    try:
+        payload = json.loads(candidate)
+    except json.JSONDecodeError:
+        # Try with strict=False to handle some edge cases
+        payload = json.loads(candidate, strict=False)
     if "files" in payload:
         for f in payload["files"]:
             if not isinstance(f.get("content"), str):
