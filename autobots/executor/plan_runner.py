@@ -75,11 +75,9 @@ def run_task(target_root: str, task_id: str, mode: str = "supervised") -> dict:
     Execute a single task by ID.
     Modes: supervised, autonomous, milestone
     """
-    from .task_registry import get_task, start_task, complete_task, fail_task
-    from ..planning.core import build_cluster_dispatch
-    from ..router.planning import dispatch_phase
-    from .queue_writer import append_result
-    from .todo_tracker import TodoTracker, append_milestone, update_phase_status
+    from .task_registry import get_task, start_task, complete_task, fail_task, get_phase_status
+    from ..router import AutobotRouter, PhaseRecord
+    from ..workspace import TargetProjectWorkspace
 
     task = get_task(target_root, task_id)
     if not task:
@@ -89,34 +87,55 @@ def run_task(target_root: str, task_id: str, mode: str = "supervised") -> dict:
         return {"error": f"Task {task_id} already completed"}
 
     context_dir = Path(target_root) / "context"
+    roadmap_path = str(context_dir / "roadmap.md")
     progress_path = str(context_dir / "progress-tracker.md")
 
     try:
         start_task(target_root, task_id)
 
-        phases = [{"phase": task["phase_name"], "tasks": [task["description"]], "complete": False}]
-        cluster_map = build_cluster_dispatch(phases)
+        workspace = TargetProjectWorkspace(target_root)
+        router = AutobotRouter()
 
-        tracker = TodoTracker(task["phase_name"], [task["description"]])
-        tracker.mark_active(task["description"])
+        healthy = router.catalog.probe_models(timeout=15.0)
+        if healthy:
+            router.catalog.filter_to_healthy_models(healthy)
 
-        results = dispatch_phase([task["description"]], cluster_map)
-        result = results[0] if results else {}
+        roadmap_text = workspace.read_context_file("roadmap.md")
+        progress_text = workspace.read_context_file("progress-tracker.md")
 
-        cluster = result.get("cluster", "")
-        tracker.mark_complete(task["description"])
+        phase = router.find_next_phase(progress_text)
+        if not phase:
+            return {"error": f"No pending phase found in progress-tracker.md"}
 
-        todo_snapshot = tracker.render()
-        append_milestone(progress_path, task["phase_name"], task["description"], cluster, todo_snapshot)
+        result = router.execute_phase(
+            workspace=workspace,
+            phase=phase,
+            roadmap_text=roadmap_text,
+            progress_text=progress_text,
+        )
 
-        complete_task(target_root, task_id, result=cluster, cluster=cluster)
+        updated_progress = router.complete_phase(workspace, phase, progress_text, result.plan)
 
-        from .task_registry import get_phase_status
+        files = result.files_written or []
+        complete_task(
+            target_root,
+            task_id,
+            result=f"Generated {len(files)} files: {', '.join(files[:5])}",
+            cluster=result.cluster_name,
+        )
+
         phase_status = get_phase_status(target_root, task["phase_id"])
         if phase_status["completed"] == phase_status["total"]:
+            from .todo_tracker import update_phase_status
             update_phase_status(progress_path, task["phase_id"], "COMPLETE")
 
-        return {"task_id": task_id, "status": "completed", "cluster": cluster}
+        return {
+            "task_id": task_id,
+            "status": "completed",
+            "cluster": result.cluster_name,
+            "files_written": files,
+            "summary": result.summary,
+        }
 
     except Exception as exc:
         fail_task(target_root, task_id, error=str(exc))

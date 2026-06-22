@@ -16,7 +16,7 @@ class TargetProjectWorkspace:
     LOCK_RETRY_ATTEMPTS = 3
     ATOMIC_WRITE_RETRY_ATTEMPTS = 3
     ATOMIC_WRITE_RETRY_DELAY_SECONDS = 0.05
-    ALLOWED_WRITE_ROOTS = {"src", "app", "lib", "tests", "docs", "scripts", "context"}
+    ALLOWED_WRITE_ROOTS = {"src", "app", "lib", "tests", "docs", "scripts", "context", "public", "config"}
 
     def __init__(self, target_root: str | Path):
         self.target_root = Path(target_root).expanduser().resolve()
@@ -129,17 +129,20 @@ class TargetProjectWorkspace:
         written_paths: list[str] = []
 
         for file_spec in files:
-            root_name = (file_spec.get("root") or "src").strip().lower()
+            root_name = (file_spec.get("root") or "").strip().lower()
             relative_path = (file_spec.get("path") or "").strip().replace("\\", "/")
             content = file_spec.get("content") or ""
 
-            if root_name not in self.ALLOWED_WRITE_ROOTS:
+            if root_name and root_name not in self.ALLOWED_WRITE_ROOTS:
                 raise WorkspaceIOError(
                     f"Unsupported write root '{root_name}'. Use one of: {', '.join(self.ALLOWED_WRITE_ROOTS)}"
                 )
 
             if root_name == "context":
                 written = self.write_context_file(relative_path, content, lock_owner=lock_owner)
+            elif not root_name:
+                # Empty root = project root directory
+                written = self._atomic_write_text(self.target_root / relative_path, content)
             else:
                 written = self.write_file(root_name, relative_path, content)
 

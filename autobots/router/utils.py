@@ -116,10 +116,11 @@ class PayloadValidator:
                 raise ModelContractError(
                     f"{payload_name} files[{index}] must be an object."
                 )
-            root_name = file_spec.get("root")
+            root_name = file_spec.get("root", "")
             relative_path = file_spec.get("path")
             content = file_spec.get("content")
-            if root_name not in allowed_roots:
+            # Empty string root means project root directory
+            if root_name and root_name not in allowed_roots:
                 raise ModelContractError(
                     f"{payload_name} files[{index}].root must be one of: {', '.join(sorted(allowed_roots))}."
                 )

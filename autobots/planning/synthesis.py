@@ -45,14 +45,14 @@ class PlanSynthesizer:
         phases: list[PhaseSpec] = [
             PhaseSpec(
                 phase_id="P1",
-                title="Inspect impacted code and confirm implementation scope",
+                title=f"Set up project scaffolding for {goal}",
                 goal=(
-                    f"Review the repository surfaces most relevant to '{goal}', especially {paths_label}, "
-                    "and identify constraints, entry points, dependencies, and missing context before editing begins."
+                    f"Create the foundational project structure needed for '{goal}'. "
+                    f"Set up configuration files, dependencies, and the basic directory layout in {paths_label}."
                 ),
                 acceptance_checks=(
-                    f"Relevant implementation surfaces are narrowed to {paths_label}.",
-                    "Known blockers or unknowns are captured before implementation planning continues.",
+                    f"Project structure exists in {paths_label} with all required configuration files.",
+                    "Dependencies are listed and the project can be initialized.",
                 ),
                 depends_on=(),
                 relevant_paths=relevant_paths,
@@ -60,13 +60,13 @@ class PlanSynthesizer:
             ),
             PhaseSpec(
                 phase_id="P2",
-                title="Implement the core change in the primary code paths",
+                title=f"Implement core functionality for {goal}",
                 goal=(
-                    f"Apply the main change needed for '{goal}' in {paths_label} and keep the work scoped to one coherent deliverable."
+                    f"Build the main application logic and components needed for '{goal}' in {paths_label}."
                 ),
                 acceptance_checks=(
-                    "The primary code paths needed for the goal are updated.",
-                    "The implementation stays aligned with the detected repository structure.",
+                    "Core application logic is implemented and complete.",
+                    "All required components and modules are created.",
                 ),
                 depends_on=("P1",),
                 relevant_paths=relevant_paths,
@@ -74,13 +74,13 @@ class PlanSynthesizer:
             ),
             PhaseSpec(
                 phase_id="P3",
-                title="Add or update validation coverage for the change",
+                title=f"Polish and integrate {goal}",
                 goal=(
-                    f"Add or refresh automated checks so the change can be verified with {validation_label}."
+                    f"Add styling, integration, and finishing touches so '{goal}' works end-to-end."
                 ),
                 acceptance_checks=(
-                    "At least one validation path exists for the delivered change.",
-                    "Tests or validation coverage reflect the intended behavior.",
+                    "Application is fully styled and integrated.",
+                    "All files work together as a complete runnable application.",
                 ),
                 depends_on=("P2",),
                 relevant_paths=select_validation_paths(scan),

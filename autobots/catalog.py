@@ -50,7 +50,7 @@ CLUSTER_DEFINITIONS = {
             "requirements",
         ),
         "models": [
-            "nvidia/nemotron-3-super-120b-a12b",
+            "meta/llama-3.3-70b-instruct",
             "nvidia/llama-3.3-nemotron-super-49b-v1.5",
             "nvidia/mistral-large-3-675b-instruct-2512",
             "nvidia/kimi-k2-thinking",
@@ -59,6 +59,7 @@ CLUSTER_DEFINITIONS = {
             "nvidia/glm-5.1",
             "nvidia/llama-4-maverick-17b-128e-instruct",
             "nvidia/stockmark-2-100b-instruct",
+            "nvidia/nemotron-3-super-120b-a12b",
         ],
     },
     "UltraMagnus": {
@@ -74,6 +75,7 @@ CLUSTER_DEFINITIONS = {
             "python",
         ),
         "models": [
+            "meta/llama-3.3-70b-instruct",
             "nvidia/kimi-k2.6",
             "nvidia/deepseek-v4-pro",
             "nvidia/qwen3.5-397b-a17b",
@@ -100,6 +102,7 @@ CLUSTER_DEFINITIONS = {
             "validation",
         ),
         "models": [
+            "meta/llama-3.3-70b-instruct",
             "nvidia/llama-3.1-nemotron-70b-instruct",
             "nvidia/nemotron-4-340b-instruct",
             "deepseek-ai/deepseek-v4-pro",
@@ -150,6 +153,7 @@ CLUSTER_DEFINITIONS = {
             "stability",
         ),
         "models": [
+            "meta/llama-3.3-70b-instruct",
             "nvidia/deepseek-v4-flash",
             "nvidia/qwen3.5-coder-480b-a35b-instruct",
             "nvidia/qwen2.5-coder-32b-instruct",
@@ -279,7 +283,7 @@ GENERAL_TEXT_MODEL_TOKENS = (
 )
 CLUSTER_MATCH_TOKENS = {
     "Optimus": ("command", "glm", "gpt", "kimi", "maverick", "nemotron", "reason", "step", "stockmark", "super", "think"),
-    "UltraMagnus": ("alphafold", "backend", "boltz", "code", "coder", "deepseek", "gemma", "kimi", "mixtral", "mistral", "qwen"),
+    "UltraMagnus": ("alphafold", "backend", "boltz", "code", "coder", "css", "deepseek", "frontend", "gemma", "kimi", "mixtral", "mistral", "qwen", "react", "tailwind", "ui", "vue"),
     "RedAlert": ("content-safety", "guard", "jailbreak", "moderation", "nemoguard", "pii", "safety", "topic-control", "usdvalidate", "validate"),
     "Jazz": ("diffusion", "edit", "flux", "image", "kontext", "multimodal", "relighting", "sd3", "trellis", "vista"),
     "Ratchet": ("coder", "debug", "devstral", "fix", "flash", "mini", "patch", "phi", "repair", "small"),
@@ -593,8 +597,8 @@ class ClusterCatalog:
             reasons.append(f"keyword hits: {', '.join(keyword_hits[:4])}")
 
         extension_signals = {
-            "Jazz": (".tsx", ".jsx", ".css", ".scss", ".png", ".svg"),
-            "UltraMagnus": (".py", ".sql", ".yaml", ".yml", "api", "service"),
+            "Jazz": (".png", ".svg", ".jpg", ".gif", "image", "photo", "illustration"),
+            "UltraMagnus": (".tsx", ".jsx", ".vue", ".css", ".scss", ".py", ".sql", ".yaml", ".yml", "api", "service", "component", "frontend"),
             "Ratchet": ("test", "failure", "fix", "repair", ".spec", ".snap"),
             "RedAlert": ("auth", "security", "policy", "guard", "permission"),
             "Perceptor": ("docs/", "document", "parse", "extract"),
@@ -646,3 +650,58 @@ class ClusterCatalog:
         if any(token in normalized for token in ("405b", "397b", "340b", "675b", "480b")):
             return "slow"
         return "balanced"
+
+    def probe_models(self, timeout: float = 10.0) -> set[str]:
+        """Probe all models and return set of healthy model IDs."""
+        if not self.api_key:
+            return set()
+
+        import httpx
+
+        healthy: set[str] = set()
+        all_model_ids = list({m.model_id for cluster in self.clusters.values() for m in cluster.models})
+        logger.info("Probing %d models for availability...", len(all_model_ids))
+
+        for model_id in all_model_ids:
+            try:
+                resp = httpx.post(
+                    "https://integrate.api.nvidia.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model_id,
+                        "messages": [{"role": "user", "content": "hi"}],
+                        "max_tokens": 5,
+                        "stream": False,
+                    },
+                    timeout=timeout,
+                )
+                if resp.status_code == 200:
+                    healthy.add(model_id)
+                    logger.debug("Model %s: OK", model_id)
+                else:
+                    logger.debug("Model %s: %d %s", model_id, resp.status_code, resp.text[:100])
+            except Exception as exc:
+                logger.debug("Model %s: error %s", model_id, exc)
+
+        logger.info("Healthy models: %d/%d", len(healthy), len(all_model_ids))
+        return healthy
+
+    def filter_to_healthy_models(self, healthy_ids: set[str]) -> None:
+        """Remove unhealthy models from all clusters."""
+        if not healthy_ids:
+            return
+
+        for cluster_name, cluster in self.clusters.items():
+            filtered = tuple(m for m in cluster.models if m.model_id in healthy_ids)
+            if not filtered:
+                # Keep at least one model (the first) as fallback
+                filtered = cluster.models[:1] if cluster.models else ()
+            self.clusters[cluster_name] = ClusterSpec(
+                name=cluster.name,
+                role=cluster.role,
+                keywords=cluster.keywords,
+                models=filtered,
+            )

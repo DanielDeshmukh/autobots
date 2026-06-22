@@ -805,6 +805,7 @@ def run_plan(args: list[str]) -> None:
         return
 
     # No --goal: read existing roadmap and select next phase
+    from rich.table import Table
     result = plan_runner.plan_phase(str(target_root))
 
     if result is None:
@@ -2851,6 +2852,8 @@ def run_steer(args: list[str]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    os.environ["PYTHONUTF8"] = "1"
+    os.environ["PYTHONIOENCODING"] = "utf-8"
     setup_logging()
     args = argv or sys.argv[1:]
     if not args:

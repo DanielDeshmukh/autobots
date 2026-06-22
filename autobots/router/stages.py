@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
+import os
 import time
 from typing import TYPE_CHECKING
 
@@ -49,7 +51,7 @@ class StageExecutor:
         workspace_root: str | None = None,
         base_url: str = "https://integrate.api.nvidia.com/v1",
         temperature: float = 0.2,
-        max_tokens: int = 4096,
+        max_tokens: int = 8192,
         usage_tracker: "UsageTracker | None" = None,
         context_budget_manager: "ContextBudgetManager | None" = None,
     ):
@@ -107,6 +109,15 @@ class StageExecutor:
             command_payload,
         )
         raw = self._complete(plan.primary_lead.model_id, prompt, plan.primary_cluster)
+        logger.info("Specialist raw response length: %d chars", len(raw))
+        # Debug: dump specialist response
+        try:
+            import tempfile
+            debug_path = os.path.join(tempfile.gettempdir(), "autobots_debug_specialist.txt")
+            with open(debug_path, "w", encoding="utf-8") as f:
+                f.write(raw)
+        except Exception:
+            pass
         payload = PayloadValidator.parse_json(raw)
         if "files" not in payload:
             payload["files"] = []
@@ -184,7 +195,27 @@ class StageExecutor:
             if conditional_skills:
                 system_content = f"{system_content}\n\n{conditional_skills}"
 
-        return self._call_model(model_id, system_content, prompt)
+        # Truncate system prompt if too long to avoid model timeouts
+        max_system_chars = 8000
+        if len(system_content) > max_system_chars:
+            logger.warning("System prompt too long (%d chars), truncating to %d", len(system_content), max_system_chars)
+            system_content = system_content[:max_system_chars] + "\n\n[Skills truncated for context limits]"
+
+        logger.debug("Calling model %s with system=%d chars, prompt=%d chars", model_id, len(system_content), len(prompt))
+        # Debug: dump system prompt to file
+        try:
+            import tempfile
+            debug_path = os.path.join(tempfile.gettempdir(), "autobots_debug_system.txt")
+            with open(debug_path, "w", encoding="utf-8") as f:
+                f.write(system_content)
+            debug_path2 = os.path.join(tempfile.gettempdir(), "autobots_debug_prompt.txt")
+            with open(debug_path2, "w", encoding="utf-8") as f:
+                f.write(prompt)
+        except Exception:
+            pass
+        result = self._call_model(model_id, system_content, prompt)
+        logger.debug("Model %s returned %d chars", model_id, len(result))
+        return result
 
     @with_retry(max_attempts=3, base_delay=1.0)
     def _call_model(self, model_id: str, system_content: str, user_prompt: str) -> str:
@@ -230,7 +261,13 @@ class StageExecutor:
         input_tokens = 0
         output_tokens = 0
 
-        with console.status("", spinner="dots") as status:
+        try:
+            spinner_ctx = console.status("", spinner="dots")
+        except Exception:
+            spinner_ctx = None
+
+        ctx = spinner_ctx if spinner_ctx else contextlib.nullcontext()
+        with ctx as status:
             for chunk in self.client.chat.completions.create(
                 model=model_id,
                 messages=[
@@ -242,12 +279,14 @@ class StageExecutor:
                 stream=True,
                 stream_options={"include_usage": True},
             ):
-                if chunk.choices and chunk.choices[0].delta.content:
-                    delta = chunk.choices[0].delta.content
-                    full_response.append(delta)
-                    elapsed = time.time() - start_time
-                    char_count = sum(len(r) for r in full_response)
-                    status.update(f"[dim]Receiving response - {char_count} chars - {elapsed:.1f}s[/dim]")
+                if chunk.choices and chunk.choices[0].delta:
+                    delta = chunk.choices[0].delta
+                    content = getattr(delta, "content", None) or ""
+                    if content:
+                        full_response.append(content)
+                        elapsed = time.time() - start_time
+                        char_count = sum(len(r) for r in full_response)
+                        status.update(f"[dim]Receiving response - {char_count} chars - {elapsed:.1f}s[/dim]")
 
                 # Extract usage from final chunk
                 if chunk.usage:
@@ -264,7 +303,11 @@ class StageExecutor:
                 duration_ms=duration_ms,
             )
 
-        return "".join(full_response)
+        response_text = "".join(full_response)
+        logger.debug("Model %s returned %d chars", model_id, len(response_text))
+        if not response_text.strip():
+            logger.warning("Model %s returned empty response", model_id)
+        return response_text
 
     def _build_client(self):
         from openai import OpenAI
@@ -369,6 +412,19 @@ Treat the coordination rules below as hard laws.
 
 {COORDINATION_LAWS}
 {steering_section}
+CRITICAL: Generate a COMPLETE, RUNNABLE project. The user must be able to run `npm install && npm run dev` and see the working application. This means you MUST include ALL of these files:
+- index.html (entry point)
+- src/main.tsx (React entry point)
+- src/App.tsx (root component)
+- All component files
+- vite.config.ts (build configuration)
+- tsconfig.json (TypeScript configuration)
+- package.json (with ALL dependencies listed)
+- Any CSS/style files needed
+- Any configuration files needed
+
+Do NOT skip project setup files. Every file must be complete and runnable.
+
 Workspace constraints:
 1. Write to appropriate project roots: src/, app/, lib/, tests/, docs/, scripts/, or context/.
 2. Choose the root that matches the file type and project structure.
@@ -452,6 +508,12 @@ Return strict JSON:
         specialist_payload: dict,
         review_payload: dict,
     ) -> str:
+        specialist_summary = json.dumps({
+            "summary": specialist_payload.get("summary", ""),
+            "implementation_notes": specialist_payload.get("implementation_notes", []),
+            "files": [{"root": f.get("root", ""), "path": f.get("path", "")} for f in specialist_payload.get("files", [])],
+        }, indent=2)
+
         return f"""
 {ROLE_PROMPT_HEADERS["repair"]}
 Revise the implementation after autonomous review and feedback from the swarm.
@@ -478,17 +540,11 @@ Target roots available:
 Phase:
 {phase.raw_line}
 
-Roadmap:
-{roadmap_text}
-
-Progress tracker:
-{progress_text}
-
 Command brief:
 {json.dumps(command_payload, indent=2)}
 
-Previous implementation:
-{json.dumps(specialist_payload, indent=2)}
+Previous implementation summary:
+{specialist_summary}
 
 Repair instructions:
 {json.dumps(review_payload, indent=2)}

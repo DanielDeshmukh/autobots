@@ -35,7 +35,7 @@ class PlanningTests(unittest.TestCase):
             _, _, artifacts = write_plan(workspace, goal="Add a planning workflow")
 
             progress = (root / "context" / "progress-tracker.md").read_text(encoding="utf-8")
-            self.assertIn("P2 | Implement the core change in the primary code paths", progress)
+            self.assertIn("P2 | Implement core functionality for Add a planning workflow", progress)
             self.assertIn("validation: python -m unittest discover -s tests -q", progress)
             self.assertEqual(len(artifacts.phases), 3)
 
@@ -56,7 +56,7 @@ class PlanningTests(unittest.TestCase):
             write_plan(workspace, goal="Add a planning workflow")
 
             progress = (context_root / "progress-tracker.md").read_text(encoding="utf-8")
-            self.assertIn("- [x] P1 | Inspect impacted code and confirm implementation scope", progress)
+            self.assertIn("- [x] P1 | Set up project scaffolding for Add a planning workflow", progress)
 
     def test_write_plan_append_mode_inserts_new_phases_after_anchor(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -74,9 +74,9 @@ class PlanningTests(unittest.TestCase):
             )
 
             progress = (root / "context" / "progress-tracker.md").read_text(encoding="utf-8")
-            self.assertIn("P4 | Inspect impacted code and confirm implementation scope", progress)
-            self.assertIn("P4 | Inspect impacted code and confirm implementation scope | depends on: P1", progress)
-            self.assertIn("P2 | Implement the core change in the primary code paths | depends on: P1, P6", progress)
+            self.assertIn("P4 | Set up project scaffolding for Add release readiness follow-up", progress)
+            self.assertIn("P4 | Set up project scaffolding for Add release readiness follow-up | depends on: P1", progress)
+            self.assertIn("P2 | Implement core functionality for Initial planning | depends on: P1, P6", progress)
             self.assertEqual(len(artifacts.phases), 6)
 
     def test_write_plan_dry_run_does_not_write_context_files(self) -> None:

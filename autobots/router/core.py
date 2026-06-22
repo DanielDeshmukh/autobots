@@ -36,7 +36,7 @@ class AutobotRouter:
         catalog: ClusterCatalog | None = None,
         base_url: str = "https://integrate.api.nvidia.com/v1",
         temperature: float = 0.2,
-        max_tokens: int = 4096,
+        max_tokens: int = 8192,
         usage_tracker: "UsageTracker | None" = None,
         context_budget_manager: "ContextBudgetManager | None" = None,
     ):
@@ -134,20 +134,24 @@ class AutobotRouter:
         final_payload = specialist_payload
         final_lock_owner = f"{plan.primary_cluster}/{plan.primary_lead.model_id}"
         if (review_payload.get("status") or "").lower() == "revise":
-            repair_payload, repair_raw = self._run_repair_stage(
-                plan, workspace, phase, roadmap_text, progress_text, command_payload, specialist_payload, review_payload
-            )
-            raw_parts.append(repair_raw)
-            journal.append(
-                ClusterMessage(
-                    speaker=f"Ratchet/{plan.repair_lead.model_id}",
-                    objective="Repair and refinement",
-                    summary=(repair_payload.get("summary") or "Applied repairs after review.").strip(),
+            try:
+                repair_payload, repair_raw = self._run_repair_stage(
+                    plan, workspace, phase, roadmap_text, progress_text, command_payload, specialist_payload, review_payload
                 )
-            )
-            self._emit(event_handler, f"Ratchet repaired {phase.title} and returned the update to Optimus.")
-            final_payload = repair_payload
-            final_lock_owner = f"Ratchet/{plan.repair_lead.model_id}"
+                raw_parts.append(repair_raw)
+                journal.append(
+                    ClusterMessage(
+                        speaker=f"Ratchet/{plan.repair_lead.model_id}",
+                        objective="Repair and refinement",
+                        summary=(repair_payload.get("summary") or "Applied repairs after review.").strip(),
+                    )
+                )
+                self._emit(event_handler, f"Ratchet repaired {phase.title} and returned the update to Optimus.")
+                final_payload = repair_payload
+                final_lock_owner = f"Ratchet/{plan.repair_lead.model_id}"
+            except Exception as exc:
+                logger.warning("Ratchet repair failed, using specialist output: %s", exc)
+                self._emit(event_handler, f"Ratchet repair failed ({type(exc).__name__}), using specialist output.")
 
         safe_files = self._enforce_generated_file_laws(final_payload.get("files", []))
         files_written = self._persist_generated_files(
