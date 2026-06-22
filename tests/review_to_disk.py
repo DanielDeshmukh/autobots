@@ -11,18 +11,20 @@ BASE_URL = "https://integrate.api.nvidia.com/v1"
 MODEL = "meta/llama-3.3-70b-instruct"
 PROJECT = Path(r"D:\Vs Code\VS code\tic-tac-toe")
 
-REVIEWER_PROMPT = """You are a code reviewer. Review the generated project files for issues.
+REVIEWER_PROMPT = """You are a code reviewer for a Vite + React + TypeScript project.
 
-Check for:
-1. Missing files (index.html, package.json, tsconfig.json, vite.config.ts)
-2. Incorrect file locations:
-   - index.html, package.json, tsconfig.json, vite.config.ts MUST be at root ""
-   - App.tsx, main.tsx, App.css, components MUST be at root "src"
-3. index.html must reference /src/main.tsx (with src/ prefix)
-4. main.tsx must import from ./App (not App.tsx)
-5. Missing imports or dependencies
-6. Broken code (syntax errors, wrong React usage)
-7. Duplicate files (same file at root and in src/)
+The following patterns are CORRECT. Do NOT flag them as issues:
+- index.html references /src/main.tsx (with src/ prefix) — this is how Vite works
+- main.tsx imports from ./App (without .tsx extension) — TypeScript resolves this automatically
+- package.json, index.html, vite.config.ts, tsconfig.json are at root ""
+- App.tsx, Board.tsx, Cell.tsx, main.tsx, App.css are in src/
+
+ONLY flag these as issues:
+1. Missing required files (package.json, index.html, vite.config.ts, tsconfig.json, src/main.tsx, src/App.tsx)
+2. Syntax errors or broken React code (wrong JSX, missing return, wrong hooks usage)
+3. Missing imports between files (e.g. App.tsx imports Board but Board.tsx doesn't exist)
+4. package.json missing react or react-dom dependency
+5. Files in wrong location (e.g. index.html inside src/)
 
 Return strict JSON:
 {
