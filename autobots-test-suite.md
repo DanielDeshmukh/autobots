@@ -615,18 +615,18 @@
 
 ## 32. Plugin System
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-381 | Register a simple "before" hook (e.g. logs a message before each phase) | Hook fires reliably at the correct point in the lifecycle | P0 |
-| AB-382 | Register an "after" hook | Fires reliably after phase completion | P0 |
-| AB-383 | Plugin hook throws an exception | Run continues gracefully (or fails clearly, documented either way) rather than the plugin crash taking down the entire run silently with a confusing error | P0 |
-| AB-384 | Plugin hook attempts a slow/blocking operation (e.g. network call with no timeout) | Doesn't hang the entire run indefinitely — some timeout protection exists | P1 |
-| AB-385 | Multiple plugins registered, both hooking the same event | Execute in a defined, documented order | P1 |
-| AB-386 | Plugin hook attempts to modify the in-flight phase data (if the API allows it) | Documented whether mutation is supported/safe, or hooks are strictly read-only/observational | P1 |
-| AB-387 | Plugin loading from a malformed/broken plugin file | Clear error identifying which plugin failed to load, doesn't block ALL plugins or the whole CLI from starting | P0 |
-| AB-388 | Plugin system documentation/examples exist for a third-party developer to actually write one without reading autobots source code | At least one working example plugin in docs/repo | P1 |
-| AB-389 | Plugin hooks have access to enough context to be useful (phase ID, cluster, file changes) without being able to access secrets (API key) | Confirm secrets aren't passed into the plugin hook context | P0 |
-| AB-390 | Uninstalling/removing a plugin cleanly | No orphaned references causing errors on next run | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-381 | Register a simple "before" hook (e.g. logs a message before each phase) | Hook fires reliably at the correct point in the lifecycle | P0 | PASS |
+| AB-382 | Register an "after" hook | Fires reliably after phase completion | P0 | PASS |
+| AB-383 | Plugin hook throws an exception | Run continues gracefully (or fails clearly, documented either way) rather than the plugin crash taking down the entire run silently with a confusing error | P0 | PASS |
+| AB-384 | Plugin hook attempts a slow/blocking operation (e.g. network call with no timeout) | Doesn't hang the entire run indefinitely — some timeout protection exists | P1 | CODE-VERIFIED |
+| AB-385 | Multiple plugins registered, both hooking the same event | Execute in a defined, documented order | P1 | PASS |
+| AB-386 | Plugin hook attempts to modify the in-flight phase data (if the API allows it) | Documented whether mutation is supported/safe, or hooks are strictly read-only/observational | P1 | PASS |
+| AB-387 | Plugin loading from a malformed/broken plugin file | Clear error identifying which plugin failed to load, doesn't block ALL plugins or the whole CLI from starting | P0 | CODE-VERIFIED |
+| AB-388 | Plugin system documentation/examples exist for a third-party developer to actually write one without reading autobots source code | At least one working example plugin in docs/repo | P1 | CODE-VERIFIED |
+| AB-389 | Plugin hooks have access to enough context to be useful (phase ID, cluster, file changes) without being able to access secrets (API key) | Confirm secrets aren't passed into the plugin hook context | P0 | PASS |
+| AB-390 | Uninstalling/removing a plugin cleanly | No orphaned references causing errors on next run | P2 | PASS |
 
 ## 33. Skill Marketplace
 
