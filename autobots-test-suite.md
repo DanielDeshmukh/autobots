@@ -352,18 +352,18 @@
 
 ## 15. `autobots run --milestone`
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-203 | `milestone_threshold = 3`, roadmap has 9 phases | Approval prompts occur after phase 3, 6, and 9 — verify exact cadence | P0 |
-| AB-204 | `milestone_threshold = 3`, roadmap has only 2 phases total | Single approval at the end (or none needed beyond final), no crash from threshold exceeding total phases | P1 |
-| AB-205 | Reject at a milestone checkpoint after 3 phases already auto-completed | Confirm whether reject rolls back all 3 phases in that milestone batch or just halts going forward — and that this is documented either way | P0 |
-| AB-206 | `--milestone` flag combined with a CLI-overridden threshold (if supported, e.g. `--milestone --threshold 5`) | CLI override takes precedence over config file value | P1 |
-| AB-207 | Milestone run interrupted mid-batch (phase 2 of a 3-phase milestone batch) | Resume picks up correctly mid-batch, not from the start of the batch or the whole run | P0 |
-| AB-208 | Milestone diff review at the checkpoint shows ALL phases in that batch, not just the last one | Full batch diff visibility before approving | P0 |
-| AB-209 | Milestone mode with `milestone_threshold = 1` | Behaves identically to supervised mode | P2 |
-| AB-210 | Milestone mode with `milestone_threshold` larger than total phase count | Behaves identically to autonomous mode for that run (single final gate) — confirm this is intentional | P2 |
-| AB-211 | Validation failure occurs on phase 2 of a 3-phase milestone batch, before the checkpoint | Repair loop (Section 17) engages before reaching the milestone approval, not bypassed | P0 |
-| AB-212 | Cost/stats accuracy for milestone runs vs supervised — `autobots stats` after a milestone run | Cost tracking is accurate per-phase even though approval is batched | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-203 | `milestone_threshold = 3`, roadmap has 9 phases | Approval prompts occur after phase 3, 6, and 9 — verify exact cadence | P0 | PASS |
+| AB-204 | `milestone_threshold = 3`, roadmap has only 2 phases total | Single approval at the end (or none needed beyond final), no crash from threshold exceeding total phases | P1 | PASS |
+| AB-205 | Reject at a milestone checkpoint after 3 phases already auto-completed | Confirm whether reject rolls back all 3 phases in that milestone batch or just halts going forward — and that this is documented either way | P0 | CODE-VERIFIED |
+| AB-206 | `--milestone` flag combined with a CLI-overridden threshold (if supported, e.g. `--milestone --threshold 5`) | CLI override takes precedence over config file value | P1 | PASS |
+| AB-207 | Milestone run interrupted mid-batch (phase 2 of a 3-phase milestone batch) | Resume picks up correctly mid-batch, not from the start of the batch or the whole run | P0 | CODE-VERIFIED |
+| AB-208 | Milestone diff review at the checkpoint shows ALL phases in that batch, not just the last one | Full batch diff visibility before approving | P0 | CODE-VERIFIED |
+| AB-209 | Milestone mode with `milestone_threshold = 1` | Behaves identically to supervised mode | P2 | PASS |
+| AB-210 | Milestone mode with `milestone_threshold` larger than total phase count | Behaves identically to autonomous mode for that run (single final gate) — confirm this is intentional | P2 | PASS |
+| AB-211 | Validation failure occurs on phase 2 of a 3-phase milestone batch, before the checkpoint | Repair loop (Section 17) engages before reaching the milestone approval, not bypassed | P0 | CODE-VERIFIED |
+| AB-212 | Cost/stats accuracy for milestone runs vs supervised — `autobots stats` after a milestone run | Cost tracking is accurate per-phase even though approval is batched | P1 | PASS |
 
 ## 16. `autobots run --autonomous`
 
