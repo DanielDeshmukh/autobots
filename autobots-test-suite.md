@@ -658,14 +658,14 @@
 
 ## 35. Response Streaming
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-409 | Long model response (large code generation) shows live character counter as documented | Counter updates in real time, gives the user confidence the process isn't hung | P0 |
-| AB-410 | Streaming interrupted by network blip mid-response | Either resumes/retries cleanly or fails with a clear partial-response error, not silently accepting a truncated response as complete | P0 |
-| AB-411 | `--verbose` mode combined with streaming | Full prompt + streaming response both shown without garbling each other in terminal output | P1 |
-| AB-412 | Streaming output in a non-TTY/piped context (CI logs) | Degrades to non-streaming-looking sequential output without broken control characters | P1 |
-| AB-413 | Streaming character counter accuracy vs final token count in `autobots stats` | Roughly consistent, not wildly different units causing confusion | P2 |
-| AB-414 | Compare streaming UX directly against Claude Code's live tool-output streaming | Should feel equally responsive — this is a major "is the tool alive" trust signal for users coming from those tools | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-409 | Long model response (large code generation) shows live character counter as documented | Counter updates in real time, gives the user confidence the process isn't hung | P0 | PASS |
+| AB-410 | Streaming interrupted by network blip mid-response | Either resumes/retries cleanly or fails with a clear partial-response error, not silently accepting a truncated response as complete | P0 | GAP (no try/except) |
+| AB-411 | `--verbose` mode combined with streaming | Full prompt + streaming response both shown without garbling each other in terminal output | P1 | CODE-VERIFIED |
+| AB-412 | Streaming output in a non-TTY/piped context (CI logs) | Degrades to non-streaming-looking sequential output without broken control characters | P1 | PASS |
+| AB-413 | Streaming character counter accuracy vs final token count in `autobots stats` | Roughly consistent, not wildly different units causing confusion | P2 | PASS |
+| AB-414 | Compare streaming UX directly against Claude Code's live tool-output streaming | Should feel equally responsive — this is a major "is the tool alive" trust signal for users coming from those tools | P1 | DEFERRED |
 
 ## 36. Structured Error Handling
 
