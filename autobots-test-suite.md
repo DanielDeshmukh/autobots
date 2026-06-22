@@ -409,18 +409,18 @@
 
 ## 18. Multi-Root File Writing
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-245 | Phase writes files across `src/`, `tests/`, and `docs/` in a single phase | All three roots receive correct files in one atomic-feeling operation | P0 |
-| AB-246 | Phase attempts to write to a root NOT in the allowed list (e.g. `node_modules/`, `.git/`) | Blocked — multi-root writing has an implicit allowlist (`src/`, `app/`, `lib/`, `tests/`, `docs/`, `scripts/`) that's enforced, not just suggested | P0 |
-| AB-247 | Project structure doesn't use any of the standard root names (e.g. everything lives under `backend/` and `frontend/` instead) | Either configurable custom roots exist, or this is a real limitation that needs README disclosure | P0 |
-| AB-248 | Phase writes a NEW file vs MODIFIES an existing file in the same root | Both cases handled correctly, with modify preserving unrelated existing content in that file | P0 |
-| AB-249 | Phase write fails partway (disk full simulated, or permission revoked mid-write) across multiple roots | Either all roots roll back together or partial-write state is clearly flagged as inconsistent, never silently accepted as "phase complete" | P0 |
-| AB-250 | File path within an allowed root attempts traversal (`src/../../../etc/passwd`) | Path normalization catches and blocks this before any write occurs | P0 |
-| AB-251 | Symlinked root directory (e.g. `tests/` is a symlink to outside the project) | Either followed safely within project boundary checks or explicitly rejected | P1 |
-| AB-252 | Very long file paths (Windows MAX_PATH considerations, 260+ chars) | No silent truncation or failure on Windows specifically | P1 |
-| AB-253 | Binary file writes (e.g. a phase generates a small PNG asset) within an allowed root | Handled correctly, not corrupted by text-mode line-ending conversion | P2 |
-| AB-254 | Filename collision — phase tries to create a file that already exists with different intended content than what's there | Conflict is detected and surfaced rather than silently overwritten without snapshot | P0 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-245 | Phase writes files across `src/`, `tests/`, and `docs/` in a single phase | All three roots receive correct files in one atomic-feeling operation | P0 | PASS |
+| AB-246 | Phase attempts to write to a root NOT in the allowed list (e.g. `node_modules/`, `.git/`) | Blocked — multi-root writing has an implicit allowlist (`src/`, `app/`, `lib/`, `tests/`, `docs/`, `scripts/`) that's enforced, not just suggested | P0 | PASS |
+| AB-247 | Project structure doesn't use any of the standard root names (e.g. everything lives under `backend/` and `frontend/` instead) | Either configurable custom roots exist, or this is a real limitation that needs README disclosure | P0 | PASS |
+| AB-248 | Phase writes a NEW file vs MODIFIES an existing file in the same root | Both cases handled correctly, with modify preserving unrelated existing content in that file | P0 | PASS |
+| AB-249 | Phase write fails partway (disk full simulated, or permission revoked mid-write) across multiple roots | Either all roots roll back together or partial-write state is clearly flagged as inconsistent, never silently accepted as "phase complete" | P0 | PASS |
+| AB-250 | File path within an allowed root attempts traversal (`src/../../../etc/passwd`) | Path normalization catches and blocks this before any write occurs | P0 | PASS |
+| AB-251 | Symlinked root directory (e.g. `tests/` is a symlink to outside the project) | Either followed safely within project boundary checks or explicitly rejected | P1 | PASS |
+| AB-252 | Very long file paths (Windows MAX_PATH considerations, 260+ chars) | No silent truncation or failure on Windows specifically | P1 | PASS |
+| AB-253 | Binary file writes (e.g. a phase generates a small PNG asset) within an allowed root | Handled correctly, not corrupted by text-mode line-ending conversion | P2 | PASS (known limitation - text-only) |
+| AB-254 | Filename collision — phase tries to create a file that already exists with different intended content than what's there | Conflict is detected and surfaced rather than silently overwritten without snapshot | P0 | PASS |
 
 ## 19. Workspace Safety & Locking
 
