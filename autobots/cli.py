@@ -482,6 +482,47 @@ def run_engage() -> None:
             usage_tracker.save()
 
 
+def _detect_monorepo_subprojects(target_root: Path) -> list[Path]:
+    """Detect potential project sub-roots in a monorepo structure.
+
+    Scans immediate children and one level deeper for common project indicators.
+    """
+    project_indicators = {
+        "pyproject.toml", "package.json", "Cargo.toml", "go.mod",
+        "setup.py", "setup.cfg", "pom.xml", "build.gradle",
+    }
+    skip_dirs = {
+        "node_modules", "__pycache__", ".git", "venv", ".venv", "env",
+        "dist", "build", ".tox", ".mypy_cache", ".pytest_cache",
+    }
+    subprojects = []
+    try:
+        for child in sorted(target_root.iterdir()):
+            if not child.is_dir() or child.name.startswith(".") or child.name in skip_dirs:
+                continue
+            # Check immediate child for project indicators
+            for indicator in project_indicators:
+                if (child / indicator).exists():
+                    subprojects.append(child)
+                    break
+            else:
+                # One level deeper: check if child has subdirs with indicators
+                # (common in monorepos: packages/api/, apps/web/, libs/core/)
+                try:
+                    for grandchild in sorted(child.iterdir()):
+                        if not grandchild.is_dir() or grandchild.name.startswith(".") or grandchild.name in skip_dirs:
+                            continue
+                        for indicator in project_indicators:
+                            if (grandchild / indicator).exists():
+                                subprojects.append(grandchild)
+                                break
+                except PermissionError:
+                    pass
+    except PermissionError:
+        pass
+    return subprojects
+
+
 def run_init(args: list[str]) -> None:
     """Check context files for a target project."""
     console = Console()
@@ -506,12 +547,14 @@ def run_init(args: list[str]) -> None:
 
     # Auto-detect target: use provided path, or default to current directory
     target_root = None
+    explicit_path = False
     tokens = []
     for arg in args[1:]:
         if arg.startswith("--"):
             tokens.append(arg)
         elif target_root is None:
             target_root = Path(arg).expanduser().resolve()
+            explicit_path = True
         else:
             tokens.append(arg)
 
@@ -525,6 +568,23 @@ def run_init(args: list[str]) -> None:
     if interactive:
         run_onboarding_wizard(target_root, console, skip_api_key)
         return
+
+    # Monorepo detection: if no explicit path and no context/ dir, check for sub-projects
+    if not explicit_path and not (target_root / "context").is_dir():
+        subprojects = _detect_monorepo_subprojects(target_root)
+        if subprojects:
+            paths = "\n".join(f"  [cyan]{sp.relative_to(target_root)}[/cyan]" for sp in subprojects[:10])
+            console.print(
+                Panel.fit(
+                    f"No context/ directory found at:\n{target_root}\n\n"
+                    f"Detected potential project sub-roots:\n{paths}\n\n"
+                    "[bold]Tip:[/bold] Specify the project path explicitly:\n"
+                    "  autobots init <path-to-sub-project>",
+                    title="Monorepo Detected",
+                    border_style="yellow",
+                )
+            )
+            # Continue anyway — check cwd for context, but warn
 
     console.print(
         Panel.fit(
@@ -574,6 +634,32 @@ def run_init(args: list[str]) -> None:
         )
     )
 
+    # Show guidance on what to write in context files
+    if missing_files:
+        guidance = (
+            "[bold]Next steps:[/bold]\n\n"
+            "Each context file should describe your project:\n"
+            "  [cyan]architecture.md[/cyan]     - Tech stack, patterns, directory structure\n"
+            "  [cyan]roadmap.md[/cyan]           - Phases and tasks for Autobots to execute\n"
+            "  [cyan]ui-components.md[/cyan]     - UI component library and design system\n"
+            "  [cyan]progress-tracker.md[/cyan]  - Current phase/task status (auto-updated)\n"
+            "  [cyan]project-briefing.md[/cyan]  - Project overview, goals, constraints\n"
+            "  [cyan]security-auth.md[/cyan]     - Auth patterns, security requirements\n\n"
+            "[bold]Example roadmap.md:[/bold]\n"
+            "  ### P1: Setup\n"
+            "  - Initialize project structure\n"
+            "  - Acceptance checks:\n"
+            "    - [ ] src/ directory exists\n"
+            "    - [ ] pyproject.toml configured"
+        )
+        console.print(
+            Panel.fit(
+                guidance,
+                title="Writing Context Files",
+                border_style="cyan",
+            )
+        )
+
     # Show API key status
     import os
     api_key = os.getenv("NVIDIA_API_KEY", "").strip()
@@ -581,6 +667,10 @@ def run_init(args: list[str]) -> None:
         console.print("[green]OK[/green] NVIDIA API key: configured")
     else:
         console.print("[yellow]WARN[/yellow] NVIDIA API key: not set (required for swarm operations)")
+
+    # Return non-zero exit code if context is incomplete (for CI/scripting)
+    if missing_files:
+        raise SystemExit(1)
 
 
 def _parse_init_file_args(tokens: list[str]) -> tuple[str, ...] | None:
