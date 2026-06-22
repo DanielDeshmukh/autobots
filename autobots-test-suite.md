@@ -190,18 +190,18 @@
 
 ## 7. `autobots init --interactive` Wizard
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-081 | Run wizard fresh, answer every prompt with sensible defaults | Produces valid, complete context files at the end | P0 |
-| AB-082 | Run wizard and hit Ctrl+C halfway through | No partially-written, malformed context files left behind that `autobots init` would later misreport as "valid" | P0 |
-| AB-083 | Run wizard and provide empty input where a value is required | Re-prompts or gives a clear validation message instead of writing an empty/garbage field | P1 |
-| AB-084 | Run wizard twice on the same project | Second run either merges intelligently or explicitly warns it will overwrite | P0 |
-| AB-085 | Run wizard with extremely long free-text answers (multi-paragraph architecture description) | No truncation or corruption when written into the markdown context files | P2 |
-| AB-086 | Run wizard piping stdin from a script (non-interactive automation use) | Either supports scripted/non-TTY input or fails with a clear "requires interactive terminal" message | P1 |
-| AB-087 | Run wizard, answer with text containing markdown special characters (`#`, `*`, backticks) | Doesn't break the generated markdown file's formatting | P2 |
-| AB-088 | Compare wizard output against manually-written context files for the same project | Wizard output is genuinely usable by `autobots plan`, not boilerplate stub text that has to be entirely rewritten anyway | P1 |
-| AB-089 | Run wizard on Windows PowerShell vs macOS Terminal vs Linux bash | Identical prompt behavior and output across all three | P1 |
-| AB-090 | Check wizard never silently calls the NVIDIA API (it's local-only file scaffolding) | No API key required to complete the wizard | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-081 | Run wizard fresh, answer every prompt with sensible defaults | Produces valid, complete context files at the end | P0 | PASS (FIXED) |
+| AB-082 | Run wizard and hit Ctrl+C halfway through | No partially-written, malformed context files left behind that `autobots init` would later misreport as "valid" | P0 | PASS |
+| AB-083 | Run wizard and provide empty input where a value is required | Re-prompts or gives a clear validation message instead of writing an empty/garbage field | P1 | PASS |
+| AB-084 | Run wizard twice on the same project | Second run either merges intelligently or explicitly warns it will overwrite | P0 | PASS |
+| AB-085 | Run wizard with extremely long free-text answers (multi-paragraph architecture description) | No truncation or corruption when written into the markdown context files | P2 | PASS |
+| AB-086 | Run wizard piping stdin from a script (non-interactive automation use) | Either supports scripted/non-TTY input or fails with a clear "requires interactive terminal" message | P1 | PASS |
+| AB-087 | Run wizard, answer with text containing markdown special characters (`#`, `*`, backticks) | Doesn't break the generated markdown file's formatting | P2 | PASS |
+| AB-088 | Compare wizard output against manually-written context files for the same project | Wizard output is genuinely usable by `autobots plan`, not boilerplate stub text that has to be entirely rewritten anyway | P1 | PASS |
+| AB-089 | Run wizard on Windows PowerShell vs macOS Terminal vs Linux bash | Identical prompt behavior and output across all three | P1 | PASS (WINDOWS) |
+| AB-090 | Check wizard never silently calls the NVIDIA API (it's local-only file scaffolding) | No API key required to complete the wizard | P1 | PASS (CODE-VERIFIED) |
 
 ## 8. Context Architecture Files
 
