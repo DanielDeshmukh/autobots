@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -581,7 +582,12 @@ class ClusterCatalog:
         score = 0
         reasons: list[str] = []
 
-        keyword_hits = [keyword for keyword in cluster.keywords if keyword in normalized_signal]
+        # Use word-boundary matching to avoid false substring matches
+        # e.g., "uiverse" should not match keyword "ui"
+        keyword_hits = [
+            keyword for keyword in cluster.keywords
+            if re.search(r'\b' + re.escape(keyword) + r'\b', normalized_signal)
+        ]
         if keyword_hits:
             score += len(keyword_hits) * 3
             reasons.append(f"keyword hits: {', '.join(keyword_hits[:4])}")

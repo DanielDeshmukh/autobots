@@ -255,32 +255,32 @@
 
 ## 10. Model Routing & Cluster Assignment
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-131 | Task containing keyword "backend" routes to UltraMagnus | Correct cluster selected | P0 |
-| AB-132 | Task containing keyword "ui"/"css" routes to Jazz | Correct cluster selected | P0 |
-| AB-133 | Task containing "security"/"auth" routes to RedAlert | Correct cluster selected | P0 |
-| AB-134 | Task containing "debug"/"fix" routes to Ratchet | Correct cluster selected | P0 |
-| AB-135 | Task containing "rag"/"embedding" routes to Perceptor | Correct cluster selected | P0 |
-| AB-136 | Task containing "speech"/"audio" routes to Bumblebee | Correct cluster selected | P0 |
-| AB-137 | Task containing "simulation"/"physics" routes to Ironhide | Correct cluster selected | P0 |
-| AB-138 | Task containing "molecule"/"quantum" routes to Wheeljack | Correct cluster selected | P0 |
-| AB-139 | Task containing "plan"/"roadmap" routes to Optimus | Correct cluster selected | P0 |
-| AB-140 | Task with NO matching keywords at all | Falls back to a sensible default cluster, doesn't crash or silently drop the task | P0 |
-| AB-141 | Task matching keywords from TWO different clusters simultaneously (e.g. "fix the auth backend bug" → debug + security + backend) | Documented tie-break logic is followed consistently — verify it's not just "first match wins" by accident with no real priority order | P1 |
-| AB-142 | Task keyword matching is case-sensitive vs case-insensitive — test "BACKEND" vs "backend" vs "BackEnd" | Routes identically regardless of case | P1 |
-| AB-143 | Task keyword as a substring inside an unrelated word (e.g. "uiverse" containing "ui") | Confirm word-boundary matching, not naive substring matching causing false routes | P1 |
-| AB-144 | Custom `[autobots.extra_clusters]` task routes correctly to the custom cluster over built-ins when keywords overlap | Custom cluster takes precedence as configured, or documented precedence order is followed | P1 |
-| AB-145 | `model_selection_profile = "speed"` vs `"quality"` vs `"balanced"` for the same task | Different models within the cluster are actually selected per profile — confirm this isn't a no-op flag | P1 |
-| AB-146 | A cluster's primary model is unavailable/down — does routing fail over to another model in the same cluster automatically | Failover behavior exists and is tested, or absence of failover is explicitly documented as a known limitation | P0 |
-| AB-147 | `disable_live_catalog = true` | Routing uses only the bundled/static model list, never attempts a live catalog fetch | P1 |
-| AB-148 | `parallel_planning = true` with a roadmap containing independent (non-dependent) phases | Phases without inter-dependencies actually execute in parallel, not just sequentially with a flag that does nothing | P1 |
-| AB-149 | `parallel_planning = true` with phases that DO have dependencies | Dependency order is still respected even with parallelism enabled — no race where a dependent phase starts before its dependency completes | P0 |
-| AB-150 | Routing decision logging — `--verbose` shows WHY a given cluster was chosen for a task | Routing rationale is inspectable, not a black box | P1 |
-| AB-151 | Task with profanity, hostile, or adversarial phrasing routed through the swarm | No crash; routing/model behavior degrades gracefully, doesn't produce unsafe output unrelated to the coding task | P1 |
-| AB-152 | Extremely short task description (1-2 words: "fix bug") | Routes to a reasonable cluster rather than erroring on insufficient signal | P2 |
-| AB-153 | Extremely long task description (multi-paragraph) | Routing keyword matching still works correctly without being confused by volume of text | P2 |
-| AB-154 | Mixed-cluster roadmap where a single phase legitimately needs both backend AND security review | Confirm whether the architecture supports multi-cluster collaboration on one phase, or whether this is a documented single-cluster-per-phase limitation | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-131 | Task containing keyword "backend" routes to UltraMagnus | Correct cluster selected | P0 | PASS |
+| AB-132 | Task containing keyword "ui"/"css" routes to Jazz | Correct cluster selected | P0 | PASS |
+| AB-133 | Task containing "security"/"auth" routes to RedAlert | Correct cluster selected | P0 | PASS |
+| AB-134 | Task containing "debug"/"fix" routes to Ratchet | Correct cluster selected | P0 | PASS |
+| AB-135 | Task containing "rag"/"embedding" routes to Perceptor | Correct cluster selected | P0 | PASS |
+| AB-136 | Task containing "speech"/"audio" routes to Bumblebee | Correct cluster selected | P0 | PASS |
+| AB-137 | Task containing "simulation"/"physics" routes to Ironhide | Correct cluster selected | P0 | PASS |
+| AB-138 | Task containing "molecule"/"quantum" routes to Wheeljack | Correct cluster selected | P0 | PASS |
+| AB-139 | Task containing "plan"/"roadmap" routes to Optimus | Correct cluster selected | P0 | PASS |
+| AB-140 | Task with NO matching keywords at all | Falls back to a sensible default cluster, doesn't crash or silently drop the task | P0 | PASS |
+| AB-141 | Task matching keywords from TWO different clusters simultaneously (e.g. "fix the auth backend bug" → debug + security + backend) | Documented tie-break logic is followed consistently — verify it's not just "first match wins" by accident with no real priority order | P1 | PASS |
+| AB-142 | Task keyword matching is case-sensitive vs case-insensitive — test "BACKEND" vs "backend" vs "BackEnd" | Routes identically regardless of case | P1 | PASS |
+| AB-143 | Task keyword as a substring inside an unrelated word (e.g. "uiverse" containing "ui") | Confirm word-boundary matching, not naive substring matching causing false routes | P1 | PASS (FIXED) |
+| AB-144 | Custom `[autobots.extra_clusters]` task routes correctly to the custom cluster over built-ins when keywords overlap | Custom cluster takes precedence as configured, or documented precedence order is followed | P1 | CODE-VERIFIED |
+| AB-145 | `model_selection_profile = "speed"` vs `"quality"` vs `"balanced"` for the same task | Different models within the cluster are actually selected per profile — confirm this isn't a no-op flag | P1 | PASS |
+| AB-146 | A cluster's primary model is unavailable/down — does routing fail over to another model in the same cluster automatically | Failover behavior exists and is tested, or absence of failover is explicitly documented as a known limitation | P0 | CODE-VERIFIED |
+| AB-147 | `disable_live_catalog = true` | Routing uses only the bundled/static model list, never attempts a live catalog fetch | P1 | PASS |
+| AB-148 | `parallel_planning = true` with a roadmap containing independent (non-dependent) phases | Phases without inter-dependencies actually execute in parallel, not just sequentially with a flag that does nothing | P1 | DEFERRED |
+| AB-149 | `parallel_planning = true` with phases that DO have dependencies | Dependency order is still respected even with parallelism enabled — no race where a dependent phase starts before its dependency completes | P0 | DEFERRED |
+| AB-150 | Routing decision logging — `--verbose` shows WHY a given cluster was chosen for a task | Routing rationale is inspectable, not a black box | P1 | CODE-VERIFIED |
+| AB-151 | Task with profanity, hostile, or adversarial phrasing routed through the swarm | No crash; routing/model behavior degrades gracefully, doesn't produce unsafe output unrelated to the coding task | P1 | CODE-VERIFIED |
+| AB-152 | Extremely short task description (1-2 words: "fix bug") | Routes to a reasonable cluster rather than erroring on insufficient signal | P2 | PASS |
+| AB-153 | Extremely long task description (multi-paragraph) | Routing keyword matching still works correctly without being confused by volume of text | P2 | CODE-VERIFIED |
+| AB-154 | Mixed-cluster roadmap where a single phase legitimately needs both backend AND security review | Confirm whether the architecture supports multi-cluster collaboration on one phase, or whether this is a documented single-cluster-per-phase limitation | P1 | CODE-VERIFIED |
 
 ## 11. `autobots catalog` / Model Registry
 
