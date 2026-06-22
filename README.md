@@ -1,6 +1,3 @@
-⭐ If autobot-swarm saved you from wiring up another multi-agent mess — a star helps other devs find it. Takes 2 seconds.
-
-
 <div align="center">
   <a href="https://pypi.org/project/autobot-swarm/">
     <img src="assets/autobots-banner.png" alt="Autobots Banner" width="100%" />
@@ -10,24 +7,39 @@
 
 <p align="center">
   <a href="https://github.com/DanielDeshmukh/autobots">
-    <img src="https://img.shields.io/badge/version-0.1.9-blue" alt="Version">
+    <img src="https://img.shields.io/badge/version-0.2.0-blue" alt="Version">
   </a>
   <a href="https://python.org">
     <img src="https://img.shields.io/badge/python-3.11+-brightgreen" alt="Python">
   </a>
+  <a href="https://pypi.org/project/autobot-swarm/">
+    <img src="https://img.shields.io/pypi/v/autobot-swarm" alt="PyPI">
+  </a>
+  <a href="https://github.com/DanielDeshmukh/autobots/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
+  </a>
 </p>
 
-Autobots is a Python CLI for running a structured, approval-gated coding swarm against target repositories. It checks target-owned context files, generates phased plans, routes implementation work through hierarchical model clusters, and executes autonomous work with validation, repair, and rollback loops.
+Autobots is a hierarchical multi-cluster coding swarm CLI that orchestrates multiple AI models to plan, implement, validate, and repair code against target repositories. It features a full tool system (Read, Write, Edit, Glob, Grep), interactive REPL mode, granular permissions, context management, hooks, MCP integration, and code review — all built on NVIDIA NIM models.
+
+---
 
 ## Table of Contents
 
-- [Overview](#overview)
 - [Features](#features)
 - [Architecture](#architecture)
 - [Installation](#installation)
+- [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [CLI Commands](#cli-commands)
-- [NVIDIA Models Registry](#nvidia-models-registry)
+- [Tool System](#tool-system)
+- [REPL Mode](#repl-mode)
+- [Permissions](#permissions)
+- [Context Management](#context-management)
+- [Hooks & MCP](#hooks--mcp)
+- [Code Review & Diagnostics](#code-review--diagnostics)
+- [NVIDIA Models & Clusters](#nvidia-models--clusters)
+- [NVIDIA Skills](#nvidia-skills)
 - [Execution Modes](#execution-modes)
 - [Context Architecture](#context-architecture)
 - [Cross-Platform Usage](#cross-platform-usage)
@@ -38,49 +50,75 @@ Autobots is a Python CLI for running a structured, approval-gated coding swarm a
 
 ---
 
-## Overview
-
-Autobots transforms your development workflow by orchestrating multiple AI models as a hierarchical swarm:
-
-1. **Optimus** (Command Cluster) — Plans and orchestrates the mission
-2. **UltraMagnus** (Backend Cluster) — Implements backend logic and APIs
-3. **Jazz** (Frontend Cluster) — Creates UI components and visual elements
-4. **RedAlert** (Security Cluster) — Reviews code for safety and correctness
-5. **Ratchet** (Repair Cluster) — Fixes validation failures and bugs
-6. **Perceptor** (Retrieval Cluster) — Handles document parsing and RAG
-7. **Bumblebee** (Media Cluster) — Processes speech, audio, and video
-8. **Ironhide** (Simulation Cluster) — Runs physics and optimization tasks
-9. **Wheeljack** (Science Cluster) — Handles molecular and research tasks
-
----
-
 ## Features
 
+### Core Swarm
+
+- **Hierarchical Model Routing** — 9 specialized clusters (Optimus, UltraMagnus, Jazz, RedAlert, Ratchet, Perceptor, Bumblebee, Ironhide, Wheeljack)
+- **Phase-Based Execution** — Inspect → Implement → Validate → Repair pipeline
 - **Context Injection** — Reads `context/` files and injects project documentation into model prompts
-- **Phase Planning** — Generate implementation roadmaps with dependencies and acceptance criteria
-- **Model Routing** — Intelligent cluster selection based on task keywords
-- **Multi-Root File Writing** — Write to `src/`, `app/`, `lib/`, `tests/`, `docs/`, `scripts/`
-- **Validation Commands** — Run tests, linters, and build commands automatically
+- **Model Routing** — Intelligent cluster selection based on task keywords and file extensions
 - **Automatic Repair** — Self-healing execution with validation-driven repair loops
-- **Session Management** — Durable checkpoints, resumable runs, and audit trails
-- **Configurable Modes** — Supervised, milestone, or fully autonomous execution
 - **Rollback Support** — Snapshots before writes, `autobots undo` reverts changes
 - **Response Streaming** — Live character counter during model calls
-- **Doctor Preflight** — Health checks before execution (API, git, config, dependencies)
-- **Structured Errors** — Contextual error messages with actionable suggestions
-- **Test Gate** — Run tests before commit with `autobots gate`
-- **Git Integration** — Auto-commit after phase completion
-- **Config Validation** — `autobots config validate` checks TOML settings
+- **Rich Status Output** — Progress bars, estimated time, branch info via Rich
+
+### File Operations & Search
+
+- **ReadTool** — Read files with offset/limit, line numbers, binary/image support
+- **WriteTool** — Atomic writes (tmp + rename), directory creation, path sandboxing
+- **EditTool** — Targeted string replacement with exact match, replaceAll mode
+- **GlobTool** — Pattern-based file search (`**/*.py`, `src/**/*.ts`)
+- **GrepTool** — Regex content search across files, include filters
+- **ToolRegistry** — Register, dispatch, and manage tools
+
+### REPL & Interactive Mode
+
+- **Interactive REPL** — Conversational session with history and streaming
+- **One-Shot Mode** — `autobots ask "question"` for quick queries
+- **Piped Input** — `cat file.py | autobots ask "explain this"`
+- **Slash Commands** — `/help`, `/clear`, `/cost`, `/compact`, `/model`, `/exit`
+- **Session Persistence** — Save and restore conversations from JSON
+
+### Permissions & Safety
+
+- **Tool-Level Permissions** — Allow/deny/ask per tool call
+- **Interactive Approval** — y/n/a/Esc prompt for tool execution
+- **Session Whitelisting** — "Always allow" for trusted tools
+- **Config Merge** — Global (`~/.autobots/settings.json`) + project + env vars
+- **Audit Logging** — JSON-lines log of all permission decisions
+- **Command Policy** — Whitelist-based command validation, blocks dangerous patterns
+
+### Context Management
+
+- **Token Estimation** — `len(text) // 4` with tiktoken fallback
+- **Auto-Compaction** — Summarizes conversation when approaching context limit
+- **CLAUDE.md Hierarchy** — Global → project → subdirectory instruction loading
+- **Budget Tracking** — Remaining context display, usage ratios
+
+### Hooks & Extensions
+
+- **Pre/Post Tool Hooks** — Run scripts or callbacks before/after tool execution
+- **Abort on Failure** — Hook failure stops the tool chain
+- **MCP Integration** — Connect to Model Context Protocol servers for custom tools
+- **Command Hooks** — Shell commands with env injection and 30s timeout
+
+### Code Review & Diagnostics
+
+- **Git Diff Review** — Analyze changes for large PRs, many files, patterns
+- **Doctor Command** — Health checks: API key, connectivity, Python version, package
+- **PR Review** — Review pull requests by number or diff
+
+### Workflow
+
+- **Session Management** — Durable checkpoints, resumable runs, audit trails
+- **Configurable Modes** — Supervised, milestone, or fully autonomous execution
+- **Multi-Root File Writing** — Write to `src/`, `app/`, `lib/`, `tests/`, `docs/`, `scripts/`
+- **Validation Commands** — Run tests, linters, and build commands automatically
 - **Shell Completions** — bash, zsh, and fish tab completion
-- **Context Budget** — Warns and truncates when prompts approach model limits
 - **Plugin System** — before/after hooks for custom extensions
 - **Skill Marketplace** — Built-in packs for FastAPI, Django, React, Next.js
-- **NVIDIA Skills** — 17 NVIDIA-specific skills injected into cluster prompts (RAG, cuOpt, cuDF, Dynamo, Holoscan, CUDA-Q)
 - **Web Dashboard** — Real-time status on port 8080
-- **Rich Status Output** — Progress bars, estimated time, branch info
-- **Explain Command** — `autobots explain P2-T3` shows audit trail details
-- **Usage Stats** — `autobots stats` shows totals, averages, costs
-- **Verbose Mode** — `--verbose` flag logs full prompts sent to models
 
 ---
 
@@ -88,50 +126,74 @@ Autobots transforms your development workflow by orchestrating multiple AI model
 
 ```
 autobots/
-├── cli.py              # CLI entry point (20+ commands)
-├── bootstrap.py        # Project profiling and context filename contract
-├── config.py           # TOML + env config with validation
-├── catalog.py          # Cluster definitions and model registry
-├── workspace.py        # Target workspace safety and locking
-├── errors.py           # Structured error classes
-├── costs.py            # Token/cost estimation
-├── git_utils.py        # Git auto-commit integration
-├── preflight.py        # Doctor health checks
-├── onboarding.py       # Interactive setup wizard
-├── completions.py      # Shell tab completion
-├── context_budget.py   # Context window management
-├── plugins.py          # Plugin/hook system
-├── marketplace.py      # Skill pack marketplace
-├── dashboard.py        # Web dashboard
-├── diff.py             # Snapshot comparison
-├── router/
-│   ├── core.py         # Main routing orchestration
-│   ├── models.py       # Data models (ClusterPlan, PhaseRecord, etc.)
-│   ├── planning.py     # Cluster assignment and model selection
-│   ├── stages.py       # Stage execution (streaming, retry, verbose)
-│   └── phases.py       # Phase reading and status management
-├── executor/
-│   ├── autonomy.py     # Autonomous execution engine
-│   ├── modes.py        # Execution modes (supervised, milestone, autonomous)
-│   ├── state.py        # Session state, audit trail, and rollback manager
-│   ├── commands.py     # Command validation and execution
-│   ├── gate.py         # Test-then-commit gate
-│   └── validation.py   # Validation result handling
-├── planning/
-│   ├── core.py         # Plan generation
-│   ├── scanner.py      # Repository scanning
-│   └── synthesis.py    # Phase synthesis
-├── skills/
-│   ├── loader.py       # Skill pack loading
-│   ├── cluster_prompts.py  # Cluster-specific system prompts
-│   └── nvidia/         # 17 NVIDIA-specific skill files
-│       ├── agent-skills.md
-│       ├── rag-blueprint.md
-│       ├── dynamo-router.md
-│       ├── skill-evolution.md
-│       └── ...         # (17 total skill files)
+├── cli.py                  # CLI entry point (22+ commands)
+├── bootstrap.py            # Project profiling and context contract
+├── config.py               # TOML + env config with validation
+├── catalog.py              # Cluster definitions and model registry
+├── workspace.py            # Target workspace safety and locking
+├── errors.py               # Structured error classes
+├── costs.py                # Token/cost estimation
+├── git_utils.py            # Git auto-commit integration
+├── preflight.py            # Doctor health checks
+├── onboarding.py           # Interactive setup wizard
+├── completions.py          # Shell tab completion
+├── context_budget.py       # Context window management
+├── plugins.py              # Plugin/hook system
+├── marketplace.py          # Skill pack marketplace
+├── dashboard.py            # Web dashboard
+├── diff.py                 # Snapshot comparison
+├── tools/                  # File operation tools
+│   ├── base.py             # Tool ABC and ToolResult
+│   ├── read.py             # ReadTool (offset/limit, binary)
+│   ├── write.py            # WriteTool (atomic, sandboxed)
+│   ├── edit.py             # EditTool (exact match, replaceAll)
+│   ├── glob.py             # GlobTool (pattern search)
+│   ├── grep.py             # GrepTool (regex search)
+│   ├── registry.py         # ToolRegistry (dispatch)
+│   ├── permissions.py      # PermissionRule, PermissionChecker
+│   └── formatting.py       # Tool result formatting
+├── repl/                   # Interactive REPL
+│   ├── session.py          # ReplSession, Message, SessionStats
+│   ├── commands.py         # SlashCommand registry
+│   └── runner.py           # run_repl, run_one_shot, run_piped
+├── permissions/            # Permission system
+│   ├── settings.py         # PermissionSettings (global/project/env)
+│   ├── logging.py          # PermissionLogger (audit trail)
+│   └── interactive.py      # Interactive approval prompt
+├── context/                # Context management
+│   ├── manager.py          # ContextManager (token tracking)
+│   ├── tokenizer.py        # estimate_tokens, count_tokens
+│   └── claude_md.py        # CLAUDE.md hierarchy loader
+├── hooks/                  # Hook system
+│   └── manager.py          # HookManager, HookPoint, HookResult
+├── mcp/                    # MCP integration
+│   └── client.py           # MCPClient, MCPTool
+├── review/                 # Code review
+│   ├── git_review.py       # Diff parsing, review
+│   └── diagnostics.py      # Doctor checks
+├── router/                 # Swarm orchestration
+│   ├── core.py             # Main routing orchestration
+│   ├── models.py           # Data models
+│   ├── planning.py         # Cluster assignment
+│   ├── stages.py           # Stage execution
+│   └── phases.py           # Phase reading
+├── executor/               # Execution engine
+│   ├── autonomy.py         # Autonomous loop
+│   ├── modes.py            # Execution modes
+│   ├── state.py            # Session state and rollback
+│   ├── commands.py         # Command validation
+│   ├── gate.py             # Test-then-commit gate
+│   └── validation.py       # Validation handling
+├── planning/               # Plan generation
+│   ├── core.py             # Plan entry point
+│   ├── scanner.py          # Repository scanning
+│   └── synthesis.py        # Phase synthesis
+├── skills/                 # Skill injection
+│   ├── loader.py           # Skill pack loading
+│   ├── cluster_prompts.py  # Cluster-specific prompts
+│   └── nvidia/             # 17 NVIDIA skill files
 └── utils/
-    └── retry.py        # Exponential backoff decorator
+    └── retry.py            # Exponential backoff
 ```
 
 ---
@@ -143,7 +205,7 @@ autobots/
 - Python 3.11 or higher
 - NVIDIA API Key (for model execution)
 
-### pip install
+### PyPI Install
 
 ```powershell
 pip install autobot-swarm
@@ -155,6 +217,27 @@ pip install autobot-swarm
 git clone https://github.com/DanielDeshmukh/autobots.git
 cd autobots
 python -m pip install -e . --no-build-isolation
+```
+
+---
+
+## Quick Start
+
+```powershell
+# 1. Set your API key
+$env:NVIDIA_API_KEY = "your_key_here"
+
+# 2. Navigate to your project
+cd C:\path\to\your\project
+
+# 3. Initialize (creates context/ directory)
+autobots init
+
+# 4. Generate a plan
+autobots plan --goal "Add user authentication"
+
+# 5. Run the swarm
+autobots run --supervised
 ```
 
 ---
@@ -195,20 +278,46 @@ max_tokens = 4096
 # MyCluster = ["nvidia/custom-model-1"]
 ```
 
+### Permission Settings
+
+Create `~/.autobots/settings.json` (global) or `.autobots/settings.json` (project):
+
+```json
+{
+  "permissions": {
+    "default": "ask",
+    "rules": [
+      {"tool_pattern": "Read", "permission": "allow"},
+      {"tool_pattern": "Glob", "permission": "allow"},
+      {"tool_pattern": "Grep", "permission": "allow"},
+      {"tool_pattern": "Write", "permission": "ask"},
+      {"tool_pattern": "Edit", "permission": "ask"},
+      {"tool_pattern": "Bash", "permission": "ask"}
+    ]
+  }
+}
+```
+
 ---
 
 ## CLI Commands
-
-All commands automatically detect the target project from the current working directory.
 
 | Command | Description |
 |---------|-------------|
 | `autobots init` | Check context files in target project |
 | `autobots init --interactive` | Interactive setup wizard |
 | `autobots plan` | Generate implementation roadmap |
+| `autobots plan --goal "text"` | Plan with specific goal |
+| `autobots plan --append` | Append to existing plan |
+| `autobots plan --dry-run` | Preview without writing |
 | `autobots run [task]` | Execute phases with autonomy mode |
+| `autobots run --supervised` | Manual approval per phase (default) |
+| `autobots run --milestone` | Approval every N phases |
+| `autobots run --autonomous` | Fully autonomous execution |
 | `autobots resume` | Resume from last checkpoint |
 | `autobots engage` | Interactive mode with startup screen |
+| `autobots ask "question"` | One-shot question answering |
+| `autobots steer "instruction"` | Add mid-task steering instructions |
 | `autobots status` | Rich status with progress bars |
 | `autobots explain <id>` | Show audit trail for a phase/task |
 | `autobots stats` | Usage statistics and costs |
@@ -225,28 +334,246 @@ All commands automatically detect the target project from the current working di
 | `autobots validate-models` | Test NVIDIA API connectivity |
 | `autobots publish` | Build and publish to PyPI |
 
-### Plan Options
+---
 
-| Flag | Description |
-|------|-------------|
-| `--goal "text"` | Set the planning goal |
-| `--append` | Append new phases instead of replacing |
-| `--dry-run` | Preview without writing files |
+## Tool System
 
-### Run Options
+Autobots includes a full file operation tool system:
 
-| Flag | Description |
-|------|-------------|
-| `--supervised` | Manual approval per phase (default) |
-| `--milestone` | Approval every N phases |
-| `--autonomous` | Fully autonomous execution |
-| `--verbose` | Log full prompts sent to models |
+### ReadTool
+
+```python
+# Read with line numbers
+ReadTool.run(file_path="/path/to/file.py")
+
+# Read with offset and limit
+ReadTool.run(file_path="/path/to/file.py", offset=10, limit=50)
+```
+
+### WriteTool
+
+```python
+# Atomic write (creates parent directories automatically)
+WriteTool.run(file_path="/path/to/file.py", content="print('hello')")
+
+# Sandboxed write (only allowed paths)
+WriteTool(allowed_paths=["/project/src"]).run(file_path="...", content="...")
+```
+
+### EditTool
+
+```python
+# Exact string replacement
+EditTool.run(file_path="main.py", old_string="old_code", new_string="new_code")
+
+# Replace all occurrences
+EditTool.run(file_path="main.py", old_string="foo", new_string="bar", replace_all=True)
+```
+
+### GlobTool
+
+```python
+# Find files by pattern
+GlobTool.run(pattern="**/*.py", path="/project")
+
+# Find TypeScript files
+GlobTool.run(pattern="src/**/*.tsx", path="/project")
+```
+
+### GrepTool
+
+```python
+# Regex search
+GrepTool.run(pattern=r"def \w+", path="/project/src")
+
+# Search specific file types
+GrepTool.run(pattern="TODO", path="/project", include="*.py")
+```
 
 ---
 
-## NVIDIA Models Registry
+## REPL Mode
 
-Autobots includes a comprehensive model registry with 9 clusters:
+### Interactive Session
+
+```powershell
+autobots
+# Autobots REPL (model: meta/llama-3.1-8b-instruct)
+# Type /help for commands, /exit to quit.
+#
+# You> What is this project about?
+# Assistant: This project is...
+```
+
+### One-Shot Mode
+
+```powershell
+autobots ask "What does the main.py file do?"
+```
+
+### Piped Input
+
+```powershell
+cat main.py | autobots ask "Explain this code"
+```
+
+### Slash Commands
+
+| Command | Description |
+|---------|-------------|
+| `/help` | Show available commands |
+| `/clear` | Clear conversation history |
+| `/cost` | Show token usage and estimated cost |
+| `/compact` | Summarize conversation to save tokens |
+| `/model <name>` | Switch model mid-session |
+| `/exit` | Exit the REPL |
+
+---
+
+## Permissions
+
+### Permission Levels
+
+- **allow** — Auto-approved, no prompt
+- **ask** — Interactive approval required
+- **deny** — Blocked, cannot execute
+
+### Interactive Approval
+
+When a tool requires approval:
+
+```
+Allow Write?
+  file_path: /project/src/main.py
+  content: print('hello')
+  [y]es / [n]o / [a]lways / [Esc] cancel
+```
+
+- `y` — Approve this once
+- `n` — Deny this call
+- `a` — Always allow this tool for the session
+- `Esc` — Cancel
+
+### Configuration
+
+**Global** (`~/.autobots/settings.json`):
+```json
+{
+  "permissions": {
+    "default": "ask",
+    "rules": [
+      {"tool_pattern": "Read", "permission": "allow"},
+      {"tool_pattern": "Write", "permission": "ask"}
+    ]
+  }
+}
+```
+
+**Project** (`.autobots/settings.json`):
+```json
+{
+  "permissions": {
+    "rules": [
+      {"tool_pattern": "Bash(npm test)", "permission": "allow"},
+      {"tool_pattern": "Bash(rm *)", "permission": "deny"}
+    ]
+  }
+}
+```
+
+**Environment Variables**:
+```powershell
+$env:AUTOBOTS_ALLOWED_TOOLS = "Read,Glob,Grep"
+$env:AUTOBOTS_DENIED_TOOLS = "Bash(rm *)"
+```
+
+---
+
+## Context Management
+
+### Token Tracking
+
+- Tracks token usage per message
+- Estimates remaining context budget
+- Auto-compacts at 80% threshold
+
+### CLAUDE.md Hierarchy
+
+Instructions loaded from multiple locations:
+```
+~/.autobots/CLAUDE.md           (global)
+./CLAUDE.md                     (project root)
+./src/CLAUDE.md                 (subdirectory)
+```
+
+### Compaction
+
+```
+You> /compact
+Compacted 24 messages into summary.
+```
+
+---
+
+## Hooks & MCP
+
+### Pre/Post Tool Hooks
+
+Register callbacks that run before or after tool execution:
+
+```python
+from autobots.hooks import HookManager, Hook, HookPoint
+
+mgr = HookManager()
+mgr.register(Hook(
+    name="lint",
+    point=HookPoint.POST_TOOL,
+    command="ruff check {file_path}"
+))
+```
+
+### MCP Integration
+
+Connect to Model Context Protocol servers:
+
+```python
+from autobots.mcp import MCPClient
+
+client = MCPClient(command="npx", args=["-y", "@modelcontextprotocol/server-filesystem"])
+client.connect()
+tools = client.list_tools()
+result = client.call_tool("read_file", {"path": "/etc/hosts"})
+```
+
+---
+
+## Code Review & Diagnostics
+
+### Git Diff Review
+
+```powershell
+# Review current changes
+autobots review
+
+# Review PR by number
+autobots pr-review 42
+```
+
+### Doctor Command
+
+```powershell
+autobots doctor
+# Autobots Doctor Results:
+#   [PASS] Python Version: Python 3.13 (OK)
+#   [PASS] API Key: NVIDIA_API_KEY set (ends with ...abc1)
+#   [PASS] Connectivity: NVIDIA API reachable
+#   [PASS] Package: autobot-swarm installed
+#   4/4 checks passed
+```
+
+---
+
+## NVIDIA Models & Clusters
 
 | Cluster | Role | Models | Keywords |
 |---------|------|--------|----------|
@@ -264,84 +591,76 @@ Autobots includes a comprehensive model registry with 9 clusters:
 
 ## NVIDIA Skills
 
-Autobots injects **17 NVIDIA-specific skills** into cluster system prompts. These are condensed knowledge docs from NVIDIA's official skill library, providing domain expertise for RAG, deployment, optimization, and more.
-
-### Always-Loaded Skills (Tier 1)
+### Tier 1 (Always Loaded)
 
 | Skill | Cluster(s) | Description |
 |-------|------------|-------------|
-| `agent-skills.md` | Optimus, UltraMagnus | NemoClaw agent skill architecture and dispatch patterns |
-| `autonomous-agent-research.md` | Optimus, Wheeljack | Autonomous research workflow: hypothesis → wire → launch → evaluate |
-| `session-memory.md` | Optimus, Jazz | Durable working-session memory and checkpoint strategy |
-| `skill-evolution.md` | ALL clusters | Self-improvement protocol: reflect on tasks, propose skill updates |
-| `safety-policy.md` | Ironhide | Nemotron safety policy taxonomy and structured security reviews |
-| `rag-blueprint.md` | UltraMagnus, Optimus | NVIDIA RAG Blueprint architecture (Milvus, embedding, reranking) |
-| `rag-eval.md` | Jazz | RAG evaluation with RAGAS metrics and benchmark harnesses |
-| `dynamo-deployment.md` | UltraMagnus, Wheeljack | Dynamo Kubernetes recipes and deployment modes |
-| `dynamo-router.md` | UltraMagnus, Optimus | Dynamo router modes (round-robin, KV-aware, least-loaded) |
-| `retrieval.md` | UltraMagnus, Bumblebee | Document retrieval pipeline (PDF, image OCR, audio transcription) |
+| `agent-skills.md` | Optimus, UltraMagnus | NemoClaw agent architecture |
+| `autonomous-agent-research.md` | Optimus, Wheeljack | Autonomous research workflow |
+| `session-memory.md` | Optimus, Jazz | Durable session memory |
+| `skill-evolution.md` | ALL | Self-improvement protocol |
+| `safety-policy.md` | Ironhide | Safety taxonomy |
+| `rag-blueprint.md` | UltraMagnus, Optimus | RAG architecture |
+| `rag-eval.md` | Jazz | RAG evaluation metrics |
+| `dynamo-deployment.md` | UltraMagnus, Wheeljack | Dynamo K8s recipes |
+| `dynamo-router.md` | UltraMagnus, Optimus | Dynamo router modes |
+| `retrieval.md` | UltraMagnus, Bumblebee | Document retrieval pipeline |
 
-### Conditional Skills (Tier 2)
-
-Loaded automatically when roadmap keywords are detected:
+### Tier 2 (Conditional)
 
 | Skill | Loaded When | Description |
 |-------|-------------|-------------|
-| `nemotron-customize.md` | fine-tuning, training | Nemotron model customization (SFT, DPO, RLHF) |
-| `cuopt-routing.md` | routing, scheduling | cuOpt vehicle routing API (VRP, TSP, PDP) |
-| `cuopt-optimization.md` | optimization, LP/MILP/QP | cuOpt numerical optimization (GPU-accelerated) |
-| `cudf.md` | pandas, dataframe | cuDF GPU DataFrames (pandas acceleration) |
-| `neautomodel-recipe.md` | training at scale | NeMo Automodel distributed training recipes |
-| `kubernetes-infra.md` | Kubernetes, K8s | Physical AI infrastructure setup (MicroK8s, OSMO) |
-| `holoscan.md` | video, edge AI | Holoscan SDK video analytics pipelines |
-| `cudaq.md` | quantum computing | CUDA-Q quantum circuit simulation |
+| `nemotron-customize.md` | fine-tuning, training | Nemotron customization |
+| `cuopt-routing.md` | routing, scheduling | cuOpt vehicle routing |
+| `cuopt-optimization.md` | optimization, LP/MILP/QP | cuOpt numerical optimization |
+| `cudf.md` | pandas, dataframe | cuDF GPU DataFrames |
+| `neautomodel-recipe.md` | training at scale | Distributed training |
+| `kubernetes-infra.md` | Kubernetes, K8s | Physical AI infra |
+| `holoscan.md` | video, edge AI | Holoscan video analytics |
+| `cudaq.md` | quantum computing | CUDA-Q quantum simulation |
 
 ---
 
 ## Execution Modes
 
-### Supervised Mode (Default)
+### Supervised (Default)
 
 ```powershell
 autobots run --supervised
 ```
 
-- Requires approval before each phase
-- Full human control over execution
+Requires approval before each phase. Full human control.
 
-### Milestone Mode
+### Milestone
 
 ```powershell
 autobots run --milestone
 ```
 
-- Requires approval after N phases (configurable)
-- Balance between autonomy and control
+Requires approval after N phases (configurable via `milestone_threshold`).
 
-### Autonomous Mode
+### Autonomous
 
 ```powershell
 autobots run --autonomous
 ```
 
-- No approval gates, fastest execution
+No approval gates. Fastest execution.
 
 ---
 
 ## Context Architecture
 
-Autobots expects six target-owned context files under `context/`:
+Autobots expects six context files under `context/`:
 
 | File | Purpose |
 |------|---------|
 | `architecture.md` | Project architecture and structure |
-| `conventions.md` | Code style, naming, formatting rules |
-| `testing-strategy.md` | Test framework, coverage, patterns |
-| `security-auth.md` | Security and authentication notes |
 | `roadmap.md` | Phase definitions with goals and validation |
-| `progress-tracker.md` | Phase status tracking (autobots updates this) |
-
-These files are injected into model prompts so generated code matches your project's patterns.
+| `progress-tracker.md` | Phase status tracking |
+| `project-briefing.md` | Project overview and goals |
+| `security-auth.md` | Security and authentication notes |
+| `ui-components.md` | UI component documentation |
 
 ---
 
@@ -354,8 +673,8 @@ pip install autobot-swarm
 $env:NVIDIA_API_KEY = "your_key"
 cd C:\path\to\your\project
 autobots init
-autobots plan
-autobots run
+autobots plan --goal "Add feature X"
+autobots run --supervised
 ```
 
 ### macOS / Linux
@@ -365,8 +684,8 @@ pip install autobot-swarm
 export NVIDIA_API_KEY="your_key"
 cd /path/to/your/project
 autobots init
-autobots plan
-autobots run
+autobots plan --goal "Add feature X"
+autobots run --supervised
 ```
 
 ---
@@ -383,51 +702,22 @@ autobots run
 | `AUTOBOTS_DEFAULT_MODE` | Default execution mode | supervised |
 | `AUTOBOTS_MILESTONE_THRESHOLD` | Phases per approval | 3 |
 | `AUTOBOTS_MAX_VERIFICATION_ATTEMPTS` | Retry limit | 3 |
+| `AUTOBOTS_ALLOWED_TOOLS` | Comma-separated allowed tools | (none) |
+| `AUTOBOTS_DENIED_TOOLS` | Comma-separated denied tools | (none) |
 
 ---
 
 ## Troubleshooting
 
-### Missing NVIDIA API Key
-
-```
-RuntimeError: NVIDIA_API_KEY is missing. Cannot execute the swarm.
-```
-
-**Solution**: Set `NVIDIA_API_KEY` in `.env` or environment variable.
-
-### Incomplete Context Setup
-
-```
-Command: run
-Missing: roadmap.md, progress-tracker.md
-```
-
-**Solution**: Create the listed files in `context/`, then run `autobots plan`.
-
-### Safety Branch Check Fails
-
-```
-Execution blocked. Switch to autobots-safety branch.
-```
-
-**Solution**: `git checkout -b autobots-safety`
-
-### Command Policy Violation
-
-```
-Command not in safety whitelist: rm -rf /
-```
-
-**Solution**: Autobots blocks dangerous commands. Use safe alternatives.
-
-### Resume Without Checkpoint
-
-```
-No checkpoint found. Use 'autobots run' to start fresh.
-```
-
-**Solution**: Start a new run with `autobots run`.
+| Error | Solution |
+|-------|----------|
+| `NVIDIA_API_KEY is missing` | Set `NVIDIA_API_KEY` in `.env` or environment variable |
+| `Missing: roadmap.md` | Run `autobots plan` to generate context files |
+| `Switch to autobots-safety branch` | `git checkout -b autobots-safety` |
+| `Command not in safety whitelist` | Autobots blocks dangerous commands. Use safe alternatives |
+| `No checkpoint found` | Start fresh with `autobots run` |
+| `old_string not found` | Provide exact surrounding lines for unique match |
+| `old_string found N times` | Add more context or use `replace_all=true` |
 
 ---
 
@@ -440,45 +730,31 @@ No checkpoint found. Use 'autobots run' to start fresh.
 python -m pytest tests/ -v
 
 # Specific test file
-python -m pytest tests/test_phase_9_config.py -v
+python -m pytest tests/test_tools.py -v
 
 # With coverage
 python -m pytest tests/ --cov=autobots --cov-report=html
 ```
 
-### Project Structure
+### Test Suite
 
-```
-autobots/
-├── autobots/           # Main package (35 modules)
-├── skills/             # Skill injection system
-├── utils/              # Utilities (retry decorator)
-├── tests/              # Test suite (465 tests)
-├── integration/        # Integration tests (10 tests)
-├── setup.cfg           # Package configuration
-└── README.md           # This file
-```
+| Test File | Tests | Coverage |
+|-----------|-------|----------|
+| `test_tools.py` | 46 | File operations (Read, Write, Edit, Glob, Grep, Registry, Permissions, Formatting) |
+| `test_tools_integration.py` | 5 | Integration: read → edit → verify → read |
+| `test_repl.py` | 20 | REPL session, commands, runner |
+| `test_permissions.py` | 12 | Permission settings, logging, merge |
+| `test_context.py` | 18 | Token estimation, compaction, CLAUDE.md |
+| `test_hooks_mcp.py` | 13 | Hooks, MCP client |
+| `test_review.py` | 12 | Git review, diagnostics |
+| `test_final_decision.py` | 10 | Release readiness |
+| **Total** | **136** | |
 
 ---
 
 ## License
 
 MIT License — See [LICENSE](LICENSE) for details.
-
----
-
-## Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 0.1.9 | 2026-06-09 | NVIDIA Skills: 17 skill files injected into cluster prompts (RAG, cuOpt, cuDF, Dynamo, Holoscan, CUDA-Q), roadmap-based conditional loading, live catalog discovery |
-| 0.1.8 | 2026-06-09 | Priority features: rollback, streaming, preflight, onboarding, errors, gate, git, config validation, completions, context budget, plugins, marketplace, dashboard, diff, logs, costs, rich status, explain, stats, verbose |
-| 0.1.7 | 2026-06-08 | PyPI description update |
-| 0.1.6 | 2026-06-08 | Guide to A+++: retry, safe subprocess, logging, engage screen |
-| 0.1.5 | 2026-06-08 | Task ID registry, publish command, skill injection |
-| 0.1.4 | 2026-06-08 | Removed Autobots-created context files |
-| 0.1.1 | 2026-05-15 | Phase 9-10: config, error handling, failure tests |
-| 0.1.0 | 2026-05-14 | Phase 1-8.5: core functionality |
 
 ---
 
