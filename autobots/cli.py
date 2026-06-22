@@ -614,7 +614,29 @@ def _parse_init_file_args(tokens: list[str]) -> tuple[str, ...] | None:
 def run_plan(args: list[str]) -> None:
     """Read roadmap.md, select next phase, create task IDs in task-registry.json."""
     console = Console()
-    target_root = _parse_plan_target(args)
+
+    if "--help" in args or "-h" in args:
+        console.print(
+            "[bold]Usage:[/bold] autobots plan [target] [--goal GOAL] [--append] [--dry-run]\n\n"
+            "[bold]Arguments:[/bold]\n"
+            "  target    Path to target project directory (default: current directory)\n\n"
+            "[bold]Options:[/bold]\n"
+            "  --goal GOAL    Generate a new roadmap for the given goal\n"
+            "  --append       Add new phases to existing roadmap\n"
+            "  --dry-run      Show proposed plan without writing files\n"
+            "  --insert-after PHASE_ID  Insert new phases after specified phase\n\n"
+            "[bold]Examples:[/bold]\n"
+            "  autobots plan --goal 'add JWT auth'\n"
+            "  autobots plan --goal 'add tests' --append\n"
+            "  autobots plan  # Read existing roadmap, select next phase"
+        )
+        return
+
+    target_root, goal, append, insert_after, dry_run = _parse_plan_args(args)
+    if target_root is None:
+        target_root = Path.cwd().resolve()
+    else:
+        target_root = Path(target_root).expanduser().resolve()
 
     _ensure_api_key(console)
 
@@ -628,6 +650,71 @@ def run_plan(args: list[str]) -> None:
         Panel.fit(f"Planning in:\n{target_root}", title="Workspace", border_style="cyan")
     )
 
+    from .workspace import TargetProjectWorkspace
+    workspace = TargetProjectWorkspace(target_root)
+
+    # Check context files exist
+    from .selectors import missing_core_context_files
+    missing = missing_core_context_files(target_root)
+    if missing:
+        console.print(
+            Panel.fit(
+                f"Cannot plan: context files missing.\n"
+                f"Run 'autobots init' first to check context.\n"
+                f"Missing: {', '.join(missing)}",
+                title="Incomplete Context",
+                border_style="red",
+            )
+        )
+        raise SystemExit(1)
+
+    # If --goal is provided, generate a new roadmap
+    if goal:
+        from .planning import write_plan
+        from rich.table import Table
+
+        console.print(
+            Panel.fit(f"Generating plan for goal:\n{goal}", title="Goal", border_style="blue")
+        )
+
+        profile, scan, artifacts = write_plan(
+            workspace,
+            goal=goal,
+            append=append,
+            insert_after=insert_after,
+            dry_run=dry_run,
+        )
+
+        if dry_run:
+            console.print(
+                Panel.fit(
+                    f"Dry run — no files written.\n\nRoadmap preview:\n{artifacts.roadmap[:2000]}",
+                    title="Dry Run",
+                    border_style="yellow",
+                )
+            )
+        else:
+            # Write roadmap.md
+            workspace.write_context_file("roadmap.md", artifacts.roadmap, lock_owner="Autobots/plan")
+            console.print(
+                Panel.fit(
+                    f"Generated {len(artifacts.phases)} phase(s) and wrote to roadmap.md.",
+                    title="Plan Generated",
+                    border_style="green",
+                )
+            )
+
+            # Show the generated phases
+            table = Table(title="Generated Phases")
+            table.add_column("ID", style="cyan")
+            table.add_column("Phase")
+            table.add_column("Tasks")
+            for phase in artifacts.phases:
+                table.add_row(phase.phase_id, phase.title, str(len(phase.acceptance_checks)))
+            console.print(table)
+        return
+
+    # No --goal: read existing roadmap and select next phase
     result = plan_runner.plan_phase(str(target_root))
 
     if result is None:

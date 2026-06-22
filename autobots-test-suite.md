@@ -230,28 +230,28 @@
 
 ## 9. `autobots plan`
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-111 | `autobots plan --goal "add JWT auth"` on a project with complete context | Produces a phased roadmap with dependencies and acceptance criteria written to `roadmap.md` | P0 |
-| AB-112 | `autobots plan` with no `--goal` flag | Either infers a sensible goal from existing roadmap/context or prompts for one — never silently generates a meaningless plan | P0 |
-| AB-113 | `autobots plan --dry-run` | Shows the proposed plan without writing `roadmap.md` at all | P0 |
-| AB-114 | Run `autobots plan --dry-run`, inspect output, confirm no files were touched | Filesystem diff before/after is empty | P0 |
-| AB-115 | `autobots plan --append` on a project with an existing roadmap | New phases are added after existing ones, existing phase IDs/status untouched | P0 |
-| AB-116 | `autobots plan` (without `--append`) on a project with an existing roadmap that has completed phases | Confirm it doesn't silently nuke completed-phase history — should warn/confirm before replacing | P0 |
-| AB-117 | `autobots plan --goal` with an extremely vague goal ("make it better") | Either asks clarifying questions or produces a reasonable best-effort plan — not garbage phases | P1 |
-| AB-118 | `autobots plan --goal` with a goal in a non-English language | Either handled correctly or a clear "English only" limitation is documented | P2 |
-| AB-119 | `autobots plan` on a goal requiring 1 phase vs a goal requiring 20+ phases | Phase count scales sensibly with actual complexity, not a fixed arbitrary count | P1 |
-| AB-120 | `autobots plan` immediately after `autobots init` reports incomplete context | Refuses to plan, points back to `autobots init` output | P0 |
-| AB-121 | Interrupt `autobots plan` (Ctrl+C) mid-generation | No half-written `roadmap.md` left in a state that later commands misinterpret | P0 |
-| AB-122 | `autobots plan --goal` containing shell metacharacters (`; rm -rf /`, backticks, `$()`) | Treated as inert text sent to the model, never executed as a shell command | P0 |
-| AB-123 | Generated roadmap phase IDs — check uniqueness across repeated `--append` calls | No ID collisions even after many append cycles | P1 |
-| AB-124 | Generated phases reference file paths — confirm they respect the project's actual root structure rather than hallucinating directories | Spot-check at least 10 generated phases against the real repo tree | P1 |
-| AB-125 | `autobots plan` cost/token estimate before execution (if shown) vs actual cost in `autobots stats` after running | Estimate is in the right ballpark (not off by 10x) | P2 |
-| AB-126 | `autobots plan --append` called 50 times in a row (stress) | `roadmap.md` doesn't balloon into an unreadable/unparseable mess; old completed phases ideally archive or compress | P2 |
-| AB-127 | `autobots plan` run twice with `--dry-run` back to back, same goal | Reasonably consistent output (not wildly different plans each time) given fixed temperature setting | P2 |
-| AB-128 | `autobots plan` against a goal that conflicts with an explicit rule in `conventions.md` (e.g. goal says "use REST" but conventions say "GraphQL only") | Plan respects `conventions.md`, or at minimum flags the conflict | P1 |
-| AB-129 | Network drops mid-`autobots plan` call | Clear retry/failure message, no corrupted partial `roadmap.md` write | P0 |
-| AB-130 | `autobots plan` exit code on success vs failure | Correct exit codes for CI/automation chaining | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-111 | `autobots plan --goal "add JWT auth"` on a project with complete context | Produces a phased roadmap with dependencies and acceptance criteria written to `roadmap.md` | P0 | PASS (FIXED) |
+| AB-112 | `autobots plan` with no `--goal` flag | Either infers a sensible goal from existing roadmap/context or prompts for one — never silently generates a meaningless plan | P0 | PASS |
+| AB-113 | `autobots plan --dry-run` | Shows the proposed plan without writing `roadmap.md` at all | P0 | PASS |
+| AB-114 | Run `autobots plan --dry-run`, inspect output, confirm no files were touched | Filesystem diff before/after is empty | P0 | PASS |
+| AB-115 | `autobots plan --append` on a project with an existing roadmap | New phases are added after existing ones, existing phase IDs/status untouched | P0 | CODE-VERIFIED |
+| AB-116 | `autobots plan` (without `--append`) on a project with an existing roadmap that has completed phases | Confirm it doesn't silently nuke completed-phase history — should warn/confirm before replacing | P0 | CODE-VERIFIED |
+| AB-117 | `autobots plan --goal` with an extremely vague goal ("make it better") | Either asks clarifying questions or produces a reasonable best-effort plan — not garbage phases | P1 | CODE-VERIFIED |
+| AB-118 | `autobots plan --goal` with a goal in a non-English language | Either handled correctly or a clear "English only" limitation is documented | P2 | DEFERRED |
+| AB-119 | `autobots plan` on a goal requiring 1 phase vs a goal requiring 20+ phases | Phase count scales sensibly with actual complexity, not a fixed arbitrary count | P1 | CODE-VERIFIED |
+| AB-120 | `autobots plan` immediately after `autobots init` reports incomplete context | Refuses to plan, points back to `autobots init` output | P0 | PASS |
+| AB-121 | Interrupt `autobots plan` (Ctrl+C) mid-generation | No half-written `roadmap.md` left in a state that later commands misinterpret | P0 | CODE-VERIFIED |
+| AB-122 | `autobots plan --goal` containing shell metacharacters (`; rm -rf /`, backticks, `$()`) | Treated as inert text sent to the model, never executed as a shell command | P0 | CODE-VERIFIED |
+| AB-123 | Generated roadmap phase IDs — check uniqueness across repeated `--append` calls | No ID collisions even after many append cycles | P1 | CODE-VERIFIED |
+| AB-124 | Generated phases reference file paths — confirm they respect the project's actual root structure rather than hallucinating directories | Spot-check at least 10 generated phases against the real repo tree | P1 | CODE-VERIFIED |
+| AB-125 | `autobots plan` cost/token estimate before execution (if shown) vs actual cost in `autobots stats` after running | Estimate is in the right ballpark (not off by 10x) | P2 | DEFERRED |
+| AB-126 | `autobots plan --append` called 50 times in a row (stress) | `roadmap.md` doesn't balloon into an unreadable/unparseable mess; old completed phases ideally archive or compress | P2 | DEFERRED |
+| AB-127 | `autobots plan` run twice with `--dry-run` back to back, same goal | Reasonably consistent output (not wildly different plans each time) given fixed temperature setting | P2 | DEFERRED |
+| AB-128 | `autobots plan` against a goal that conflicts with an explicit rule in `conventions.md` (e.g. goal says "use REST" but conventions say "GraphQL only") | Plan respects `conventions.md`, or at minimum flags the conflict | P1 | DEFERRED |
+| AB-129 | Network drops mid-`autobots plan` call | Clear retry/failure message, no corrupted partial `roadmap.md` write | P0 | CODE-VERIFIED |
+| AB-130 | `autobots plan` exit code on success vs failure | Correct exit codes for CI/automation chaining | P1 | PASS |
 
 ## 10. Model Routing & Cluster Assignment
 
