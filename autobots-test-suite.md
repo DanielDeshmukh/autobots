@@ -576,16 +576,16 @@
 
 ## 29. `autobots config validate`
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-357 | Valid config | Passes cleanly | P0 |
-| AB-358 | Config with a typo'd key name (e.g. `tempurature` instead of `temperature`) | Flagged as an unrecognized key, not silently ignored (silent ignoring is how users end up confused why a setting "isn't working") | P0 |
-| AB-359 | Config with correct keys but wrong value TYPES (e.g. `max_tokens = "four thousand"` as a string) | Type validation error with the expected type named | P0 |
-| AB-360 | Config validate run standalone vs config validation that happens automatically at the start of `autobots run` | Same validation logic, consistent results (no case where `config validate` passes but `run` immediately fails on a config issue, or vice versa) | P0 |
-| AB-361 | Empty config file (0 bytes) | Treated as "use all defaults," not an error | P1 |
-| AB-362 | Config validate exit code | Correct for CI/pre-commit hook usage | P1 |
-| AB-363 | Config with deprecated keys from an older autobots version | Clear deprecation warning with migration guidance, not silent ignore or hard failure | P1 |
-| AB-364 | Config validate output format is consistent/parseable enough to use in a pre-commit hook | Usable in automation, not just human-readable prose | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-357 | Valid config | Passes cleanly | P0 | PASS |
+| AB-358 | Config with a typo'd key name (e.g. `tempurature` instead of `temperature`) | Flagged as an unrecognized key, not silently ignored (silent ignoring is how users end up confused why a setting "isn't working") | P0 | PASS |
+| AB-359 | Config with correct keys but wrong value TYPES (e.g. `max_tokens = "four thousand"` as a string) | Type validation error with the expected type named | P0 | PASS |
+| AB-360 | Config validate run standalone vs config validation that happens automatically at the start of `autobots run` | Same validation logic, consistent results (no case where `config validate` passes but `run` immediately fails on a config issue, or vice versa) | P0 | PASS |
+| AB-361 | Empty config file (0 bytes) | Treated as "use all defaults," not an error | P1 | PASS |
+| AB-362 | Config validate exit code | Correct for CI/pre-commit hook usage | P1 | PASS |
+| AB-363 | Config with deprecated keys from an older autobots version | Clear deprecation warning with migration guidance, not silent ignore or hard failure | P1 | PASS |
+| AB-364 | Config validate output format is consistent/parseable enough to use in a pre-commit hook | Usable in automation, not just human-readable prose | P2 | PASS |
 
 ## 30. Shell Completions
 
