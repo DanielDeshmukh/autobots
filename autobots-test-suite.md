@@ -509,16 +509,16 @@
 
 ## 24. `autobots status`
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-315 | `autobots status` on a fresh, never-run project | Clear "no run history" state, not an empty/blank confusing output | P1 |
-| AB-316 | `autobots status` mid-run (in another terminal while a run is active) | Shows live/current progress accurately, not stale cached data | P0 |
-| AB-317 | `autobots status` progress bar accuracy — compare against actual `progress-tracker.md` phase count | Numbers match exactly | P0 |
-| AB-318 | `autobots status` after a run that ended in failure/rollback | Clearly shows failed state, not misleadingly showing as "complete" or "in progress" forever | P0 |
-| AB-319 | `autobots status` branch info display | Shows the actual current git branch correctly | P1 |
-| AB-320 | `autobots status` estimated time remaining (if shown) | Reasonably accurate based on actual phase timing history, not a static guess | P2 |
-| AB-321 | `autobots status` output in a non-TTY context (CI pipeline) | Degrades to plain text, no broken progress-bar ANSI escape codes in logs | P1 |
-| AB-322 | `autobots status --json` (if supported) for scripting | Valid parseable JSON | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-315 | `autobots status` on a fresh, never-run project | Clear "no run history" state, not an empty/blank confusing output | P1 | PASS |
+| AB-316 | `autobots status` mid-run (in another terminal while a run is active) | Shows live/current progress accurately, not stale cached data | P0 | PASS |
+| AB-317 | `autobots status` progress bar accuracy — compare against actual `progress-tracker.md` phase count | Numbers match exactly | P0 | PASS |
+| AB-318 | `autobots status` after a run that ended in failure/rollback | Clearly shows failed state, not misleadingly showing as "complete" or "in progress" forever | P0 | PASS |
+| AB-319 | `autobots status` branch info display | Shows the actual current git branch correctly | P1 | PASS |
+| AB-320 | `autobots status` estimated time remaining (if shown) | Reasonably accurate based on actual phase timing history, not a static guess | P2 | PASS |
+| AB-321 | `autobots status` output in a non-TTY context (CI pipeline) | Degrades to plain text, no broken progress-bar ANSI escape codes in logs | P1 | PASS |
+| AB-322 | `autobots status --json` (if supported) for scripting | Valid parseable JSON | P2 | PASS |
 
 ## 25. `autobots explain` / Audit Trail
 
