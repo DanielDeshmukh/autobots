@@ -458,22 +458,22 @@
 
 ## 21. Session Management / `autobots resume` / Checkpoints
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-279 | Crash mid-phase (kill process), then `autobots resume` | Picks up exactly where it left off — does NOT re-run already-completed phases | P0 |
-| AB-280 | Crash mid-WRITE within a phase (not between phases), then resume | Confirm the in-progress phase is treated as failed/incomplete and either retried cleanly or rolled back first, never resumed from a torn mid-write state | P0 |
-| AB-281 | `autobots resume` with no prior session/checkpoint at all | Clear "nothing to resume, use `autobots run` to start fresh" message (matches documented troubleshooting) | P0 |
-| AB-282 | Resume a session days/weeks later (laptop closed, reopened) | Checkpoint data survives across machine sleep/restart with no time-based expiry breaking it unexpectedly | P0 |
-| AB-283 | Resume after the project's `context/` files were edited since the crash | Documented behavior — does resume use the OLD context snapshot from when the run started, or the NEW current files | P1 |
-| AB-284 | Resume after switching git branches since the crash | Safety branch check (Section 22) catches this before resuming on the wrong branch | P0 |
-| AB-285 | Resume after the API key changed/rotated since the crash | Works fine with the new key, no stale-credential issue | P1 |
-| AB-286 | Two different sessions exist (e.g. one from a `--supervised` run, one from a different `--autonomous` attempt) — does resume correctly pick the most recent/relevant one | No ambiguity about WHICH session is being resumed | P1 |
-| AB-287 | Resume after manually deleting the checkpoint file directly (not the lock, the actual session state) | Clear "checkpoint corrupted/missing" rather than resuming from a wrong/default state silently | P0 |
-| AB-288 | Checkpoint data includes enough audit context that `autobots explain` works correctly even for phases completed in a PREVIOUS (crashed) session, not just the current one | Full audit trail continuity across resume | P1 |
-| AB-289 | Resume on a DIFFERENT machine than where the run started (checkpoint committed to git, cloned elsewhere) | Document whether this is supported; if checkpoints are local-only, this should fail with a clear message, not silent wrong behavior | P1 |
-| AB-290 | Compare this resume experience directly against Claude Code/OpenCode's session resume — does autobots survive the exact same crash scenarios they handle (terminal closed, laptop sleep, network drop) | Should be at genuine parity — this is one of the most-used reliability features of both reference tools | P0 |
-| AB-291 | `autobots resume` mid-resume itself gets interrupted (double crash scenario) | Doesn't compound into unrecoverable state — still resumable a third time | P1 |
-| AB-292 | Resume correctly re-acquires the workspace lock (Section 19) rather than assuming it's still held | No race where two resumed sessions both think they own the lock | P0 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-279 | Crash mid-phase (kill process), then `autobots resume` | Picks up exactly where it left off — does NOT re-run already-completed phases | P0 | PASS |
+| AB-280 | Crash mid-WRITE within a phase (not between phases), then resume | Confirm the in-progress phase is treated as failed/incomplete and either retried cleanly or rolled back first, never resumed from a torn mid-write state | P0 | CODE-VERIFIED |
+| AB-281 | `autobots resume` with no prior session/checkpoint at all | Clear "nothing to resume, use `autobots run` to start fresh" message (matches documented troubleshooting) | P0 | PASS |
+| AB-282 | Resume a session days/weeks later (laptop closed, reopened) | Checkpoint data survives across machine sleep/restart with no time-based expiry breaking it unexpectedly | P0 | PASS |
+| AB-283 | Resume after the project's `context/` files were edited since the crash | Documented behavior — does resume use the OLD context snapshot from when the run started, or the NEW current files | P1 | CODE-VERIFIED |
+| AB-284 | Resume after switching git branches since the crash | Safety branch check (Section 22) catches this before resuming on the wrong branch | P0 | PASS |
+| AB-285 | Resume after the API key changed/rotated since the crash | Works fine with the new key, no stale-credential issue | P1 | CODE-VERIFIED |
+| AB-286 | Two different sessions exist (e.g. one from a `--supervised` run, one from a different `--autonomous` attempt) — does resume correctly pick the most recent/relevant one | No ambiguity about WHICH session is being resumed | P1 | PASS |
+| AB-287 | Resume after manually deleting the checkpoint file directly (not the lock, the actual session state) | Clear "checkpoint corrupted/missing" rather than resuming from a wrong/default state silently | P0 | PASS |
+| AB-288 | Checkpoint data includes enough audit context that `autobots explain` works correctly even for phases completed in a PREVIOUS (crashed) session, not just the current one | Full audit trail continuity across resume | P1 | CODE-VERIFIED |
+| AB-289 | Resume on a DIFFERENT machine than where the run started (checkpoint committed to git, cloned elsewhere) | Document whether this is supported; if checkpoints are local-only, this should fail with a clear message, not silent wrong behavior | P1 | CODE-VERIFIED |
+| AB-290 | Compare this resume experience directly against Claude Code/OpenCode's session resume — does autobots survive the exact same crash scenarios they handle (terminal closed, laptop sleep, network drop) | Should be at genuine parity — this is one of the most-used reliability features of both reference tools | P0 | DEFERRED |
+| AB-291 | `autobots resume` mid-resume itself gets interrupted (double crash scenario) | Doesn't compound into unrecoverable state — still resumable a third time | P1 | PASS |
+| AB-292 | Resume correctly re-acquires the workspace lock (Section 19) rather than assuming it's still held | No race where two resumed sessions both think they own the lock | P0 | PASS |
 
 ## 22. Safety Branch Enforcement
 
