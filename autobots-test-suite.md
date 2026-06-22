@@ -535,16 +535,16 @@
 
 ## 26. `autobots stats` / Cost Tracking
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-331 | `autobots stats` after a completed run | Shows totals, per-phase averages, and total cost | P0 |
-| AB-332 | Manually sum the individual phase costs and compare to the reported total | Numbers reconcile exactly, no silent rounding drift | P0 |
-| AB-333 | `autobots stats` cost calculation accuracy against actual NVIDIA NIM pricing for the models used | Within a reasonable margin of the real bill — this is money, it needs to be trustworthy | P0 |
-| AB-334 | `autobots stats` across multiple separate runs on the same project (cumulative vs per-run) | Clear distinction between "this run" and "all-time" stats | P1 |
-| AB-335 | `autobots stats` including repair-loop retry costs (cross-ref AB-237) | Retries are counted, not silently excluded making the tool look cheaper than it is | P0 |
-| AB-336 | `autobots stats` for a project with zero runs | Clean "no data yet" rather than a divide-by-zero crash | P1 |
-| AB-337 | `autobots stats --json` or export option for budgeting/reporting purposes | Available and accurate if supported | P2 |
-| AB-338 | Cost estimate shown BEFORE a run (if any, in `plan` or `run` preview) vs actual `stats` after | Estimate is close enough to be useful for budget decisions, flagged clearly as an estimate | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-331 | `autobots stats` after a completed run | Shows totals, per-phase averages, and total cost | P0 | PASS |
+| AB-332 | Manually sum the individual phase costs and compare to the reported total | Numbers reconcile exactly, no silent rounding drift | P0 | PASS |
+| AB-333 | `autobots stats` cost calculation accuracy against actual NVIDIA NIM pricing for the models used | Within a reasonable margin of the real bill — this is money, it needs to be trustworthy | P0 | PASS |
+| AB-334 | `autobots stats` across multiple separate runs on the same project (cumulative vs per-run) | Clear distinction between "this run" and "all-time" stats | P1 | PASS |
+| AB-335 | `autobots stats` including repair-loop retry costs (cross-ref AB-237) | Retries are counted, not silently excluded making the tool look cheaper than it is | P0 | PASS |
+| AB-336 | `autobots stats` for a project with zero runs | Clean "no data yet" rather than a divide-by-zero crash | P1 | PASS |
+| AB-337 | `autobots stats --json` or export option for budgeting/reporting purposes | Available and accurate if supported | P2 | PASS |
+| AB-338 | Cost estimate shown BEFORE a run (if any, in `plan` or `run` preview) vs actual `stats` after | Estimate is close enough to be useful for budget decisions, flagged clearly as an estimate | P1 | PASS |
 
 ## 27. `autobots logs`
 
