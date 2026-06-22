@@ -13,7 +13,7 @@ from rich.table import Table
 from .config import AutobotsConfig, CONFIG_FILE_NAMES
 
 
-# Default templates for context files
+# Default templates for context files (must match CORE_CONTEXT_FILES in bootstrap.py)
 CONTEXT_TEMPLATES = {
     "architecture.md": """# Architecture
 
@@ -45,68 +45,149 @@ CONTEXT_TEMPLATES = {
 - **Test Framework**: {test_framework}
 """,
 
-    "conventions.md": """# Conventions
+    "roadmap.md": """# Roadmap
 
-## Code Style
+Project phases and milestone tracking.
 
-- Follow PEP 8 for Python code
-- Use type hints for all function signatures
-- Maximum line length: 88 characters (Black default)
+## Project Phases
 
-## Naming Conventions
+### Phase 1: Project Setup
 
-- **Files**: snake_case (e.g., `my_module.py`)
-- **Classes**: PascalCase (e.g., `MyClass`)
-- **Functions**: snake_case (e.g., `my_function`)
-- **Constants**: UPPER_SNAKE_CASE (e.g., `MAX_RETRIES`)
+**Goal**: Initialize project structure and core components
 
-## Testing
+**Duration**: Week 1
 
-- Write tests for all new functionality
-- Use descriptive test names: `test_<what>_<scenario>_<expected>`
-- Keep tests independent and idempotent
+- [ ] Set up project repository
+- [ ] Configure development environment
+- [ ] Create basic project structure
+- [ ] Set up CI/CD pipeline
 
-## Documentation
+**Acceptance checks:**
+  - [ ] src/ directory exists
+  - [ ] pyproject.toml configured
 
-- Add docstrings to all public functions
-- Keep README.md up to date
-- Document API endpoints with examples
+### Phase 2: Core Implementation
+
+**Goal**: Implement main application features
+
+**Duration**: Week 2-3
+
+- [ ] Implement core business logic
+- [ ] Create API endpoints
+- [ ] Set up database models
+- [ ] Write initial tests
+
+**Acceptance checks:**
+  - [ ] All API endpoints respond correctly
+  - [ ] Database models are verified
+
+### Phase 3: Testing & Documentation
+
+**Goal**: Ensure quality and document the project
+
+**Duration**: Week 4
+
+- [ ] Write comprehensive tests
+- [ ] Create user documentation
+- [ ] Performance testing
+- [ ] Security audit
+
+**Acceptance checks:**
+  - [ ] Test coverage > 80%
+  - [ ] Documentation complete
+
+## Timeline
+
+| Phase | Start | End    | Status        |
+| ----- | ----- | ------ | ------------- |
+| P1    | W1    | W1     | Not Started   |
+| P2    | W2    | W3     | Not Started   |
+| P3    | W4    | W4     | Not Started   |
+
+## Blockers
+
+- [List any blockers here]
+
+## Next Steps
+
+- Complete project setup
+- Define detailed requirements
 """,
 
-    "testing-strategy.md": """# Testing Strategy
+    "ui-components.md": """# UI Components
 
-## Test Types
+## Component Library
 
-- **Unit Tests**: Test individual functions and methods
-- **Integration Tests**: Test component interactions
-- **E2E Tests**: Test complete user workflows
+- **Framework**: {framework}
+- **Styling**: CSS/Styled Components/Tailwind
 
-## Test Structure
+## Component Structure
 
-```
-tests/
-├── unit/           # Unit tests
-├── integration/    # Integration tests
-├── fixtures/       # Test fixtures and mocks
-└── conftest.py     # Shared fixtures
-```
+- Layout components (Header, Footer, Sidebar)
+- Form components (Input, Button, Select)
+- Display components (Card, Table, Modal)
+- Navigation components (Tabs, Breadcrumb)
 
-## Running Tests
+## Design System
 
-```bash
-# Run all tests
-{test_command}
+- Color palette
+- Typography
+- Spacing
+- Shadows and borders
+""",
 
-# Run with coverage
-{test_command_with_coverage}
-```
+    "progress-tracker.md": """# Progress Tracker
 
-## Test Guidelines
+Current phase and task status for Autobots execution.
 
-1. Each test should test one thing
-2. Use Arrange-Act-Assert pattern
-3. Mock external dependencies
-4. Clean up after tests
+## Current Status
+
+- **Phase**: Not started
+- **Last Updated**: (auto-updated by Autobots)
+
+## Phase Progress
+
+| Phase | Status | Notes |
+| ----- | ------ | ----- |
+| P1    | - [ ] Not started | |
+| P2    | - [ ] Not started | |
+| P3    | - [ ] Not started | |
+
+## Task Log
+
+(Updated automatically by Autobots during execution)
+""",
+
+    "project-briefing.md": """# Project Briefing
+
+## Overview
+
+{project_name} is a {description} application.
+
+## Goals
+
+- Build a reliable, well-tested application
+- Follow best practices for {languages} development
+- Ensure security and performance
+
+## Constraints
+
+- Must work on modern browsers/operating systems
+- Follow coding standards and conventions
+- Maintain backward compatibility
+
+## Stakeholders
+
+- Development team
+- End users
+- Operations team
+
+## Success Criteria
+
+- All features implemented and tested
+- Documentation complete
+- Performance benchmarks met
+- Security audit passed
 """,
 
     "security-auth.md": """# Security & Authentication
@@ -135,69 +216,6 @@ tests/
 - [ ] Input validation on all endpoints
 - [ ] Rate limiting enabled
 - [ ] CORS properly configured
-""",
-
-    "roadmap.md": """# Roadmap
-
-Project phases and milestone tracking.
-
-## Project Phases
-
-### Phase 1: Project Setup
-
-**Goal**: Initialize project structure and core components
-
-**Duration**: Week 1
-
-- [ ] Set up project repository
-- [ ] Configure development environment
-- [ ] Create basic project structure
-- [ ] Set up CI/CD pipeline
-
-**Completion**: Not started
-
-### Phase 2: Core Implementation
-
-**Goal**: Implement main application features
-
-**Duration**: Week 2-3
-
-- [ ] Implement core business logic
-- [ ] Create API endpoints
-- [ ] Set up database models
-- [ ] Write initial tests
-
-**Completion**: Not started
-
-### Phase 3: Testing & Documentation
-
-**Goal**: Ensure quality and document the project
-
-**Duration**: Week 4
-
-- [ ] Write comprehensive tests
-- [ ] Create user documentation
-- [ ] Performance testing
-- [ ] Security audit
-
-**Completion**: Not started
-
-## Timeline
-
-| Phase | Start | End    | Status        |
-| ----- | ----- | ------ | ------------- |
-| P1    | W1    | W1     | Not Started   |
-| P2    | W2    | W3     | Not Started   |
-| P3    | W4    | W4     | Not Started   |
-
-## Blockers
-
-- [List any blockers here]
-
-## Next Steps
-
-- Complete project setup
-- Define detailed requirements
 """,
 }
 
@@ -425,16 +443,6 @@ def _scaffold_context_files(
     # Parse first language for templates
     primary_language = languages.split(",")[0].strip()
 
-    # Determine test command
-    test_commands = {
-        "pytest": "pytest tests/ -q",
-        "unittest": "python -m unittest discover tests/",
-        "jest": "npm test",
-        "go test": "go test ./...",
-    }
-    test_command = test_commands.get(test_framework, f"{test_framework} tests/")
-    test_command_with_coverage = test_command.replace(" -q", " --cov=src")
-
     created_files = []
     for filename, template in CONTEXT_TEMPLATES.items():
         file_path = context_dir / filename
@@ -446,8 +454,6 @@ def _scaffold_context_files(
             languages=primary_language,
             framework=primary_language,  # Use language as default framework
             test_framework=test_framework,
-            test_command=test_command,
-            test_command_with_coverage=test_command_with_coverage,
             description=f"{primary_language} {test_framework}",
         )
 
