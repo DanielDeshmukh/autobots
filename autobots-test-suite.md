@@ -589,14 +589,14 @@
 
 ## 30. Shell Completions
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-365 | `autobots completions bash` generates a valid completion script | Sourcing it enables `autobots <TAB>` completion in bash | P1 |
-| AB-366 | `autobots completions zsh` | Same for zsh | P1 |
-| AB-367 | `autobots completions fish` | Same for fish | P1 |
-| AB-368 | Completions cover subcommand flags too (e.g. `autobots run --<TAB>` suggests `--supervised`, `--milestone`, `--autonomous`, `--verbose`) | Flag-level completion works, not just top-level command names | P2 |
-| AB-369 | Completions stay in sync after a version upgrade (regenerate and diff against old) | No stale completions suggesting removed/renamed commands | P2 |
-| AB-370 | README/doctor mentions HOW to install completions (source location, shell config line to add) | First-time setup instructions exist and are accurate | P1 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-365 | `autobots completions bash` generates a valid completion script | Sourcing it enables `autobots <TAB>` completion in bash | P1 | PASS |
+| AB-366 | `autobots completions zsh` | Same for zsh | P1 | PASS |
+| AB-367 | `autobots completions fish` | Same for fish | P1 | PASS |
+| AB-368 | Completions cover subcommand flags too (e.g. `autobots run --<TAB>` suggests `--supervised`, `--milestone`, `--autonomous`, `--verbose`) | Flag-level completion works, not just top-level command names | P2 | PASS |
+| AB-369 | Completions stay in sync after a version upgrade (regenerate and diff against old) | No stale completions suggesting removed/renamed commands | P2 | PASS |
+| AB-370 | README/doctor mentions HOW to install completions (source location, shell config line to add) | First-time setup instructions exist and are accurate | P1 | PASS |
 
 ## 31. Context Budget Management
 
