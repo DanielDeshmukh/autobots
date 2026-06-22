@@ -299,18 +299,18 @@
 
 ## 12. NVIDIA Skills — Tier 1 (Always-loaded)
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-165 | Confirm `agent-skills.md` is actually injected into Optimus and UltraMagnus prompts (verify via `--verbose` prompt dump) | Skill content present in the actual prompt sent to the model | P0 |
-| AB-166 | Confirm `safety-policy.md` is injected into Ironhide prompts specifically (not other clusters) | Skill scoping is correct per the README table | P1 |
-| AB-167 | Confirm `skill-evolution.md` is injected into ALL clusters as documented | Verify across at least 3 different clusters | P1 |
-| AB-168 | Confirm `rag-blueprint.md` reaches UltraMagnus and Optimus but NOT unrelated clusters like Bumblebee | No skill bleed into clusters it isn't scoped for | P1 |
-| AB-169 | Total Tier 1 prompt overhead — measure token count added by all 10 always-loaded skills combined | Overhead is reasonable and doesn't itself trigger context budget warnings on small tasks | P1 |
-| AB-170 | Tier 1 skill file missing/corrupted on disk (simulate by deleting one skill file post-install) | Clear error identifying the missing skill file, not a silent prompt with a gap in it | P0 |
-| AB-171 | Tier 1 skills content accuracy — spot-check `rag-eval.md` RAGAS guidance against actual current RAGAS docs | Content isn't stale/outdated to the point of giving bad guidance | P2 |
-| AB-172 | `session-memory.md` skill actually influences checkpoint/resume behavior (cross-reference with Section 21 tests) | Documented behavior matches observed behavior | P1 |
-| AB-173 | Skill injection order — confirm consistent ordering doesn't cause later skills to get truncated first under context pressure | Truncation, if it happens, drops lowest-priority content first, not randomly | P1 |
-| AB-174 | Disabling Tier 1 skills entirely (if any config flag exists) vs not | If no such flag exists, confirm this is intentional (skills are core, not optional) and documented as such | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-165 | Confirm `agent-skills.md` is actually injected into Optimus and UltraMagnus prompts (verify via `--verbose` prompt dump) | Skill content present in the actual prompt sent to the model | P0 | PASS |
+| AB-166 | Confirm `safety-policy.md` is injected into Ironhide prompts specifically (not other clusters) | Skill scoping is correct per the README table | P1 | PASS |
+| AB-167 | Confirm `skill-evolution.md` is injected into ALL clusters as documented | Verify across at least 3 different clusters | P1 | PASS |
+| AB-168 | Confirm `rag-blueprint.md` reaches UltraMagnus and Optimus but NOT unrelated clusters like Bumblebee | No skill bleed into clusters it isn't scoped for | P1 | PASS (FIXED) |
+| AB-169 | Total Tier 1 prompt overhead — measure token count added by all 10 always-loaded skills combined | Overhead is reasonable and doesn't itself trigger context budget warnings on small tasks | P1 | CODE-VERIFIED |
+| AB-170 | Tier 1 skill file missing/corrupted on disk (simulate by deleting one skill file post-install) | Clear error identifying the missing skill file, not a silent prompt with a gap in it | P0 | CODE-VERIFIED |
+| AB-171 | Tier 1 skills content accuracy — spot-check `rag-eval.md` RAGAS guidance against actual current RAGAS docs | Content isn't stale/outdated to the point of giving bad guidance | P2 | DEFERRED |
+| AB-172 | `session-memory.md` skill actually influences checkpoint/resume behavior (cross-reference with Section 21 tests) | Documented behavior matches observed behavior | P1 | DEFERRED |
+| AB-173 | Skill injection order — confirm consistent ordering doesn't cause later skills to get truncated first under context pressure | Truncation, if it happens, drops lowest-priority content first, not randomly | P1 | CODE-VERIFIED |
+| AB-174 | Disabling Tier 1 skills entirely (if any config flag exists) vs not | If no such flag exists, confirm this is intentional (skills are core, not optional) and documented as such | P2 | CODE-VERIFIED |
 
 ## 13. NVIDIA Skills — Tier 2 (Conditional)
 

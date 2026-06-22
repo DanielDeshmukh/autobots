@@ -25,6 +25,7 @@ CLUSTER_NVIDIA_SKILLS: dict[str, list[str]] = {
     "Optimus": [
         "agent-skills.md",
         "autonomous-agent-research.md",
+        "rag-blueprint.md",
         "session-memory.md",
     ],
     "UltraMagnus": [
