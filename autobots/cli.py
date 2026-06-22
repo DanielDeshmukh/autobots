@@ -1365,6 +1365,8 @@ def run_list() -> None:
         ("resume", "Resume execution from the last checkpoint"),
         ("status", "Show all phase and task statuses from task-registry.json"),
         ("engage", "Interactive swarm execution with operator approval at each phase"),
+        ("ask", "Free-form conversation — ask questions about the codebase"),
+        ("steer", "Mid-task steering — modify the current plan without aborting"),
         ("doctor", "Run preflight checks to verify API, config, and workspace"),
         ("config", "Validate or show current configuration"),
         ("completions", "Generate shell completion scripts"),
@@ -2621,6 +2623,230 @@ def run_publish(args: list[str]) -> None:
     )
 
 
+def run_ask(args: list[str]) -> None:
+    """Free-form conversation mode — ask questions about the codebase."""
+    console = Console()
+    question = " ".join(args[1:]) if len(args) > 1 else ""
+
+    if not question:
+        console.print(
+            Panel.fit(
+                "Usage: autobots ask <question>\n\n"
+                "Ask a free-form question about the codebase.\n"
+                "Examples:\n"
+                "  autobots ask 'What does this project do?'\n"
+                "  autobots ask 'Where is the auth logic?'\n"
+                "  autobots ask 'How does the routing work?'",
+                title="Ask",
+                border_style="cyan",
+            )
+        )
+        return
+
+    # Resolve target project
+    target_root = Path.cwd().resolve()
+
+    # Load context files for context
+    from .selectors import missing_core_context_files
+    missing = missing_core_context_files(str(target_root))
+    context_parts = []
+
+    # Read available context files
+    for ctx_name in ["architecture.md", "project-briefing.md", "security-auth.md"]:
+        ctx_path = target_root / "context" / ctx_name
+        if ctx_path.exists():
+            try:
+                content = ctx_path.read_text(encoding="utf-8-sig")
+                if content.strip():
+                    context_parts.append(f"## {ctx_name}\n\n{content[:3000]}")
+            except Exception:
+                pass
+
+    # Read roadmap if available
+    roadmap_path = target_root / "roadmap.md"
+    if roadmap_path.exists():
+        try:
+            content = roadmap_path.read_text(encoding="utf-8-sig")
+            if content.strip():
+                context_parts.append(f"## roadmap.md\n\n{content[:2000]}")
+            except Exception:
+                pass
+
+    context = "\n\n---\n\n".join(context_parts) if context_parts else "No context files available."
+
+    # Build prompt
+    system_prompt = (
+        "You are a helpful coding assistant with knowledge of this project. "
+        "Answer the user's question concisely and accurately based on the provided context. "
+        "If you don't know something, say so clearly. "
+        "Reply in plain text, not JSON."
+    )
+
+    user_prompt = f"Project context:\n\n{context}\n\n---\n\nQuestion: {question}"
+
+    # Call model
+    from .config import load_config
+    config = load_config(target_root)
+    api_key = os.getenv("NVIDIA_API_KEY") or config.api_key
+
+    if not api_key:
+        console.print(
+            Panel.fit(
+                "NVIDIA_API_KEY not set. Run 'autobots doctor' for setup help.",
+                title="API Key Missing",
+                border_style="red",
+            )
+        )
+        return
+
+    from openai import OpenAI
+    client = OpenAI(
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=api_key,
+    )
+
+    # Use a fast model for Q&A
+    model_id = "meta/llama-3.1-8b-instruct"
+
+    console.print(f"\n[cyan]Asking {model_id}...[/cyan]\n")
+
+    try:
+        response = client.chat.completions.create(
+            model=model_id,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            max_tokens=1024,
+            temperature=0.3,
+        )
+        answer = response.choices[0].message.content
+        console.print(Panel(answer, title="Answer", border_style="green"))
+    except Exception as e:
+        console.print(
+            Panel.fit(
+                f"Model call failed: {e}",
+                title="Error",
+                border_style="red",
+            )
+        )
+
+
+def run_steer(args: list[str]) -> None:
+    """Mid-task steering — modify the current plan mid-run."""
+    console = Console()
+
+    if len(args) < 2:
+        console.print(
+            Panel.fit(
+                "Usage: autobots steer <instruction>\n\n"
+                "Modify the current plan mid-run without aborting.\n"
+                "Examples:\n"
+                "  autobots steer 'Use pytest instead of unittest'\n"
+                "  autobots steer 'Don't touch src/auth.py'\n"
+                "  autobots steer 'Add error handling to the API client'\n"
+                "  autobots steer 'Focus on performance, not features'",
+                title="Steer",
+                border_style="cyan",
+            )
+        )
+        return
+
+    instruction = " ".join(args[1:])
+    target_root = Path.cwd().resolve()
+
+    # Check for active session
+    from .executor.modes import ExecutionModeManager, ExecutionMode
+    checkpoint_path = target_root / ".autobots-checkpoint.json"
+    if not checkpoint_path.exists():
+        console.print(
+            Panel.fit(
+                "No active session found.\n\n"
+                "Start a session with 'autobots run' first, then steer it.",
+                title="No Active Session",
+                border_style="yellow",
+            )
+        )
+        return
+
+    # Load checkpoint
+    import json
+    try:
+        with open(checkpoint_path, "r", encoding="utf-8") as f:
+            checkpoint = json.load(f)
+    except Exception as e:
+        console.print(
+            Panel.fit(
+                f"Failed to load checkpoint: {e}",
+                title="Error",
+                border_style="red",
+            )
+        )
+        return
+
+    # Read current progress
+    progress_path = target_root / "progress-tracker.md"
+    if not progress_path.exists():
+        console.print(
+            Panel.fit(
+                "No progress-tracker.md found. Run 'autobots plan' first.",
+                title="Error",
+                border_style="red",
+            )
+        )
+        return
+
+    progress_text = progress_path.read_text(encoding="utf-8-sig")
+
+    # Find current phase
+    from .router.phases import PhaseReader
+    phase = PhaseReader.find_next_phase(progress_text)
+    if not phase:
+        console.print(
+            Panel.fit(
+                "No pending phases found. All phases may be complete.",
+                title="No Pending Phases",
+                border_style="yellow",
+            )
+        )
+        return
+
+    # Append steering instruction to the phase's constraints
+    console.print(
+        Panel.fit(
+            f"Current phase: {phase.title}\n"
+            f"Phase ID: {phase.phase_id}\n\n"
+            f"Steering instruction:\n{instruction}\n\n"
+            f"This instruction will be applied to the current phase.",
+            title="Steering Instruction",
+            border_style="cyan",
+        )
+    )
+
+    # Write steering file that the router will pick up
+    steering_path = target_root / "context" / ".autobots-steering.md"
+    try:
+        steering_content = f"# Active Steering Instruction\n\n{instruction}\n\nApplied to: {phase.title} ({phase.phase_id})\n"
+        steering_path.write_text(steering_content, encoding="utf-8")
+        console.print(
+            Panel.fit(
+                "Steering instruction saved.\n"
+                "The next model call in this phase will incorporate this instruction.\n"
+                "Use 'autobots resume' to continue execution with the new direction.",
+                title="Steering Applied",
+                border_style="green",
+            )
+        )
+    except Exception as e:
+        console.print(
+            Panel.fit(
+                f"Failed to save steering instruction: {e}",
+                title="Error",
+                border_style="red",
+            )
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     setup_logging()
     args = argv or sys.argv[1:]
@@ -2712,6 +2938,10 @@ def main(argv: list[str] | None = None) -> int:
             run_marketplace(args)
         elif command == "dashboard":
             run_dashboard(args)
+        elif command == "ask":
+            run_ask(args)
+        elif command == "steer":
+            run_steer(args)
         elif command == "list":
             run_list()
         else:
@@ -2720,7 +2950,7 @@ def main(argv: list[str] | None = None) -> int:
                 "init", "plan", "run", "resume", "status", "engage",
                 "validate-models", "publish", "undo", "snapshots", "catalog",
                 "doctor", "diff", "logs", "explain", "stats", "config",
-                "completions", "marketplace", "dashboard", "list"
+                "completions", "marketplace", "dashboard", "ask", "steer", "list"
             ]
             matches = difflib.get_close_matches(command, known_commands, n=1, cutoff=0.5)
             if matches:
