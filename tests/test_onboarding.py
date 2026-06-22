@@ -96,8 +96,10 @@ class TestWriteConfig(unittest.TestCase):
 
             content = config_path.read_text()
             self.assertIn("test-project", content)
-            self.assertIn("test-api-key", content)
             self.assertIn("pytest", content)
+            # API key is stored in .env, not in TOML
+            self.assertNotIn("test-api-key", content)
+            self.assertIn("NVIDIA API key is stored in .env", content)
 
     def test_creates_config_without_api_key(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -118,7 +120,8 @@ class TestWriteConfig(unittest.TestCase):
 
             content = config_path.read_text()
             self.assertIn("test-project", content)
-            self.assertIn("# api_key", content)  # Commented out
+            # API key note is always present (stored in .env)
+            self.assertIn("NVIDIA API key is stored in .env", content)
 
 
 class TestScaffoldContextFiles(unittest.TestCase):
