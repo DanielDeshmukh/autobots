@@ -548,14 +548,14 @@
 
 ## 27. `autobots logs`
 
-| ID | Test Case | Expected Result | Priority |
-|----|-----------|------------------|----------|
-| AB-339 | `autobots logs` shows full audit trail chronologically | Readable, accurate timeline of all actions taken | P0 |
-| AB-340 | `autobots logs` with a `--tail`/`-n` style flag (if supported) | Limits output correctly | P2 |
-| AB-341 | `autobots logs` for a project with no activity yet | Clean empty state message | P1 |
-| AB-342 | `autobots logs` never leaks API keys/secrets (cross-ref AB-030) | Confirmed redacted | P0 |
-| AB-343 | `autobots logs` searchable/filterable by phase ID or cluster (if supported) | Works as documented | P2 |
-| AB-344 | `autobots logs` file size/rotation on a very long-lived project | Doesn't grow unbounded without any rotation/archival strategy | P2 |
+| ID | Test Case | Expected Result | Priority | Status |
+|----|-----------|------------------|----------|--------|
+| AB-339 | `autobots logs` shows full audit trail chronologically | Readable, accurate timeline of all actions taken | P0 | PASS |
+| AB-340 | `autobots logs` with a `--tail`/`-n` style flag (if supported) | Limits output correctly | P2 | PASS |
+| AB-341 | `autobots logs` for a project with no activity yet | Clean empty state message | P1 | PASS |
+| AB-342 | `autobots logs` never leaks API keys/secrets (cross-ref AB-030) | Confirmed redacted | P0 | PASS |
+| AB-343 | `autobots logs` searchable/filterable by phase ID or cluster (if supported) | Works as documented | P2 | PASS |
+| AB-344 | `autobots logs` file size/rotation on a very long-lived project | Doesn't grow unbounded without any rotation/archival strategy | P2 | PASS |
 
 ## 28. `autobots doctor` Preflight
 
