@@ -15,7 +15,7 @@ class ToolStatus(Enum):
 @dataclass
 class ToolResult:
     status: ToolStatus
-    output: str
+    output: str = ""
     error: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
 
