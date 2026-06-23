@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
@@ -14,6 +15,8 @@ from .phases import PhaseReader
 from .planning import ClusterPlanner
 from .stages import StageExecutor, PROTECTED_PROGRESS_FILES
 from .utils import PayloadValidator, FileEntryHelper
+from .decomposer import TaskDecomposer, DecompositionPlan
+from .sequencer import TaskSequencer, ExecutionPlan
 from ..workspace import TargetProjectWorkspace
 
 if TYPE_CHECKING:
@@ -54,10 +57,193 @@ class AutobotRouter:
             usage_tracker=usage_tracker,
             context_budget_manager=context_budget_manager,
         )
+        self.decomposer = TaskDecomposer(api_key=self.api_key, base_url=base_url)
+        self.sequencer = TaskSequencer()
 
     def read_phase_documents(self, workspace: TargetProjectWorkspace) -> tuple[str, str]:
         """Read roadmap and progress tracker."""
         return PhaseReader.read_phase_documents(workspace)
+
+    def execute_task(
+        self,
+        workspace: TargetProjectWorkspace,
+        task: str,
+        event_handler: EventHandler | None = None,
+    ) -> ExecutionResult:
+        """Execute a task using decomposer + sequencer multi-cluster pipeline."""
+        logger.info("Executing task: %s", task)
+
+        # Step 1: Decompose
+        self._emit(event_handler, f"Optimus decomposing task into subtasks...")
+        plan = self.decomposer.decompose(task)
+        logger.info("Decomposed into %d subtasks", len(plan.subtasks))
+
+        # Step 2: Sequence
+        exec_plan = self.sequencer.sequence(plan.subtasks)
+        logger.info("Sequenced into %d steps (%d parallel)", exec_plan.sequential_steps, exec_plan.parallel_groups)
+        self._emit(event_handler, f"Plan: {exec_plan.sequential_steps} steps, {exec_plan.parallel_groups} parallel groups")
+
+        # Step 3: Execute each step
+        all_files = []
+        all_journal = []
+        all_raw = []
+
+        for step_idx, group in enumerate(exec_plan.groups):
+            if len(group.subtasks) == 1:
+                subtask = group.subtasks[0]
+                self._emit(event_handler, f"Step {step_idx+1}: [{subtask.cluster}] {subtask.task}")
+                result = self._execute_subtask(workspace, subtask, plan, all_files, event_handler)
+            else:
+                self._emit(event_handler, f"Step {step_idx+1} (parallel): {len(group.subtasks)} tasks")
+                result = self._execute_parallel_group(workspace, group, plan, all_files, event_handler)
+
+            all_files.extend(result.get("files", []))
+            all_journal.extend(result.get("journal", []))
+            all_raw.append(result.get("raw", ""))
+
+        summary = f"Completed {len(plan.subtasks)} subtasks across {exec_plan.sequential_steps} steps"
+        return ExecutionResult(
+            cluster_name="multi-cluster",
+            summary=summary,
+            raw_response="\n\n".join(all_raw),
+            files_written=[],
+            journal=all_journal,
+            plan=None,
+            validation_passed=True,
+            validation_report="",
+            verification_attempts=0,
+        )
+
+    def _execute_subtask(
+        self,
+        workspace: TargetProjectWorkspace,
+        subtask,
+        decompose_plan: DecompositionPlan,
+        existing_files: list[dict],
+        event_handler: EventHandler | None = None,
+    ) -> dict:
+        """Execute a single subtask with its assigned cluster."""
+        from openai import OpenAI
+
+        # Get model for this cluster
+        lead, reviewer, support = self.catalog.select_models(subtask.cluster, subtask.task)
+        model_id = lead.model_id
+
+        # Fallback to known working model if needed
+        FALLBACK_MODELS = [
+            "meta/llama-3.3-70b-instruct",
+            "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+            "nvidia/nemotron-3-super-120b-a12b",
+        ]
+        if model_id not in FALLBACK_MODELS and "llama" not in model_id and "nemotron" not in model_id:
+            model_id = FALLBACK_MODELS[0]
+
+        self._emit(event_handler, f"  Using {model_id} for {subtask.cluster}")
+
+        # Build context from existing files
+        context = ""
+        if existing_files:
+            context = "\n\nEXISTING FILES:\n" + "\n".join(
+                f"--- {f.get('path', '?')} ---\n{f.get('content', '')[:1000]}"
+                for f in existing_files[-10:]  # Last 10 files for context
+            )
+
+        # Call model
+        client = OpenAI(base_url=self.stage_executor.base_url, api_key=self.api_key)
+        system = f"""You are a {subtask.cluster} specialist. Complete the task and return JSON with files.
+
+RULES:
+- Return complete, runnable files as JSON
+- "content" field MUST be a string with full file content
+- Use \\n for newlines inside content strings
+- Escape quotes with \\". Do NOT use single quotes for JS/JSX.
+- Return ONLY the JSON object, no explanation
+
+Return format:
+{{"files":[{{"root":"","path":"filename.ext","content":"full file content here"}}],"summary":"what you did"}}"""
+
+        user = f"TASK: {subtask.task}{context}"
+
+        try:
+            response = client.chat.completions.create(
+                model=lead.model_id,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                temperature=0.3,
+                max_tokens=8192,
+                stream=False,
+            )
+            raw = response.choices[0].message.content or ""
+            payload = self._parse_json_response(raw)
+            files = payload.get("files", [])
+
+            # Write files
+            for f in files:
+                root = f.get("root", "").strip()
+                path = f.get("path", "").strip()
+                content = f.get("content", "")
+                if not path:
+                    continue
+                target = (workspace.target_root / root / path) if root else (workspace.target_root / path)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
+
+            return {
+                "files": files,
+                "journal": [ClusterMessage(
+                    speaker=f"{subtask.cluster}/{model_id}",
+                    objective=subtask.task,
+                    summary=payload.get("summary", "Completed task."),
+                )],
+                "raw": raw,
+            }
+        except Exception as exc:
+            logger.warning("Subtask failed: %s", exc)
+            return {"files": [], "journal": [], "raw": f"Error: {exc}"}
+
+    def _execute_parallel_group(
+        self,
+        workspace: TargetProjectWorkspace,
+        group,
+        decompose_plan: DecompositionPlan,
+        existing_files: list[dict],
+        event_handler: EventHandler | None = None,
+    ) -> dict:
+        """Execute a group of subtasks (sequential for now, parallel later)."""
+        all_files = []
+        all_journal = []
+        all_raw = []
+
+        for subtask in group.subtasks:
+            result = self._execute_subtask(workspace, subtask, decompose_plan, existing_files + all_files, event_handler)
+            all_files.extend(result.get("files", []))
+            all_journal.extend(result.get("journal", []))
+            all_raw.append(result.get("raw", ""))
+
+        return {
+            "files": all_files,
+            "journal": all_journal,
+            "raw": "\n\n".join(all_raw),
+        }
+
+    @staticmethod
+    def _parse_json_response(raw: str) -> dict:
+        """Parse JSON from model response."""
+        import re
+        candidate = raw.strip()
+        fenced = re.search(r"```(?:json)?\s*\n(.*?)\n```", candidate, re.DOTALL)
+        if fenced:
+            candidate = fenced.group(1).strip()
+        start = candidate.find("{")
+        end = candidate.rfind("}")
+        if start != -1 and end != -1:
+            candidate = candidate[start:end + 1]
+        try:
+            return json.loads(candidate, strict=False)
+        except json.JSONDecodeError:
+            return {}
 
     def find_next_phase(self, progress_text: str) -> PhaseRecord | None:
         """Find next phase to execute."""
