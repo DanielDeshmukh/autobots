@@ -67,6 +67,8 @@ Return format:
 
 SKIP_DIRS = {".git", "node_modules", ".autobots-state", "context", "tests", "__pycache__"}
 
+SKILLS_DIR = Path(__file__).parent.parent / "autobots" / "skills"
+
 # Files the model commonly generates with bad tsconfig settings
 TSCONFIG_FIXES = {
     "compilerOptions.skipLibCheck": True,
@@ -77,6 +79,17 @@ TSCONFIG_FIXES = {
 
 def log(msg, indent=0):
     print(f"{'  ' * indent}{msg}", flush=True)
+
+
+def load_skill(name):
+    """Load a skill file and return its content as a string."""
+    skill_file = SKILLS_DIR / f"{name}.md"
+    if not skill_file.exists():
+        return ""
+    try:
+        return skill_file.read_text(encoding="utf-8")
+    except Exception:
+        return ""
 
 
 def kill_orphans():
@@ -290,7 +303,15 @@ def init_git(project_dir):
 
 def generate(project_dir, goal):
     log(f"Generating project from goal: {goal}")
-    raw = call_model(GEN_PROMPT, goal)
+    frontend_skill = load_skill("frontend-developer")
+    backend_skill = load_skill("backend-engineer")
+    skill_context = ""
+    if frontend_skill:
+        skill_context += f"\n\n## Frontend Engineering Skill\n{frontend_skill[:3000]}"
+    if backend_skill:
+        skill_context += f"\n\n## Backend Engineering Skill\n{backend_skill[:3000]}"
+    enhanced_prompt = GEN_PROMPT + skill_context
+    raw = call_model(enhanced_prompt, goal)
     log(f"Model returned {len(raw)} chars", 1)
     payload = parse_json(raw)
     files = payload.get("files", [])
@@ -320,9 +341,12 @@ def fix_loop(project_dir):
         files = scan_project(project_dir)
         existing = "\n".join(f"--- {f['path']} ---\n{f['content'][:2000]}" for f in files)
         error_text = "\n\n".join(errors)
+        review_skill = load_skill("code-reviewer")
+        skill_context = f"\n\n## Code Review Skill\n{review_skill[:2000]}" if review_skill else ""
+        enhanced_fix_prompt = FIX_PROMPT + skill_context
         user_msg = f"Errors:\n{error_text}\n\nEXISTING FILES:\n{existing}\n\nFix the errors."
 
-        raw = call_model(FIX_PROMPT, user_msg)
+        raw = call_model(enhanced_fix_prompt, user_msg)
         try:
             payload = parse_json(raw)
             fix_files = payload.get("files", [])
@@ -349,9 +373,12 @@ def apply_update(project_dir, instruction):
     log(f"Applying update: {instruction}")
     files = scan_project(project_dir)
     existing = "\n".join(f"--- {f['path']} ---\n{f['content'][:2000]}" for f in files)
+    fullstack_skill = load_skill("fullstack-engineer")
+    skill_context = f"\n\n## Fullstack Engineering Skill\n{fullstack_skill[:2000]}" if fullstack_skill else ""
+    enhanced_update_prompt = UPDATE_PROMPT + skill_context
     user_msg = f"Current project:\n{existing}\n\nUser instruction: {instruction}\n\nReturn ONLY files that need to change."
 
-    raw = call_model(UPDATE_PROMPT, user_msg)
+    raw = call_model(enhanced_update_prompt, user_msg)
     log(f"Model returned {len(raw)} chars", 1)
 
     try:
