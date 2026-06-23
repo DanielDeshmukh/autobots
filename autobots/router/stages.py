@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from rich.console import Console
 
 from .utils import PayloadValidator
+from .design import get_design_guidance
 from ..workspace import TargetProjectWorkspace
 from ..skills.loader import load_skill_pack, load_nvidia_skills, load_conditional_nvidia_skills
 from ..utils.retry import with_retry
@@ -404,6 +405,19 @@ Return strict JSON:
             except Exception:
                 pass
 
+        # Inject design principles for UI-related clusters
+        design_section = ""
+        ui_clusters = {"Jazz", "UltraMagnus", "Wheeljack"}
+        ui_keywords = ["ui", "frontend", "css", "react", "component", "visual", "design", "style", "theme", "layout", "page", "app"]
+        task_text = phase.raw_line.lower() + " " + json.dumps(command_payload).lower()
+
+        if plan.primary_cluster in ui_clusters or any(kw in task_text for kw in ui_keywords):
+            try:
+                guidance = get_design_guidance(project_description=phase.raw_line)
+                design_section = f"\n\n{guidance.to_prompt_context()}\n"
+            except Exception as e:
+                logger.warning("Failed to load design guidance: %s", e)
+
         return f"""
 You are the {plan.primary_cluster} implementation cluster.
 The command tier and support models have already coordinated your mission.
@@ -412,6 +426,7 @@ Treat the coordination rules below as hard laws.
 
 {COORDINATION_LAWS}
 {steering_section}
+{design_section}
 CRITICAL: Generate a COMPLETE, RUNNABLE project. The user must be able to run `npm install && npm run dev` and see the working application. This means you MUST include ALL of these files:
 - index.html (entry point)
 - src/main.tsx (React entry point)

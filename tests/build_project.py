@@ -13,7 +13,13 @@ API_KEY = os.environ.get("NVIDIA_API_KEY")
 if not API_KEY:
     raise SystemExit("Set NVIDIA_API_KEY env var first")
 BASE_URL = "https://integrate.api.nvidia.com/v1"
-MODEL = "meta/llama-3.3-70b-instruct"
+
+# Model selection: right model for each role
+MODEL_UI = "nvidia/llama-3.3-nemotron-super-49b-v1.5"  # Best for UI/design
+MODEL_ORCHESTRATOR = "qwen/qwen3.5-122b-a10b"  # Best for agentic/tool-calling
+MODEL_GENERAL = "qwen/qwen3-next-80b-a3b-instruct"  # Fast, 256K context, good for general
+MODEL = MODEL_UI  # Default to UI model (most projects have frontend)
+
 DEV_PORT = 5180
 MAX_FIX_ATTEMPTS = 3
 
@@ -68,6 +74,10 @@ Return format:
 SKIP_DIRS = {".git", "node_modules", ".autobots-state", "context", "tests", "__pycache__"}
 
 SKILLS_DIR = Path(__file__).parent.parent / "autobots" / "skills"
+
+# Design theme system
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from autobots.router.design import get_design_guidance
 
 # Files the model commonly generates with bad tsconfig settings
 TSCONFIG_FIXES = {
@@ -125,11 +135,12 @@ def wait_port(port, timeout):
     return False
 
 
-def call_model(system, user):
+def call_model(system, user, model=None):
     client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
+    use_model = model or MODEL
     parts = []
     for chunk in client.chat.completions.create(
-        model=MODEL,
+        model=use_model,
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         temperature=0.3, max_tokens=8192, stream=True,
         stream_options={"include_usage": True},
@@ -157,8 +168,9 @@ def parse_json(raw):
 def write_files(project_dir, files):
     written = []
     for f in files:
+        # Handle multiple formats: {"root": "...", "path": "..."}, {"name": "..."}, {"filename": "..."}
         root = f.get("root", "").strip()
-        path = f.get("path", "").strip()
+        path = f.get("path", "").strip() or f.get("name", "").strip() or f.get("filename", "").strip()
         content = f.get("content", "")
         if not path:
             continue
@@ -196,23 +208,26 @@ def fix_project_issues(project_dir):
         except Exception:
             pass
 
-    # Ensure critical devDependencies are present
+    # Ensure critical devDependencies are present with compatible versions
     pkg = project_dir / "package.json"
     if pkg.exists():
         try:
             p = json.loads(pkg.read_text(encoding="utf-8"))
             devdeps = p.setdefault("devDependencies", {})
+            # Force compatible versions (model often generates incompatible combos)
             required_dev = {
-                "@vitejs/plugin-react": "^2.1.0",
-                "typescript": "^4.8.4",
-                "vite": "^3.2.3",
+                "@vitejs/plugin-react": "^4.0.0",
+                "@types/react": "^18.0.0",
+                "@types/react-dom": "^18.0.0",
+                "typescript": "^5.0.0",
+                "vite": "^5.0.0",
             }
             changed = False
             for dep, ver in required_dev.items():
-                if dep not in devdeps:
+                if dep not in devdeps or devdeps[dep] != ver:
                     devdeps[dep] = ver
                     changed = True
-                    log(f"Added missing devDep: {dep}", 2)
+                    log(f"Fixed devDep: {dep} -> {ver}", 2)
             if changed:
                 pkg.write_text(json.dumps(p, indent=2), encoding="utf-8")
         except Exception:
@@ -303,6 +318,12 @@ def init_git(project_dir):
 
 def generate(project_dir, goal):
     log(f"Generating project from goal: {goal}")
+
+    # Get design guidance (model decides colors, we provide principles)
+    guidance = get_design_guidance(project_description=goal)
+    log(f"Design source: {guidance.source}", 1)
+    design_context = f"\n\n{guidance.to_prompt_context()}"
+
     frontend_skill = load_skill("frontend-developer")
     backend_skill = load_skill("backend-engineer")
     skill_context = ""
@@ -310,7 +331,7 @@ def generate(project_dir, goal):
         skill_context += f"\n\n## Frontend Engineering Skill\n{frontend_skill[:3000]}"
     if backend_skill:
         skill_context += f"\n\n## Backend Engineering Skill\n{backend_skill[:3000]}"
-    enhanced_prompt = GEN_PROMPT + skill_context
+    enhanced_prompt = GEN_PROMPT + design_context + skill_context
     raw = call_model(enhanced_prompt, goal)
     log(f"Model returned {len(raw)} chars", 1)
     payload = parse_json(raw)
@@ -371,11 +392,17 @@ def fix_loop(project_dir):
 
 def apply_update(project_dir, instruction):
     log(f"Applying update: {instruction}")
+
+    # Get design guidance (model decides colors, we provide principles)
+    guidance = get_design_guidance(project_description=instruction)
+    log(f"Design source: {guidance.source}", 1)
+    design_context = f"\n\n{guidance.to_prompt_context()}"
+
     files = scan_project(project_dir)
     existing = "\n".join(f"--- {f['path']} ---\n{f['content'][:2000]}" for f in files)
     fullstack_skill = load_skill("fullstack-engineer")
     skill_context = f"\n\n## Fullstack Engineering Skill\n{fullstack_skill[:2000]}" if fullstack_skill else ""
-    enhanced_update_prompt = UPDATE_PROMPT + skill_context
+    enhanced_update_prompt = UPDATE_PROMPT + design_context + skill_context
     user_msg = f"Current project:\n{existing}\n\nUser instruction: {instruction}\n\nReturn ONLY files that need to change."
 
     raw = call_model(enhanced_update_prompt, user_msg)

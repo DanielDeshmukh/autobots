@@ -98,12 +98,12 @@ class DecompositionPlan:
 
 
 class TaskDecomposer:
-    """Uses Optimus model to decompose complex tasks into cluster-assigned subtasks."""
+    """Uses qwen3.5-122b (best for agentic/tool-calling) to decompose complex tasks into cluster-assigned subtasks."""
 
     def __init__(self, api_key: str | None = None, base_url: str = "https://integrate.api.nvidia.com/v1"):
         self.api_key = api_key or os.getenv("NVIDIA_API_KEY")
         self.base_url = base_url
-        self.model = "meta/llama-3.3-70b-instruct"
+        self.model = "qwen/qwen3.5-122b-a10b"  # Best for agentic pipelines, 262K context
 
     def decompose(self, task: str) -> DecompositionPlan:
         """Decompose a task into subtasks with cluster assignments."""

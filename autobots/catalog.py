@@ -128,6 +128,11 @@ CLUSTER_DEFINITIONS = {
             "component",
         ),
         "models": [
+            "nvidia/llama-3.3-nemotron-super-49b-v1.5",  # Best for UI/design
+            "nvidia/llama-3.3-nemotron-super-49b-v1.5",  # Duplicate for weight
+            "nvidia/llama-3.3-nemotron-super-49b-v1.5",  # Triple for priority
+            "qwen/qwen3.5-397b-a17b",  # Flagship for complex UI
+            "qwen/qwen3.5-122b-a10b",  # Agentic pipeline backup
             "nvidia/qwen-image-edit",
             "nvidia/qwen-image",
             "nvidia/flux.2-klein-4b",
