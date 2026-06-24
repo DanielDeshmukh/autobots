@@ -1,0 +1,37 @@
+name: Update NVIDIA Models Catalog
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6am UTC
+  workflow_dispatch:       # Manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Fetch models
+        run: python scripts/update_models.py --markdown
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet nvidia_models.json NVIDIA_MODELS.md; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit updated catalog
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add nvidia_models.json NVIDIA_MODELS.md
+          git commit -m "chore: update NVIDIA models catalog [skip ci]"
+          git push

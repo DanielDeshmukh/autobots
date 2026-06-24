@@ -18,7 +18,7 @@ BASE_URL = "https://integrate.api.nvidia.com/v1"
 MODEL_UI = "nvidia/llama-3.3-nemotron-super-49b-v1.5"  # Best for UI/design
 MODEL_ORCHESTRATOR = "qwen/qwen3.5-122b-a10b"  # Best for agentic/tool-calling
 MODEL_GENERAL = "qwen/qwen3-next-80b-a3b-instruct"  # Fast, 256K context, good for general
-MODEL = MODEL_UI  # Default to UI model (most projects have frontend)
+MODEL = "qwen/qwen3.5-397b-a17b"  # Best for UI/design
 
 DEV_PORT = 5180
 MAX_FIX_ATTEMPTS = 3
