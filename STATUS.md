@@ -14,10 +14,11 @@ A Python CLI that orchestrates a swarm of AI models to generate complete, runnab
 5. **Review** — RedAlert validates the output
 6. **Merge** — combine results into a complete project
 
-**Model Selection (based on NVIDIA benchmarks):**
+**Model Selection (tested on NVIDIA NIM):**
+- Generation: `qwen3.5-397b-a17b` — all design features (gradient, blur, shadow, transition, animation), proper JSON
 - Decomposer: `qwen3.5-122b-a10b` — best for agentic/tool-calling (72.2 BFCL-V4)
-- UI/Jazz: `nemotron-super-49b` — confirmed 5/5 CSS score (gradient, blur, shadow, transition, animation)
-- General: `llama-3.3-70b` — fallback
+- Fallback: `qwen3-next-80b-a3b-instruct` — fast, 256K context
+- Broken: `nemotron-super-49b` — returns None on all prompts (API issue)
 
 **Design System:**
 - Generic best practices, not hardcoded themes
@@ -28,25 +29,26 @@ A Python CLI that orchestrates a swarm of AI models to generate complete, runnab
 
 **Working:**
 - Task Decomposer + Sequencer (parallel/sequential planning)
-- Model assignments optimized based on research
+- Full pipeline end-to-end — counter app generated, validated, running
+- qwen3.5-397b generates working React apps with design features
+- npm install succeeds (395 packages, ~2min)
 - Design principles injected (no hardcoded themes)
 - JSON parsing handles multiple formats
-- npm install succeeds (395 packages, ~2min)
+- Auto-updating NVIDIA model catalog (121 models, daily GitHub Action)
 - All 18 unit tests passing
 
 **Not Working:**
-- Full pipeline end-to-end (timeout at 10min)
 - Playwright not installed (download too slow)
-- `--fix` flag not tested with new models
+- CSS not landing on components (model claims glass-morphism but outputs plain HTML)
 - Merge logic (Ratchet rewrites files instead of adding tests)
 - Parallel execution not implemented
 
 ## Next Steps
 
 ### Short Term
-1. **Test full pipeline end-to-end** — run on a real project (counter app, todo app) and verify it works
-2. **Install Playwright** — for screenshots to verify UI output
-3. **Test `--fix` flag** — incremental updates with new models
+1. **Fix CSS delivery** — model generates CSS but it doesn't land on components
+2. **Test `--fix` flag** — incremental updates with qwen3.5-397b
+3. **Install Playwright** — for screenshots to verify UI output
 
 ### Medium Term
 4. **Fix merge logic** — Ratchet should only add tests, not rewrite files
@@ -60,17 +62,17 @@ A Python CLI that orchestrates a swarm of AI models to generate complete, runnab
 ## Key Decisions
 
 - **Generic principles > hardcoded themes** — model decides colors/fonts based on project context
-- **Model selection based on benchmarks** — not guessing, actual research on NVIDIA models
+- **qwen3.5-397b for generation** — all design features, proper JSON, 256K context
 - **qwen3.5-122b for orchestrator** — best for tool-calling/agentic pipelines
-- **nemotron-super-49b for UI** — tested 5/5 on CSS features
 - **Force dependency versions** — model generates incompatible npm package combos
+- **Auto-update model catalog** — daily GitHub Action fetches from NVIDIA NIM API
 
 ## Blockers
 
-- **NVIDIA API latency** — nemotron-super-49b ~80s per call
+- **CSS not landing** — model generates CSS but components don't use it
 - **npm install time** — ~2min for 395 packages
-- **Pipeline timeout** — 10min limit too short for full pipeline
 - **Playwright download** — 37MB+ too slow to download
+- **nemotron-super-49b broken** — returns None on all prompts (API issue)
 
 ## User Feedback
 
@@ -85,6 +87,7 @@ The user wants honest, direct answers. Not defensive explanations. Not proactive
 ## Git History
 
 ```
+e16f67f feat: auto-updating NVIDIA model catalog + switch to qwen3.5-397b for UI
 244014d feat: model-based design system + optimized model assignments
 0f00ef7 Wire decomposer + sequencer into router execute_task()
 e3668fe Add task sequencer — parallel vs sequential execution planning
