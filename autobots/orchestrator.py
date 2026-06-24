@@ -136,6 +136,134 @@ class RateLimiter:
             self.calls = [t for t in self.calls if now - t < 60]
 
 
+# ── Critical Files ──────────────────────────────────────────────────────────
+
+# Files every React project needs — planner often forgets these
+CRITICAL_FILES = {
+    "index.html": """<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>App</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>""",
+    "package.json": "",  # Generated dynamically
+    "src/main.tsx": """import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)""",
+    "src/index.css": """* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}""",
+    "vite.config.ts": """import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+})""",
+    "tsconfig.json": """{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}""",
+}
+
+
+def ensure_critical_files(project_path, subtasks):
+    """Check if planner included critical files. Inject missing ones."""
+    all_planned_files = set()
+    for st in subtasks:
+        all_planned_files.update(st.get("files", []))
+
+    # Always generate package.json content
+    pkg = {
+        "name": "app",
+        "private": True,
+        "version": "0.0.0",
+        "type": "module",
+        "scripts": {
+            "dev": "vite",
+            "build": "tsc && vite build",
+            "preview": "vite preview"
+        },
+        "dependencies": {
+            "react": "^19.0.0",
+            "react-dom": "^19.0.0"
+        },
+        "devDependencies": {
+            "@types/react": "^19.0.0",
+            "@types/react-dom": "^19.0.0",
+            "@vitejs/plugin-react": "^4.4.1",
+            "typescript": "^5.7.2",
+            "vite": "^6.0.0"
+        }
+    }
+    CRITICAL_FILES["package.json"] = json.dumps(pkg, indent=2)
+
+    missing = []
+    for filename, content in CRITICAL_FILES.items():
+        if filename not in all_planned_files:
+            missing.append(filename)
+
+    if missing:
+        logger.info(f"[planner] Missing critical files: {missing}")
+
+        # Create a new subtask for missing critical files
+        inject_files = []
+        for f in missing:
+            content = CRITICAL_FILES.get(f, "")
+            if content:
+                inject_files.append(f)
+
+        if inject_files:
+            inject_subtask = {
+                "description": "Critical project files (auto-injected)",
+                "files": inject_files,
+                "task_type": "boilerplate",
+                "depends_on": [],
+                "model": MODELS["fast"]["id"],
+                "model_key": "fast",
+                "injected": True,
+            }
+            subtasks.insert(0, inject_subtask)
+            logger.info(f"[planner] Injected subtask with {len(inject_files)} critical files")
+
+    return subtasks
+
+
 # ── Shared Context ─────────────────────────────────────────────────────────
 
 def build_shared_context(goal, subtasks):
@@ -150,7 +278,21 @@ def build_shared_context(goal, subtasks):
 Files being built:
 {chr(10).join(files_plan)}
 
-Rules: React components export default function. Return JSON: {{"files": [{{"path": "...", "content": "..."}}]}}"""
+DESIGN LANGUAGE (apply to all UI):
+- Colors: cohesive palette (blues #3b82f6/#60a5fa/#1e40af, or slates #0f172a/#1e293b/#334155)
+- Shadows: 0 4px 6px -1px rgba(0,0,0,0.1) for cards, 0 10px 15px -3px for modals
+- Transitions: all 0.2s ease on hover/focus
+- Typography: font-weight 600-700 headings, 14-16px body
+- Spacing: 16-24px padding, 8-12px gap in flex/grid
+- Border-radius: 8-12px for cards, 6px for buttons, 50% for circles
+- Gradients: linear-gradient(135deg, start, end) for accents
+
+CODE RULES:
+- React functional components with hooks
+- Export default for main components
+- TypeScript where applicable
+
+Return JSON: {{"files": [{{"path": "...", "content": "..."}}]}}"""
 
 
 # ── JSON Parser ────────────────────────────────────────────────────────────
@@ -325,10 +467,39 @@ def execute_worker(idx, model_id, task_desc, shared_context, files_to_build, rat
         api_key=os.environ.get("NVIDIA_API_KEY", ""),
     )
 
-    # Compact prompt
-    system = f"""Build these files: {', '.join(files_to_build)}
+    # Design-aware prompt for UI files
+    is_ui = any("component" in f.lower() or "style" in f.lower() or f.endswith(".css") for f in files_to_build)
+
+    if is_ui:
+        system = f"""Build these files: {', '.join(files_to_build)}
 
 Context: {shared_context}
+
+DESIGN RULES (UI files must look professional):
+- Use modern CSS: flexbox/grid, gap, rounded corners, smooth transitions
+- Colors: use a cohesive palette (e.g. blues: #3b82f6, #60a5fa, #1e40af)
+- Add hover effects on buttons (transform, shadow changes)
+- Use box-shadow for depth: 0 4px 6px -1px rgba(0,0,0,0.1)
+- Typography: font-weight 600-700 for headings, proper line-height
+- Transitions: all 0.2s ease on interactive elements
+- Dark backgrounds: use #0f172a, #1e293b, #334155 (slate scale)
+- Light backgrounds: use #f8fafc, #f1f5f9, #e2e8f0
+- Gradient accents: linear-gradient(135deg, color1, color2)
+- Glass effect: background rgba(255,255,255,0.1) + backdrop-filter: blur(10px)
+- Spacing: generous padding (16px-24px), consistent margins
+- Responsive: use %, rem, or vh/vw units
+
+Return JSON: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}"""
+    else:
+        system = f"""Build these files: {', '.join(files_to_build)}
+
+Context: {shared_context}
+
+CODE RULES:
+- Clean, well-structured code
+- TypeScript types where applicable
+- React: use functional components with hooks
+- Export default for main components
 
 Return JSON: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}"""
 
@@ -372,8 +543,15 @@ Return JSON: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}""
         data = parse_json_response(content, f"worker-{idx}")
         if data and "files" in data:
             files = data["files"]
-            logger.info(f"[worker-{idx}] Generated {len(files)} files in {elapsed:.1f}s")
-            return files
+            # Filter to only include requested files
+            requested_set = set(files_to_build)
+            filtered = [f for f in files if f.get("path", "") in requested_set]
+            
+            if len(filtered) < len(files):
+                logger.info(f"[worker-{idx}] Filtered {len(files)} -> {len(filtered)} files (kept only requested)")
+            
+            logger.info(f"[worker-{idx}] Generated {len(filtered)} files in {elapsed:.1f}s")
+            return filtered
         else:
             logger.error(f"[worker-{idx}] Failed to parse response")
             return []
@@ -405,6 +583,9 @@ def orchestrate(goal, project_dir):
         logger.error("No subtasks planned. Aborting.")
         return []
 
+    # Step 1.5: Ensure critical files are included
+    subtasks = ensure_critical_files(project_path, subtasks)
+
     # Step 2: Build shared context
     logger.info(f"\n[2/4] Building shared context...")
     shared_context = build_shared_context(goal, subtasks)
@@ -418,6 +599,16 @@ def orchestrate(goal, project_dir):
 
     for idx in range(len(subtasks)):
         st = subtasks[idx]
+
+        # Handle injected critical files (no API call needed)
+        if st.get("injected"):
+            logger.info(f"[worker-{idx}] Writing injected critical files: {st['files']}")
+            for filename in st["files"]:
+                content = CRITICAL_FILES.get(filename, "")
+                if content:
+                    all_files.append({"path": filename, "content": content})
+            continue
+
         files = execute_worker(
             idx,
             st["model"],
