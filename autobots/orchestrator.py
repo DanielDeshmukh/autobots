@@ -562,6 +562,125 @@ Return JSON: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}""
         return []
 
 
+# ── Repair Phase ────────────────────────────────────────────────────────────
+
+def repair_phase(project_path, rate_limiter):
+    """Run TypeScript check, send errors to model for repair."""
+    import subprocess
+
+    # Step 1: Run TypeScript check
+    logger.info("[repair] Running TypeScript check...")
+    try:
+        result = subprocess.run(
+            ["npx", "tsc", "--noEmit"],
+            cwd=str(project_path),
+            capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode == 0:
+            logger.info("[repair] TypeScript check passed")
+            return 0
+        errors = result.stdout + result.stderr
+    except Exception as e:
+        logger.warning(f"[repair] TypeScript check failed: {e}")
+        return 0
+
+    # Step 2: Parse errors
+    error_lines = [l for l in errors.split("\n") if l.startswith("src/") and "error TS" in l]
+    if not error_lines:
+        logger.info("[repair] No TypeScript errors found")
+        return 0
+
+    logger.info(f"[repair] Found {len(error_lines)} TypeScript errors")
+    for line in error_lines[:5]:
+        logger.info(f"  {line}")
+
+    # Step 3: Collect affected files
+    affected_files = set()
+    for line in error_lines:
+        parts = line.split("(")
+        if parts:
+            filepath = parts[0].strip()
+            affected_files.add(filepath)
+
+    # Read file contents
+    files_content = []
+    for f in affected_files:
+        full_path = project_path / f
+        if full_path.exists():
+            content = full_path.read_text(encoding="utf-8")
+            files_content.append(f"--- {f} ---\n{content}")
+
+    # Step 4: Send to repair model
+    logger.info(f"[repair] Sending {len(affected_files)} files to repair model...")
+
+    rate_limiter.wait_if_needed()
+
+    client = OpenAI(
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=os.environ.get("NVIDIA_API_KEY", ""),
+    )
+
+    system = """You are a TypeScript repair agent. Fix the type errors in the provided files.
+
+RULES:
+- Fix ONLY the type errors shown. Do not rewrite entire files.
+- Return the COMPLETE fixed file for each file that needs changes.
+- Keep the same structure and logic, only fix type mismatches.
+- Common fixes: add missing imports, align interface props, fix function signatures.
+
+Return JSON: {"files": [{"path": "src/...", "content": "full fixed file content"}]}"""
+
+    user = f"""TypeScript errors:
+{chr(10).join(error_lines[:20])}
+
+Files with errors:
+{chr(10).join(files_content)}
+
+Fix the type errors and return the fixed files."""
+
+    try:
+        start = time.time()
+        r = client.chat.completions.create(
+            model=MODELS["fast"]["id"],
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+            max_tokens=8192, temperature=0.2, timeout=120,
+        )
+        elapsed = time.time() - start
+        content = r.choices[0].message.content or ""
+
+        # Log repair response
+        with open(LOG_DIR / f"repair_response_{timestamp}.json", "w", encoding="utf-8") as f:
+            json.dump({
+                "model": MODELS["fast"]["id"],
+                "elapsed": elapsed,
+                "errors_count": len(error_lines),
+                "files_affected": list(affected_files),
+                "content": content,
+            }, f, indent=2, ensure_ascii=False)
+
+        # Parse and write fixed files
+        data = parse_json_response(content, "repair")
+        if data and "files" in data:
+            repaired = 0
+            for f in data["files"]:
+                path = f.get("path", "")
+                file_content = f.get("content", "")
+                if path and file_content:
+                    target = project_path / path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text(file_content, encoding="utf-8")
+                    logger.info(f"[repair] Fixed {path}")
+                    repaired += 1
+            return repaired
+        else:
+            logger.warning("[repair] Failed to parse repair response")
+            return 0
+
+    except Exception as e:
+        logger.error(f"[repair] Error: {e}")
+        return 0
+
+
 # ── Orchestrator ───────────────────────────────────────────────────────────
 
 def orchestrate(goal, project_dir):
@@ -654,8 +773,17 @@ def orchestrate(goal, project_dir):
 
     logger.info(f"[parallel] All {len(results)} workers completed")
 
-    # Step 4: Summary (files already written incrementally)
-    logger.info(f"\n[4/4] Summary...")
+    # Step 4: Repair phase — detect and fix type mismatches
+    logger.info(f"\n[4/5] Repair phase...")
+    repaired = repair_phase(project_path, rate_limiter)
+    if repaired:
+        written += repaired
+        logger.info(f"[repair] Fixed {repaired} files")
+    else:
+        logger.info(f"[repair] No issues found or repair skipped")
+
+    # Step 5: Summary (files already written incrementally)
+    logger.info(f"\n[5/5] Summary...")
 
     logger.info(f"\n{'='*60}")
     logger.info(f"DONE: {written} files written")
