@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from openai import OpenAI
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 # ── Logging Setup ──────────────────────────────────────────────────────────
@@ -593,28 +594,33 @@ def orchestrate(goal, project_dir):
     context_file.write_text(shared_context, encoding="utf-8")
     logger.info(f"  Wrote {context_file}")
 
-    # Step 3: Execute workers (write files incrementally)
+    # Step 3: Execute workers (semaphore-limited parallel)
     logger.info(f"\n[3/4] Executing workers...")
     all_files = []
+    write_lock = threading.Lock()
     written = 0
+    max_concurrent = 4  # Stay under 40/min rate limit
 
-    for idx in range(len(subtasks)):
-        st = subtasks[idx]
+    # Separate injected from API workers
+    injected = [(idx, st) for idx, st in enumerate(subtasks) if st.get("injected")]
+    api_workers = [(idx, st) for idx, st in enumerate(subtasks) if not st.get("injected")]
 
-        # Handle injected critical files (no API call needed)
-        if st.get("injected"):
-            logger.info(f"[worker-{idx}] Writing injected critical files: {st['files']}")
-            for filename in st["files"]:
-                content = CRITICAL_FILES.get(filename, "")
-                if content:
-                    target = project_path / filename
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    target.write_text(content, encoding="utf-8")
+    # Write injected files first (no API calls)
+    for idx, st in injected:
+        logger.info(f"[worker-{idx}] Writing injected critical files: {st['files']}")
+        for filename in st["files"]:
+            content = CRITICAL_FILES.get(filename, "")
+            if content:
+                target = project_path / filename
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
+                with write_lock:
                     all_files.append({"path": filename, "content": content})
                     written += 1
-                    logger.info(f"  -> {filename}")
-            continue
+                logger.info(f"  -> {filename}")
 
+    # Execute API workers in parallel with semaphore
+    def run_worker(idx, st):
         files = execute_worker(
             idx,
             st["model"],
@@ -623,22 +629,30 @@ def orchestrate(goal, project_dir):
             st.get("files", []),
             rate_limiter,
         )
-        if files:
-            # Write files immediately after worker completes
-            for f in files:
-                path = f.get("path", "")
-                content = f.get("content", "")
-                if path and content:
-                    target = project_path / path
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    target.write_text(content, encoding="utf-8")
-                    all_files.append(f)
-                    written += 1
-                    logger.info(f"  -> {path}")
+        return idx, files
 
-        # Small delay between workers
-        if idx < len(subtasks) - 1:
-            time.sleep(1)
+    results = []
+    with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
+        futures = {executor.submit(run_worker, idx, st): idx for idx, st in api_workers}
+        logger.info(f"[parallel] Launched {len(futures)} workers (max {max_concurrent} concurrent)")
+
+        for future in as_completed(futures):
+            idx, files = future.result()
+            if files:
+                for f in files:
+                    path = f.get("path", "")
+                    content = f.get("content", "")
+                    if path and content:
+                        target = project_path / path
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        target.write_text(content, encoding="utf-8")
+                        with write_lock:
+                            all_files.append(f)
+                            written += 1
+                        logger.info(f"  -> {path}")
+            results.append((idx, len(files) if files else 0))
+
+    logger.info(f"[parallel] All {len(results)} workers completed")
 
     # Step 4: Summary (files already written incrementally)
     logger.info(f"\n[4/4] Summary...")
