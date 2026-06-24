@@ -573,7 +573,7 @@ def orchestrate(goal, project_dir):
     logger.info(f"{'='*60}")
     logger.info(f"Log file: {log_file}")
 
-    rate_limiter = RateLimiter(max_per_minute=35, min_interval=2.0)
+    rate_limiter = RateLimiter(max_per_minute=35, min_interval=1.5)
 
     # Step 1: Plan subtasks
     logger.info(f"\n[1/4] Planning subtasks...")
@@ -593,9 +593,10 @@ def orchestrate(goal, project_dir):
     context_file.write_text(shared_context, encoding="utf-8")
     logger.info(f"  Wrote {context_file}")
 
-    # Step 3: Execute workers
+    # Step 3: Execute workers (write files incrementally)
     logger.info(f"\n[3/4] Executing workers...")
     all_files = []
+    written = 0
 
     for idx in range(len(subtasks)):
         st = subtasks[idx]
@@ -606,7 +607,12 @@ def orchestrate(goal, project_dir):
             for filename in st["files"]:
                 content = CRITICAL_FILES.get(filename, "")
                 if content:
+                    target = project_path / filename
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text(content, encoding="utf-8")
                     all_files.append({"path": filename, "content": content})
+                    written += 1
+                    logger.info(f"  -> {filename}")
             continue
 
         files = execute_worker(
@@ -618,24 +624,24 @@ def orchestrate(goal, project_dir):
             rate_limiter,
         )
         if files:
-            all_files.extend(files)
+            # Write files immediately after worker completes
+            for f in files:
+                path = f.get("path", "")
+                content = f.get("content", "")
+                if path and content:
+                    target = project_path / path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text(content, encoding="utf-8")
+                    all_files.append(f)
+                    written += 1
+                    logger.info(f"  -> {path}")
 
         # Small delay between workers
         if idx < len(subtasks) - 1:
             time.sleep(1)
 
-    # Step 4: Write all files
-    logger.info(f"\n[4/4] Writing {len(all_files)} files...")
-    written = 0
-    for f in all_files:
-        path = f.get("path", "")
-        content = f.get("content", "")
-        if path and content:
-            target = project_path / path
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(content, encoding="utf-8")
-            logger.info(f"  -> {path}")
-            written += 1
+    # Step 4: Summary (files already written incrementally)
+    logger.info(f"\n[4/4] Summary...")
 
     logger.info(f"\n{'='*60}")
     logger.info(f"DONE: {written} files written")
