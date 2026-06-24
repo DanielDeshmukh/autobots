@@ -279,6 +279,35 @@ def build_shared_context(goal, subtasks):
 Files being built:
 {chr(10).join(files_plan)}
 
+TYPE CONTRACTS (ALL workers must use these exact types):
+--- src/types/Todo.ts ---
+export interface Todo {{
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: Date;
+}}
+export type FilterType = 'all' | 'active' | 'completed';
+
+--- src/hooks/useTodos.ts (MUST export these) ---
+export function useTodos() {{
+  return {{
+    todos: Todo[],           // filtered list based on current filter
+    filter: FilterType,
+    setFilter: (f: FilterType) => void,
+    addTodo: (text: string) => void,         // takes a STRING, not an object
+    toggleTodo: (id: string) => void,        // takes string ID
+    deleteTodo: (id: string) => void,        // takes string ID
+    remainingCount: number,
+  }};
+}}
+
+--- Component Prop Contracts (use EXACTLY these signatures) ---
+TodoInput: {{ onAddTodo: (text: string) => void }}
+TodoItem: {{ todo: Todo; onToggle: (id: string) => void; onDelete: (id: string) => void }}
+TodoFilter: {{ filter: FilterType; setFilter: (f: FilterType) => void }}
+TodoCounter: {{ count: number }}
+
 DESIGN LANGUAGE (apply to all UI):
 - Colors: cohesive palette (blues #3b82f6/#60a5fa/#1e40af, or slates #0f172a/#1e293b/#334155)
 - Shadows: 0 4px 6px -1px rgba(0,0,0,0.1) for cards, 0 10px 15px -3px for modals
@@ -291,7 +320,8 @@ DESIGN LANGUAGE (apply to all UI):
 CODE RULES:
 - React functional components with hooks
 - Export default for main components
-- TypeScript where applicable
+- Import React in files that use JSX
+- Import Todo from '../types/Todo' (or '../types') where needed
 
 Return JSON: {{"files": [{{"path": "...", "content": "..."}}]}}"""
 
@@ -571,8 +601,10 @@ def repair_phase(project_path, rate_limiter):
     # Step 1: Run TypeScript check
     logger.info("[repair] Running TypeScript check...")
     try:
+        # Use npx.cmd on Windows, npx on Unix
+        npx_cmd = "npx.cmd" if os.name == "nt" else "npx"
         result = subprocess.run(
-            ["npx", "tsc", "--noEmit"],
+            [npx_cmd, "tsc", "--noEmit"],
             cwd=str(project_path),
             capture_output=True, text=True, timeout=60,
         )
@@ -582,7 +614,8 @@ def repair_phase(project_path, rate_limiter):
         errors = result.stdout + result.stderr
     except Exception as e:
         logger.warning(f"[repair] TypeScript check failed: {e}")
-        return 0
+        # Fallback: detect common issues by parsing files
+        return repair_by_parsing(project_path, rate_limiter)
 
     # Step 2: Parse errors
     error_lines = [l for l in errors.split("\n") if l.startswith("src/") and "error TS" in l]
@@ -665,6 +698,155 @@ Fix the type errors and return the fixed files."""
             for f in data["files"]:
                 path = f.get("path", "")
                 file_content = f.get("content", "")
+                if path and file_content:
+                    target = project_path / path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text(file_content, encoding="utf-8")
+                    logger.info(f"[repair] Fixed {path}")
+                    repaired += 1
+            return repaired
+        else:
+            logger.warning("[repair] Failed to parse repair response")
+            return 0
+
+    except Exception as e:
+        logger.error(f"[repair] Error: {e}")
+        return 0
+
+
+def repair_by_parsing(project_path, rate_limiter):
+    """Fallback: detect common issues by parsing files."""
+    import re
+
+    logger.info("[repair] Using file parsing fallback...")
+
+    # Read all TypeScript/TSX files
+    ts_files = {}
+    for f in project_path.rglob("src/**/*.ts*"):
+        if "node_modules" in str(f):
+            continue
+        rel = f.relative_to(project_path).as_posix()
+        content = f.read_text(encoding="utf-8")
+        ts_files[rel] = content
+
+    if not ts_files:
+        logger.info("[repair] No TypeScript files found")
+        return 0
+
+    # Detect issues
+    issues = []
+
+    # Check App.tsx for missing imports
+    app_content = ts_files.get("src/App.tsx", "")
+    if app_content:
+        # Find components used but not imported
+        used_components = re.findall(r"<(\w+)[\s/>]", app_content)
+        imported = re.findall(r"import\s+\w+\s+from\s+['\"](.+)['\"]", app_content)
+        imported_names = set()
+        for imp in re.findall(r"import\s+(?:\{[^}]+\}|\w+)", app_content):
+            for name in re.findall(r"\w+", imp):
+                if name[0].isupper():
+                    imported_names.add(name)
+
+        for comp in used_components:
+            if comp[0].isupper() and comp not in imported_names and comp not in ("React", "Todo"):
+                issues.append(f"Missing import for {comp} in src/App.tsx")
+
+    # Check for interface mismatches
+    # Find all onAddTodo, onToggle, onDelete signatures
+    signatures = {}
+    for path, content in ts_files.items():
+        for match in re.finditer(r"on(?:AddTodo|Toggle|Delete):\s*\(([^)]+)\)", content):
+            sig = match.group(0)
+            func_name = re.search(r"on\w+", sig).group(0)
+            if func_name not in signatures:
+                signatures[func_name] = []
+            signatures[func_name].append((path, sig))
+
+    # Check for useTodos missing filter/setFilter
+    hook_content = ts_files.get("src/hooks/useTodos.ts", "")
+    app_destructure = re.findall(r"const\s*\{([^}]+)\}\s*=\s*useTodos", app_content)
+    if app_destructure and hook_content:
+        needed = [n.strip() for n in app_destructure[0].split(",")]
+        for name in needed:
+            if name and name not in hook_content:
+                issues.append(f"useTodos doesn't return '{name}' but App.tsx expects it")
+
+    if not issues:
+        logger.info("[repair] No issues detected by parsing")
+        return 0
+
+    logger.info(f"[repair] Detected {len(issues)} issues:")
+    for issue in issues:
+        logger.info(f"  - {issue}")
+
+    # Send to repair model
+    return send_repair_request(project_path, issues, ts_files, rate_limiter)
+
+
+def send_repair_request(project_path, issues, ts_files, rate_limiter):
+    """Send detected issues to repair model."""
+    logger.info(f"[repair] Sending {len(issues)} issues to repair model...")
+
+    rate_limiter.wait_if_needed()
+
+    client = OpenAI(
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=os.environ.get("NVIDIA_API_KEY", ""),
+    )
+
+    # Build context with relevant files
+    files_context = []
+    for path in ["src/App.tsx", "src/hooks/useTodos.ts", "src/types/Todo.ts",
+                 "src/components/TodoInput.tsx", "src/components/TodoItem.tsx",
+                 "src/components/TodoFilter.tsx", "src/components/TodoCounter.tsx"]:
+        if path in ts_files:
+            files_context.append(f"--- {path} ---\n{ts_files[path]}")
+
+    system = """You are a TypeScript repair agent. Fix the issues in the provided files.
+
+RULES:
+- Fix ONLY the issues listed. Do not rewrite entire files.
+- Return the COMPLETE fixed file for each file that needs changes.
+- Keep the same structure and logic, only fix the specific issues.
+- Common fixes: add missing imports, align interface props, fix function signatures.
+
+Return JSON: {"files": [{"path": "src/...", "content": "full fixed file content"}]}"""
+
+    user = f"""Issues detected:
+{chr(10).join(f"- {i}" for i in issues)}
+
+Files:
+{chr(10).join(files_context)}
+
+Fix these issues and return the fixed files."""
+
+    try:
+        start = time.time()
+        r = client.chat.completions.create(
+            model=MODELS["fast"]["id"],
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+            max_tokens=8192, temperature=0.2, timeout=120,
+        )
+        elapsed = time.time() - start
+        content = r.choices[0].message.content or ""
+
+        # Log repair response
+        with open(LOG_DIR / f"repair_response_{timestamp}.json", "w", encoding="utf-8") as f:
+            json.dump({
+                "model": MODELS["fast"]["id"],
+                "elapsed": elapsed,
+                "issues": issues,
+                "content": content,
+            }, f, indent=2, ensure_ascii=False)
+
+        # Parse and write fixed files
+        data = parse_json_response(content, "repair")
+        if data and "files" in data:
+            repaired = 0
+            for file_data in data["files"]:
+                path = file_data.get("path", "")
+                file_content = file_data.get("content", "")
                 if path and file_content:
                     target = project_path / path
                     target.parent.mkdir(parents=True, exist_ok=True)
