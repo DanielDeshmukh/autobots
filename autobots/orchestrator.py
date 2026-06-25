@@ -850,10 +850,44 @@ def repair_by_parsing(project_path, rate_limiter):
         logger.info("[repair] No TypeScript files found")
         return 0
 
-    # Detect issues
-    issues = []
+    fixed = 0
 
-    # Check App.tsx for missing imports
+    # Fix 1: Check all import paths resolve to real files
+    for path, content in ts_files.items():
+        lines = content.split("\n")
+        new_lines = []
+        changed = False
+        for line in lines:
+            match = re.match(r"import\s+.*from\s+['\"](\./[^'\"]+)['\"]", line)
+            if match:
+                import_path = match.group(1)
+                # Resolve relative to this file's directory
+                file_dir = Path(path).parent
+                resolved = (file_dir / import_path).as_posix()
+                # Check if file exists (try .tsx, .ts, /index.tsx)
+                candidates = [
+                    project_path / f"{resolved}.tsx",
+                    project_path / f"{resolved}.ts",
+                    project_path / resolved / "index.tsx",
+                    project_path / resolved / "index.ts",
+                ]
+                if not any(c.exists() for c in candidates):
+                    # Try to find the actual file
+                    basename = Path(import_path).name
+                    for f in project_path.rglob(f"src/**/{basename}.tsx"):
+                        actual = f.relative_to(project_path).as_posix()
+                        actual_import = "./" + str(Path(actual).with_suffix("")).replace("src/", "").replace("\\", "/")
+                        line = line.replace(import_path, actual_import)
+                        logger.info(f"[repair] Fixed import path: {import_path} -> {actual_import} in {path}")
+                        changed = True
+                        break
+            new_lines.append(line)
+        if changed:
+            full_path = project_path / path
+            full_path.write_text("\n".join(new_lines), encoding="utf-8")
+            fixed += 1
+
+    # Fix 2: Check App.tsx for missing imports
     app_content = ts_files.get("src/App.tsx", "")
     if app_content:
         # Find components used but not imported
@@ -890,7 +924,7 @@ def repair_by_parsing(project_path, rate_limiter):
             if missing_imports:
                 target = project_path / "src/App.tsx"
                 target.write_text(app_content, encoding="utf-8")
-                return 1
+                fixed += 1
 
     # Detect issues
     issues = []
@@ -917,14 +951,14 @@ def repair_by_parsing(project_path, rate_limiter):
 
     if not issues:
         logger.info("[repair] No issues detected by parsing")
-        return 0
+        return fixed
 
     logger.info(f"[repair] Detected {len(issues)} issues:")
     for issue in issues:
         logger.info(f"  - {issue}")
 
     # Send to repair model
-    return send_repair_request(project_path, issues, ts_files, rate_limiter)
+    return fixed + send_repair_request(project_path, issues, ts_files, rate_limiter)
 
 
 def send_repair_request(project_path, issues, ts_files, rate_limiter):
