@@ -1017,7 +1017,7 @@ def orchestrate(goal, project_dir):
     all_files = []
     write_lock = threading.Lock()
     written = 0
-    max_concurrent = 4  # Stay under 40/min rate limit
+    max_concurrent = 2  # Conservative to avoid rate limits
 
     # Separate injected from API workers
     injected = [(idx, st) for idx, st in enumerate(subtasks) if st.get("injected")]
