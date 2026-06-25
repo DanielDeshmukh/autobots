@@ -545,7 +545,7 @@ Return JSON: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}""
                 r = client.chat.completions.create(
                     model=model_id,
                     messages=[{"role": "system", "content": system}, {"role": "user", "content": task_desc}],
-                    max_tokens=4096, temperature=0.3, timeout=180,
+                    max_tokens=4096, temperature=0.3, timeout=120,
                 )
                 break
             except Exception as e:
