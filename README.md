@@ -30,6 +30,7 @@ Autobots is a hierarchical multi-cluster coding swarm CLI that orchestrates mult
 - [Architecture](#architecture)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Projects Built by Autobots](#projects-built-by-autobots)
 - [Configuration](#configuration)
 - [CLI Commands](#cli-commands)
 - [Tool System](#tool-system)
@@ -239,6 +240,39 @@ autobots plan --goal "Add user authentication"
 # 5. Run the swarm
 autobots run --supervised
 ```
+
+---
+
+## Projects Built by Autobots
+
+Real projects generated entirely by the multi-model swarm — no manual code, no hand-holding. Each project starts from a single sentence and goes through planner → workers → repair pipeline.
+
+### Todo App
+
+> *"Build a todo app with React, TypeScript, and Vite. Features: add todos, toggle complete, delete, filter (all/active/completed), counter showing remaining."*
+
+<p align="center">
+  <img src="assets/todo-empty.png" alt="Todo App - Empty State" width="45%" />
+  &nbsp;&nbsp;
+  <img src="assets/todo-with-todos.png" alt="Todo App - With Todos" width="45%" />
+</p>
+
+| Detail | Value |
+|--------|-------|
+| **Stack** | React 19, TypeScript, Vite |
+| **Files Generated** | 23 |
+| **Models Used** | 2 (`qwen3-next-80b`, `llama-3.3-70b`) |
+| **Workers** | 10 parallel (semaphore-limited to 2 concurrent) |
+| **Design** | Dark theme, glass morphism, gradient accents |
+| **Features** | Add, delete, toggle complete, filter (all/active/completed), counter |
+
+**How it was built:**
+
+1. **Planner** (qwen3-next-80b) decomposed the goal into 10 subtasks — types, hooks, components (Input, Item, Filter, Counter, List), styles, tests
+2. **Critical file injection** added `index.html`, `package.json`, `main.tsx`, `index.css` automatically (planner forgets these ~80% of the time)
+3. **Workers** executed in parallel with shared context — each model built 1-2 files with type contracts ensuring all components use the same interfaces
+4. **Repair phase** detected missing files from timed-out workers and regenerated them, then ran TypeScript compilation check to fix any remaining type mismatches
+5. **Import path auto-fix** resolved wrong import paths between components
 
 ---
 
