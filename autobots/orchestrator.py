@@ -1,13 +1,18 @@
-"""orchestrator.py — Multi-model swarm with shared context.
+"""Mark I — Multi-model swarm pipeline.
 
-Each model builds 1-2 files. They share a context markdown so everyone
-knows what's being built and how to integrate.
+The first working pipeline that proved multi-model swarm code generation.
+Built the todo-by-autobots showcase app with zero manual fixes.
 
-Flow:
-1. Planner decomposes task → assigns models to subtasks
-2. Shared context markdown is created
-3. Workers execute in parallel, each generating 1-2 files
-4. Merger combines all outputs
+Architecture:
+- 1 Planner model decomposes task → assigns models to subtasks
+- N Worker models execute in parallel (2 concurrent), each generating 1-2 files
+- Shared context markdown coordinates types, imports, and design language
+- Repair phase detects missing files, fixes imports, and retries on failure
+- Rate limiter enforces NVIDIA NIM free tier limits (40 calls/min)
+
+Models used:
+- qwen/qwen3-next-80b-a3b-instruct: planner + UI/logic workers + repair
+- meta/llama-3.3-70b-instruct: test generation
 
 All API responses are logged to logs/ directory.
 """
@@ -39,7 +44,7 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(logging.Formatter("%(message)s"))
 
-logger = logging.getLogger("orchestrator")
+logger = logging.getLogger("mark1")
 logger.setLevel(logging.DEBUG)
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
@@ -1048,8 +1053,9 @@ def orchestrate(goal, project_dir):
     project_path.mkdir(parents=True, exist_ok=True)
 
     logger.info(f"\n{'='*60}")
-    logger.info(f"ORCHESTRATING: {goal}")
+    logger.info(f"MARK I — Multi-Model Swarm Pipeline")
     logger.info(f"{'='*60}")
+    logger.info(f"Goal: {goal}")
     logger.info(f"Log file: {log_file}")
 
     rate_limiter = RateLimiter(max_per_minute=35, min_interval=1.5)
@@ -1150,6 +1156,7 @@ def orchestrate(goal, project_dir):
 
     # Save summary
     summary = {
+        "pipeline": "Mark I",
         "goal": goal,
         "timestamp": timestamp,
         "subtasks_planned": len(subtasks),
@@ -1167,7 +1174,8 @@ def orchestrate(goal, project_dir):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) < 3:
-        print("Usage: python orchestrator.py 'Build a counter app' D:\\projects\\counter")
+        print("Usage: python -m autobots.orchestrator 'Build a counter app' D:\\projects\\counter")
+        print("Mark I — Multi-Model Swarm Pipeline")
         sys.exit(1)
 
     goal = sys.argv[1]
