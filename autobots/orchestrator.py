@@ -594,9 +594,126 @@ Return JSON: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}""
 
 # ── Repair Phase ────────────────────────────────────────────────────────────
 
-def repair_phase(project_path, rate_limiter):
-    """Run TypeScript check, send errors to model for repair."""
+def detect_missing_files(project_path, subtasks):
+    """Check which expected files are missing from disk."""
+    expected = set()
+    for st in subtasks:
+        for f in st.get("files", []):
+            expected.add(f)
+
+    missing = []
+    for f in expected:
+        full_path = project_path / f
+        if not full_path.exists():
+            missing.append(f)
+        elif full_path.stat().st_size == 0:
+            missing.append(f)  # Empty file is also bad
+
+    return missing
+
+
+def regenerate_missing_files(project_path, missing_files, subtasks, shared_context, rate_limiter):
+    """Send missing files to model for regeneration."""
+    if not missing_files:
+        return 0
+
+    logger.info(f"[repair] Regenerating {len(missing_files)} missing files: {missing_files}")
+
+    # Find which subtask originally owned these files
+    file_descriptions = []
+    for st in subtasks:
+        for f in st.get("files", []):
+            if f in missing_files:
+                file_descriptions.append(f"- {f}: {st.get('description', 'unknown')}")
+
+    # Read existing files for context
+    existing_files = []
+    for f in project_path.rglob("src/**/*.ts*"):
+        if "node_modules" in str(f):
+            continue
+        rel = f.relative_to(project_path).as_posix()
+        content = f.read_text(encoding="utf-8")
+        existing_files.append(f"--- {rel} ---\n{content[:2000]}")  # Truncate large files
+
+    rate_limiter.wait_if_needed()
+
+    client = OpenAI(
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=os.environ.get("NVIDIA_API_KEY", ""),
+    )
+
+    system = f"""{shared_context}
+
+You are generating missing files for this project. The following files failed to generate
+due to API errors. Generate them now, following the TYPE CONTRACTS above exactly.
+
+Return JSON: {{"files": [{{"path": "src/...", "content": "full file content"}}]}}"""
+
+    user = f"""Missing files to generate:
+{chr(10).join(file_descriptions)}
+
+Existing files for reference:
+{chr(10).join(existing_files[:5])}
+
+Generate the missing files. Follow the TYPE CONTRACTS from the context exactly."""
+
+    try:
+        start = time.time()
+        r = client.chat.completions.create(
+            model=MODELS["fast"]["id"],
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+            max_tokens=8192, temperature=0.3, timeout=120,
+        )
+        elapsed = time.time() - start
+        content = r.choices[0].message.content or ""
+
+        # Log response
+        with open(LOG_DIR / f"regen_response_{timestamp}.json", "w", encoding="utf-8") as f:
+            json.dump({
+                "model": MODELS["fast"]["id"],
+                "elapsed": elapsed,
+                "missing_files": missing_files,
+                "content": content,
+            }, f, indent=2, ensure_ascii=False)
+
+        # Parse and write
+        data = parse_json_response(content, "regen")
+        if data and "files" in data:
+            written = 0
+            for file_data in data["files"]:
+                path = file_data.get("path", "")
+                file_content = file_data.get("content", "")
+                if path and file_content and path in missing_files:
+                    target = project_path / path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text(file_content, encoding="utf-8")
+                    logger.info(f"[repair] Generated {path}")
+                    written += 1
+            return written
+        else:
+            logger.warning("[repair] Failed to parse regen response")
+            return 0
+
+    except Exception as e:
+        logger.error(f"[repair] Regen error: {e}")
+        return 0
+
+
+def repair_phase(project_path, rate_limiter, subtasks=None, shared_context=""):
+    """Run TypeScript check, detect missing files, send errors to model for repair."""
     import subprocess
+    total_repaired = 0
+
+    # Step 0: Detect and regenerate missing files
+    if subtasks:
+        missing = detect_missing_files(project_path, subtasks)
+        if missing:
+            logger.info(f"[repair] Detected {len(missing)} missing files")
+            regenerated = regenerate_missing_files(
+                project_path, missing, subtasks, shared_context, rate_limiter
+            )
+            total_repaired += regenerated
+            logger.info(f"[repair] Regenerated {regenerated} files")
 
     # Step 1: Run TypeScript check
     logger.info("[repair] Running TypeScript check...")
@@ -610,18 +727,18 @@ def repair_phase(project_path, rate_limiter):
         )
         if result.returncode == 0:
             logger.info("[repair] TypeScript check passed")
-            return 0
+            return total_repaired
         errors = result.stdout + result.stderr
     except Exception as e:
         logger.warning(f"[repair] TypeScript check failed: {e}")
         # Fallback: detect common issues by parsing files
-        return repair_by_parsing(project_path, rate_limiter)
+        return total_repaired + repair_by_parsing(project_path, rate_limiter)
 
     # Step 2: Parse errors
     error_lines = [l for l in errors.split("\n") if l.startswith("src/") and "error TS" in l]
     if not error_lines:
         logger.info("[repair] No TypeScript errors found")
-        return 0
+        return total_repaired
 
     logger.info(f"[repair] Found {len(error_lines)} TypeScript errors")
     for line in error_lines[:5]:
@@ -704,14 +821,14 @@ Fix the type errors and return the fixed files."""
                     target.write_text(file_content, encoding="utf-8")
                     logger.info(f"[repair] Fixed {path}")
                     repaired += 1
-            return repaired
+            return total_repaired + repaired
         else:
             logger.warning("[repair] Failed to parse repair response")
-            return 0
+            return total_repaired
 
     except Exception as e:
         logger.error(f"[repair] Error: {e}")
-        return 0
+        return total_repaired
 
 
 def repair_by_parsing(project_path, rate_limiter):
@@ -955,9 +1072,9 @@ def orchestrate(goal, project_dir):
 
     logger.info(f"[parallel] All {len(results)} workers completed")
 
-    # Step 4: Repair phase — detect and fix type mismatches
+    # Step 4: Repair phase — detect missing files + fix type mismatches
     logger.info(f"\n[4/5] Repair phase...")
-    repaired = repair_phase(project_path, rate_limiter)
+    repaired = repair_phase(project_path, rate_limiter, subtasks, shared_context)
     if repaired:
         written += repaired
         logger.info(f"[repair] Fixed {repaired} files")
