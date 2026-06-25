@@ -538,19 +538,19 @@ Return JSON: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}""
         start = time.time()
         logger.debug(f"[worker-{idx}] Calling {model_id}")
 
-        # Retry logic for rate limits
+        # Retry logic for rate limits and timeouts
         max_retries = 3
         for attempt in range(max_retries):
             try:
                 r = client.chat.completions.create(
                     model=model_id,
                     messages=[{"role": "system", "content": system}, {"role": "user", "content": task_desc}],
-                    max_tokens=4096, temperature=0.3, timeout=120,
+                    max_tokens=4096, temperature=0.3, timeout=180,
                 )
                 break
             except Exception as e:
-                if "429" in str(e) and attempt < max_retries - 1:
-                    logger.warning(f"[worker-{idx}] Rate limited, backing off (attempt {attempt + 1})")
+                if ("429" in str(e) or "timed out" in str(e).lower() or "DEGRADED" in str(e)) and attempt < max_retries - 1:
+                    logger.warning(f"[worker-{idx}] Failed ({type(e).__name__}), retrying (attempt {attempt + 1})")
                     rate_limiter.backoff()
                     continue
                 raise
