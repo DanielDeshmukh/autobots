@@ -858,16 +858,42 @@ def repair_by_parsing(project_path, rate_limiter):
     if app_content:
         # Find components used but not imported
         used_components = re.findall(r"<(\w+)[\s/>]", app_content)
-        imported = re.findall(r"import\s+\w+\s+from\s+['\"](.+)['\"]", app_content)
         imported_names = set()
         for imp in re.findall(r"import\s+(?:\{[^}]+\}|\w+)", app_content):
             for name in re.findall(r"\w+", imp):
                 if name[0].isupper():
                     imported_names.add(name)
 
+        missing_imports = []
         for comp in used_components:
-            if comp[0].isupper() and comp not in imported_names and comp not in ("React", "Todo"):
-                issues.append(f"Missing import for {comp} in src/App.tsx")
+            if comp[0].isupper() and comp not in imported_names and comp not in ("React",):
+                missing_imports.append(comp)
+
+        if missing_imports:
+            # Try to find the component files
+            for comp in missing_imports:
+                # Search for component file
+                for f in project_path.rglob(f"src/**/{comp}.tsx"):
+                    rel = f.relative_to(project_path).as_posix()
+                    import_path = rel.replace("src/", "./").replace(".tsx", "")
+                    # Add import after last existing import
+                    lines = app_content.split("\n")
+                    last_import_idx = 0
+                    for i, line in enumerate(lines):
+                        if line.startswith("import "):
+                            last_import_idx = i
+                    lines.insert(last_import_idx + 1, f"import {comp} from '{import_path}';")
+                    app_content = "\n".join(lines)
+                    logger.info(f"[repair] Added missing import: {comp} from {import_path}")
+
+            # Write fixed App.tsx
+            if missing_imports:
+                target = project_path / "src/App.tsx"
+                target.write_text(app_content, encoding="utf-8")
+                return 1
+
+    # Detect issues
+    issues = []
 
     # Check for interface mismatches
     # Find all onAddTodo, onToggle, onDelete signatures
