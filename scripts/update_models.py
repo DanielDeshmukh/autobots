@@ -8,7 +8,6 @@ Usage:
 import json, os, sys, time
 from datetime import datetime
 from pathlib import Path
-from openai import OpenAI
 
 API_URL = "https://integrate.api.nvidia.com/v1/models"
 OUTPUT_DIR = Path(__file__).parent.parent
@@ -138,8 +137,6 @@ MODEL_CATEGORIES = {
 
 def fetch_models():
     """Fetch all models from NVIDIA NIM API."""
-    client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key="no-key")
-    # The /v1/models endpoint doesn't require auth
     import urllib.request
     req = urllib.request.Request(API_URL)
     with urllib.request.urlopen(req) as resp:
