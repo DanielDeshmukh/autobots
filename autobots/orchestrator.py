@@ -1,18 +1,18 @@
-"""Mark I — Multi-model swarm pipeline.
+"""Mark I/II — Multi-model swarm pipeline.
 
-The first working pipeline that proved multi-model swarm code generation.
-Built the todo-by-autobots showcase app with zero manual fixes.
+Mark I: Single model per subtask (original, proven with todo app).
+Mark II: Dual-model collaboration per subtask (generator + reviewer).
 
 Architecture:
-- 1 Planner model decomposes task → assigns models to subtasks
-- N Worker models execute in parallel (2 concurrent), each generating 1-2 files
+- 1 Planner model decomposes task → assigns model pairs to subtasks
+- N Worker pairs execute in parallel, each with generator + reviewer
 - Shared context markdown coordinates types, imports, and design language
 - Repair phase detects missing files, fixes imports, and retries on failure
 - Rate limiter enforces NVIDIA NIM free tier limits (40 calls/min)
 
 Models used:
-- qwen/qwen3-next-80b-a3b-instruct: planner + UI/logic workers + repair
-- meta/llama-3.3-70b-instruct: test generation
+- qwen/qwen3-next-80b-a3b-instruct: planner + UI/test generation
+- meta/llama-3.3-70b-instruct: logic generation + review
 
 All API responses are logged to logs/ directory.
 """
@@ -88,6 +88,50 @@ TASK_MODEL_MAP = {
     "security-audit": "safety",
     "input-validation": "safety",
     "boilerplate": "logic-fast",
+    "config": "fast",
+    "documentation": "fast",
+}
+
+
+# ── Mark II: Dual-Model Pairs ──────────────────────────────────────────────
+# Each role has a generator (creates code) and reviewer (validates + fixes).
+# Two different models catch each other's blind spots.
+# KEY: Both models MUST return valid JSON. Llama-3.3-70b fails this requirement.
+
+MODEL_PAIRS = {
+    "ui": {
+        "generator": "qwen/qwen3-next-80b-a3b-instruct",
+        "reviewer": "qwen/qwen3.5-122b-a10b",
+        "desc": "UI: Qwen-80b generates design, Qwen-122b reviews (different size catches different issues)",
+    },
+    "logic": {
+        "generator": "qwen/qwen3.5-122b-a10b",
+        "reviewer": "qwen/qwen3-next-80b-a3b-instruct",
+        "desc": "Logic: Qwen-122b generates types, Qwen-80b reviews edge cases",
+    },
+    "tests": {
+        "generator": "qwen/qwen3-next-80b-a3b-instruct",
+        "reviewer": "meta/llama-3.3-70b-instruct",
+        "desc": "Tests: Qwen generates test structure, Llama reviews logic (OK for review-only)",
+    },
+    "fast": {
+        "generator": "qwen/qwen3-next-80b-a3b-instruct",
+        "reviewer": "stepfun-ai/step-3.5-flash",
+        "desc": "Config: Qwen generates, Step-Flash validates (fastest model)",
+    },
+}
+
+TASK_PAIR_MAP = {
+    "ui-component": "ui",
+    "ui-style": "ui",
+    "ui-layout": "ui",
+    "api-endpoint": "logic",
+    "business-logic": "logic",
+    "data-model": "logic",
+    "database": "logic",
+    "unit-test": "tests",
+    "integration-test": "tests",
+    "boilerplate": "fast",
     "config": "fast",
     "documentation": "fast",
 }
@@ -337,15 +381,33 @@ def parse_json_response(content, context=""):
     """Parse JSON from model response, handling common issues."""
     logger.debug(f"[json] Parsing response ({len(content)} chars) {context}")
 
-    # Strip markdown code fences
+    if not content or not content.strip():
+        logger.debug(f"[json] Empty response")
+        return None
+
+    # Strip markdown code fences (multiple patterns)
     content = re.sub(r"```json\s*", "", content)
     content = re.sub(r"```\s*$", "", content)
     content = re.sub(r"```\s*", "", content)
+    content = re.sub(r"^```.*$", "", content, flags=re.MULTILINE)
 
-    # Try to find JSON object
+    # Strip common prefixes/suffixes models add
+    content = re.sub(r"^(Here\s+(is|are)|Below\s+is|The\s+JSON|Response:?)\s*:?\s*", "", content, flags=re.IGNORECASE)
+    content = re.sub(r"\s*(Hope\s+this\s+helps|Let\s+me\s+know).*$", "", content, flags=re.IGNORECASE)
+
+    # Try to find JSON object (greedy match)
     match = re.search(r"\{.*\}", content, re.DOTALL)
     if not match:
-        logger.debug(f"[json] No JSON object found")
+        # Model returned code blocks instead of JSON — wrap them
+        code_block = re.search(r"(?:typescript|javascript|ts|js)\s*\n(.*?)$", content, re.DOTALL)
+        if code_block:
+            code = code_block.group(1).strip()
+            # Try to infer path from comment
+            path_match = re.search(r"//\s*(src/\S+)", code)
+            path = path_match.group(1) if path_match else "src/unknown.ts"
+            logger.debug(f"[json] Found code block instead of JSON, wrapping as files entry")
+            return {"files": [{"path": path, "content": code}]}
+        logger.debug(f"[json] No JSON object found in: {content[:300]}")
         return None
 
     raw = match.group()
@@ -361,21 +423,19 @@ def parse_json_response(content, context=""):
 
     # Try fixing common issues
     fixes = [
-        # Fix unescaped literal newlines
-        lambda s: s.replace('\n', '\\n'),
-        # Fix unescaped carriage returns
-        lambda s: s.replace('\r', ''),
-        # Fix unescaped tabs
-        lambda s: s.replace('\t', '\\t'),
-        # Fix single quotes
-        lambda s: s.replace("'", '"'),
+        ("remove_newlines", lambda s: s.replace('\n', '\\n')),
+        ("remove_carriage_returns", lambda s: s.replace('\r', '')),
+        ("remove_tabs", lambda s: s.replace('\t', '\\t')),
+        ("fix_single_quotes", lambda s: s.replace("'", '"')),
+        ("fix_trailing_commas", lambda s: re.sub(r",\s*([}\]])", r"\1", s)),
+        ("fix_double_escaped", lambda s: s.replace('\\\\n', '\\n')),
     ]
 
-    for fix in fixes:
+    for name, fix in fixes:
         try:
             fixed = fix(raw)
             data = json.loads(fixed)
-            logger.debug(f"[json] Fixed parse succeeded with: {fix.__name__}")
+            logger.debug(f"[json] Fixed parse succeeded with: {name}")
             return data
         except json.JSONDecodeError:
             continue
@@ -390,7 +450,7 @@ def parse_json_response(content, context=""):
         except json.JSONDecodeError:
             pass
 
-    logger.debug(f"[json] All parse attempts failed")
+    logger.debug(f"[json] All parse attempts failed. Raw content: {raw[:500]}")
     return None
 
 
@@ -597,7 +657,208 @@ Return JSON: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}""
         return []
 
 
-# ── Repair Phase ────────────────────────────────────────────────────────────
+# ── Mark II: Dual-Model Worker ─────────────────────────────────────────────
+
+def execute_worker_v2(idx, generator_id, reviewer_id, task_desc, shared_context,
+                      files_to_build, rate_limiter):
+    """Dual-model worker: Generator creates → Reviewer validates + fixes.
+
+    Flow:
+    1. Generator model builds the files
+    2. Reviewer model receives draft + context, checks for errors
+    3. If reviewer finds issues, it returns fixed files
+    4. Final output is written to disk
+    """
+    gen_name = generator_id.split("/")[-1]
+    rev_name = reviewer_id.split("/")[-1]
+    logger.info(f"[worker-v2-{idx}] Starting: {files_to_build}")
+    logger.info(f"[worker-v2-{idx}] Generator: {gen_name} | Reviewer: {rev_name}")
+
+    client = OpenAI(
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=os.environ.get("NVIDIA_API_KEY", ""),
+    )
+
+    # ── Step 1: Generator creates files ──
+    is_ui = any("component" in f.lower() or "style" in f.lower() or f.endswith(".css") for f in files_to_build)
+
+    if is_ui:
+        gen_system = f"""Build these files: {', '.join(files_to_build)}
+
+Context: {shared_context}
+
+DESIGN RULES (UI files must look professional):
+- Use modern CSS: flexbox/grid, gap, rounded corners, smooth transitions
+- Colors: use a cohesive palette (e.g. blues: #3b82f6, #60a5fa, #1e40af)
+- Add hover effects on buttons (transform, shadow changes)
+- Use box-shadow for depth: 0 4px 6px -1px rgba(0,0,0,0.1)
+- Typography: font-weight 600-700 for headings, proper line-height
+- Transitions: all 0.2s ease on interactive elements
+- Dark backgrounds: use #0f172a, #1e293b, #334155 (slate scale)
+- Light backgrounds: use #f8fafc, #f1f5f9, #e2e8f0
+- Gradient accents: linear-gradient(135deg, color1, color2)
+- Glass effect: background rgba(255,255,255,0.1) + backdrop-filter: blur(10px)
+- Spacing: generous padding (16px-24px), consistent margins
+- Responsive: use %, rem, or vh/vw units
+
+IMPORTANT: You MUST reply with valid JSON only. No explanations, no markdown, no code blocks.
+Reply with this exact format: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}"""
+    else:
+        gen_system = f"""Build these files: {', '.join(files_to_build)}
+
+Context: {shared_context}
+
+CODE RULES:
+- Clean, well-structured code
+- TypeScript types where applicable
+- React: use functional components with hooks
+- Export default for main components
+
+IMPORTANT: You MUST reply with valid JSON only. No explanations, no markdown, no code blocks.
+Reply with this exact format: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}"""
+
+    try:
+        rate_limiter.wait_if_needed()
+        start = time.time()
+        logger.debug(f"[worker-v2-{idx}] Generator calling {generator_id}")
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                r = client.chat.completions.create(
+                    model=generator_id,
+                    messages=[{"role": "system", "content": gen_system}, {"role": "user", "content": task_desc}],
+                    max_tokens=4096, temperature=0.3, timeout=120,
+                )
+                break
+            except Exception as e:
+                if ("429" in str(e) or "timed out" in str(e).lower() or "DEGRADED" in str(e)) and attempt < max_retries - 1:
+                    logger.warning(f"[worker-v2-{idx}] Generator failed, retrying (attempt {attempt + 1})")
+                    rate_limiter.backoff()
+                    continue
+                raise
+
+        gen_elapsed = time.time() - start
+        gen_content = r.choices[0].message.content or ""
+        logger.debug(f"[worker-v2-{idx}] Generator done in {gen_elapsed:.1f}s")
+
+        # Log generator response
+        with open(LOG_DIR / f"worker_v2_{idx}_gen_{timestamp}.json", "w", encoding="utf-8") as f:
+            json.dump({
+                "step": "generator",
+                "model": generator_id,
+                "elapsed": gen_elapsed,
+                "content": gen_content,
+            }, f, indent=2, ensure_ascii=False)
+
+        gen_data = parse_json_response(gen_content, f"worker-v2-{idx}-gen")
+        if not gen_data or "files" not in gen_data:
+            logger.error(f"[worker-v2-{idx}] Generator failed to parse response")
+            return []
+
+        gen_files = gen_data["files"]
+        requested_set = set(files_to_build)
+        gen_files = [f for f in gen_files if f.get("path", "") in requested_set]
+
+        if not gen_files:
+            logger.error(f"[worker-v2-{idx}] Generator returned no valid files")
+            return []
+
+        logger.info(f"[worker-v2-{idx}] Generator produced {len(gen_files)} files in {gen_elapsed:.1f}s")
+
+    except Exception as e:
+        logger.error(f"[worker-v2-{idx}] Generator error: {e}")
+        return []
+
+    # ── Step 2: Reviewer validates + fixes ──
+    gen_files_text = "\n\n".join(
+        f"--- {f['path']} ---\n{f['content']}" for f in gen_files
+    )
+
+    rev_system = f"""You are a code reviewer. Review these generated files for errors.
+
+Context: {shared_context}
+
+Check for:
+- TypeScript type errors or mismatches
+- Missing imports or wrong import paths
+- Incorrect component prop signatures
+- Broken references between files
+- CSS issues (wrong selectors, missing styles)
+- Logic bugs or incorrect function signatures
+- Missing exports
+
+RULES:
+- If files are good, return status "pass" with the original files unchanged
+- If issues found, return status "revise" with FIXED versions of the files
+- Fix ONLY what's broken. Do not rewrite working code.
+- Return ALL files (both fixed and unchanged)
+
+Return JSON: {{"status": "pass"|"revise", "issues": ["issue 1"], "files": [{{"path": "src/...", "content": "file content"}}]}}"""
+
+    rev_user = f"Review these files for errors:\n\n{gen_files_text}"
+
+    try:
+        rate_limiter.wait_if_needed()
+        rev_start = time.time()
+        logger.debug(f"[worker-v2-{idx}] Reviewer calling {reviewer_id}")
+
+        for attempt in range(max_retries):
+            try:
+                r2 = client.chat.completions.create(
+                    model=reviewer_id,
+                    messages=[{"role": "system", "content": rev_system}, {"role": "user", "content": rev_user}],
+                    max_tokens=4096, temperature=0.2, timeout=120,
+                )
+                break
+            except Exception as e:
+                if ("429" in str(e) or "timed out" in str(e).lower() or "DEGRADED" in str(e)) and attempt < max_retries - 1:
+                    logger.warning(f"[worker-v2-{idx}] Reviewer failed, retrying (attempt {attempt + 1})")
+                    rate_limiter.backoff()
+                    continue
+                raise
+
+        rev_elapsed = time.time() - rev_start
+        rev_content = r2.choices[0].message.content or ""
+        logger.debug(f"[worker-v2-{idx}] Reviewer done in {rev_elapsed:.1f}s")
+
+        # Log reviewer response
+        with open(LOG_DIR / f"worker_v2_{idx}_rev_{timestamp}.json", "w", encoding="utf-8") as f:
+            json.dump({
+                "step": "reviewer",
+                "model": reviewer_id,
+                "elapsed": rev_elapsed,
+                "content": rev_content,
+            }, f, indent=2, ensure_ascii=False)
+
+        rev_data = parse_json_response(rev_content, f"worker-v2-{idx}-rev")
+        if not rev_data or "files" not in rev_data:
+            logger.warning(f"[worker-v2-{idx}] Reviewer parse failed, using generator output")
+            logger.info(f"[worker-v2-{idx}] Done (gen only): {len(gen_files)} files in {gen_elapsed:.1f}s")
+            return gen_files
+
+        status = rev_data.get("status", "pass")
+        issues = rev_data.get("issues", [])
+        rev_files = rev_data["files"]
+
+        # Filter reviewer output to requested files
+        rev_files = [f for f in rev_files if f.get("path", "") in requested_set]
+
+        if status == "revise" and issues:
+            logger.info(f"[worker-v2-{idx}] Reviewer found {len(issues)} issues:")
+            for issue in issues[:3]:
+                logger.info(f"  - {issue}")
+
+        # Use reviewer's files if they fixed something, otherwise use generator's
+        final_files = rev_files if status == "revise" and rev_files else gen_files
+        total_elapsed = gen_elapsed + rev_elapsed
+        logger.info(f"[worker-v2-{idx}] Done: {len(final_files)} files in {total_elapsed:.1f}s (gen {gen_elapsed:.1f}s + rev {rev_elapsed:.1f}s)")
+
+        return final_files
+
+    except Exception as e:
+        logger.error(f"[worker-v2-{idx}] Reviewer error: {e}, using generator output")
+        return gen_files
 
 def detect_missing_files(project_path, subtasks):
     """Check which expected files are missing from disk."""
@@ -783,6 +1044,7 @@ RULES:
 - Keep the same structure and logic, only fix type mismatches.
 - Common fixes: add missing imports, align interface props, fix function signatures.
 
+IMPORTANT: Reply with valid JSON only. No markdown, no code blocks.
 Return JSON: {"files": [{"path": "src/...", "content": "full fixed file content"}]}"""
 
     user = f"""TypeScript errors:
@@ -993,6 +1255,7 @@ RULES:
 - Keep the same structure and logic, only fix the specific issues.
 - Common fixes: add missing imports, align interface props, fix function signatures.
 
+IMPORTANT: Reply with valid JSON only. No markdown, no code blocks.
 Return JSON: {"files": [{"path": "src/...", "content": "full fixed file content"}]}"""
 
     user = f"""Issues detected:
@@ -1047,18 +1310,27 @@ Fix these issues and return the fixed files."""
 
 # ── Orchestrator ───────────────────────────────────────────────────────────
 
-def orchestrate(goal, project_dir):
-    """Main orchestration flow."""
+def orchestrate(goal, project_dir, use_v2=True):
+    """Main orchestration flow.
+
+    Args:
+        goal: What to build
+        project_dir: Output directory
+        use_v2: If True, use Mark II dual-model (gen+review). If False, use Mark I single-model.
+    """
     project_path = Path(project_dir)
     project_path.mkdir(parents=True, exist_ok=True)
 
+    pipeline_name = "Mark II — Dual-Model Collaboration" if use_v2 else "Mark I — Single-Model Swarm"
     logger.info(f"\n{'='*60}")
-    logger.info(f"MARK I — Multi-Model Swarm Pipeline")
+    logger.info(f"{pipeline_name}")
     logger.info(f"{'='*60}")
     logger.info(f"Goal: {goal}")
     logger.info(f"Log file: {log_file}")
 
-    rate_limiter = RateLimiter(max_per_minute=35, min_interval=1.5)
+    # Mark II uses 2 API calls per worker, so be more conservative
+    min_interval = 4.0 if use_v2 else 1.5
+    rate_limiter = RateLimiter(max_per_minute=35, min_interval=min_interval)
 
     # Step 1: Plan subtasks
     logger.info(f"\n[1/4] Planning subtasks...")
@@ -1071,6 +1343,23 @@ def orchestrate(goal, project_dir):
     # Step 1.5: Ensure critical files are included
     subtasks = ensure_critical_files(project_path, subtasks)
 
+    # Step 1.6: Assign model pairs for Mark II
+    if use_v2:
+        for st in subtasks:
+            task_type = st.get("task_type", "boilerplate")
+            pair_key = TASK_PAIR_MAP.get(task_type, "fast")
+            pair = MODEL_PAIRS[pair_key]
+            st["generator"] = pair["generator"]
+            st["reviewer"] = pair["reviewer"]
+            st["pair_key"] = pair_key
+
+        logger.info("[planner] Assigned model pairs:")
+        for i, st in enumerate(subtasks):
+            files = ", ".join(st.get("files", []))
+            gen = st.get("generator", "?").split("/")[-1]
+            rev = st.get("reviewer", "?").split("/")[-1]
+            logger.info(f"  {i+1}. [{gen}+{rev}] {files}")
+
     # Step 2: Build shared context
     logger.info(f"\n[2/4] Building shared context...")
     shared_context = build_shared_context(goal, subtasks)
@@ -1079,11 +1368,11 @@ def orchestrate(goal, project_dir):
     logger.info(f"  Wrote {context_file}")
 
     # Step 3: Execute workers (semaphore-limited parallel)
-    logger.info(f"\n[3/4] Executing workers...")
+    logger.info(f"\n[3/4] Executing workers ({'dual-model' if use_v2 else 'single-model'})...")
     all_files = []
     write_lock = threading.Lock()
     written = 0
-    max_concurrent = 2  # Conservative to avoid rate limits
+    max_concurrent = 1 if use_v2 else 2  # Dual-model uses 2 API calls per worker, be conservative
 
     # Separate injected from API workers
     injected = [(idx, st) for idx, st in enumerate(subtasks) if st.get("injected")]
@@ -1103,38 +1392,44 @@ def orchestrate(goal, project_dir):
                     written += 1
                 logger.info(f"  -> {filename}")
 
-    # Execute API workers in parallel with semaphore
-    def run_worker(idx, st):
-        files = execute_worker(
-            idx,
-            st["model"],
-            st["description"],
-            shared_context,
-            st.get("files", []),
-            rate_limiter,
-        )
-        return idx, files
-
+    # Execute API workers — Mark II runs sequentially to avoid rate limits
+    logger.info(f"[sequential] Running {len(api_workers)} workers one at a time")
     results = []
-    with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
-        futures = {executor.submit(run_worker, idx, st): idx for idx, st in api_workers}
-        logger.info(f"[parallel] Launched {len(futures)} workers (max {max_concurrent} concurrent)")
 
-        for future in as_completed(futures):
-            idx, files = future.result()
-            if files:
-                for f in files:
-                    path = f.get("path", "")
-                    content = f.get("content", "")
-                    if path and content:
-                        target = project_path / path
-                        target.parent.mkdir(parents=True, exist_ok=True)
-                        target.write_text(content, encoding="utf-8")
-                        with write_lock:
-                            all_files.append(f)
-                            written += 1
-                        logger.info(f"  -> {path}")
-            results.append((idx, len(files) if files else 0))
+    for idx, st in api_workers:
+        if use_v2:
+            files = execute_worker_v2(
+                idx,
+                st["generator"],
+                st["reviewer"],
+                st["description"],
+                shared_context,
+                st.get("files", []),
+                rate_limiter,
+            )
+        else:
+            files = execute_worker(
+                idx,
+                st["model"],
+                st["description"],
+                shared_context,
+                st.get("files", []),
+                rate_limiter,
+            )
+
+        if files:
+            for f in files:
+                path = f.get("path", "")
+                content = f.get("content", "")
+                if path and content:
+                    target = project_path / path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text(content, encoding="utf-8")
+                    with write_lock:
+                        all_files.append(f)
+                        written += 1
+                    logger.info(f"  -> {path}")
+        results.append((idx, len(files) if files else 0))
 
     logger.info(f"[parallel] All {len(results)} workers completed")
 
@@ -1156,7 +1451,7 @@ def orchestrate(goal, project_dir):
 
     # Save summary
     summary = {
-        "pipeline": "Mark I",
+        "pipeline": pipeline_name,
         "goal": goal,
         "timestamp": timestamp,
         "subtasks_planned": len(subtasks),
@@ -1173,11 +1468,15 @@ def orchestrate(goal, project_dir):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) < 3:
-        print("Usage: python -m autobots.orchestrator 'Build a counter app' D:\\projects\\counter")
-        print("Mark I — Multi-Model Swarm Pipeline")
+    use_v2 = "--v1" not in sys.argv
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+
+    if len(args) < 2:
+        print("Usage: python -m autobots.orchestrator 'Build a counter app' D:\\projects\\counter [--v1]")
+        print("  Mark II (default): dual-model gen+review per subtask")
+        print("  --v1: use Mark I single-model (faster, fewer API calls)")
         sys.exit(1)
 
-    goal = sys.argv[1]
-    output = sys.argv[2]
-    orchestrate(goal, output)
+    goal = args[0]
+    output = args[1]
+    orchestrate(goal, output, use_v2=use_v2)
