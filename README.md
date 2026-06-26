@@ -274,6 +274,48 @@ Real projects generated entirely by the multi-model swarm — no manual code, no
 4. **Repair phase** detected missing files from timed-out workers and regenerated them, then ran TypeScript compilation check to fix any remaining type mismatches
 5. **Import path auto-fix** resolved wrong import paths between components
 
+> **Repo**: [github.com/DanielDeshmukh/todo-by-autobots](https://github.com/DanielDeshmukh/todo-by-autobots)
+
+### Memory Card Flip
+
+> *"Build a memory card flip game. Match pairs to win. Features: card flip animation, theme selection (animals/flags/emojis), difficulty levels, timer, move counter, and win detection."*
+
+<p align="center">
+  <img src="assets/memory-card-6x6.png" alt="Memory Card Flip - 6x6 Hard Mode" width="45%" />
+  &nbsp;&nbsp;
+  <img src="assets/memory-card-flags.png" alt="Memory Card Flip - Flags Theme" width="45%" />
+</p>
+
+| Detail | Value |
+|--------|-------|
+| **Stack** | React 19, TypeScript, Vite, Tailwind CSS, Zustand |
+| **Design System** | NVIDIA DESIGN.md (black canvas, green accent) |
+| **Pipeline** | Mark II — Dual-Model Collaboration |
+| **Models Used** | 2 (`qwen3.5-122b` generator, `qwen3-next-80b` reviewer) |
+| **Workers** | Sequential (1 at a time due to rate limits) |
+| **Features** | Card flip animation, 3 themes, 3 difficulties, timer, moves, matches, progress bar |
+
+**How it was built:**
+
+1. **Planner** (qwen3-next-80b) decomposed the goal into 7 subtasks — store, components (Card, GameGrid, StatsBar, ProgressBar, ThemeSelector, DifficultySelector, Celebration), styles, types, constants
+2. **Critical file injection** added `index.html`, `package.json`, `main.tsx`, `index.css`, `tsconfig.json` automatically
+3. **Dual-model workers** — each subtask gets a generator (qwen3.5-122b) and reviewer (qwen3-next-80b). Generator creates code, reviewer checks for bugs before writing
+4. **Repair phase** detected missing files and ran TypeScript validation to fix type mismatches
+5. **Design system injection** — NVIDIA DESIGN.md was injected into prompts so all components use black (#000000) canvas with green (#76B900) accent, angular 2px radius
+
+**Problems faced during generation:**
+
+| Problem | Root Cause | Fix |
+|---------|-----------|-----|
+| Timer showed `NaN:NaN` | gameStore used `timer`, StatsBar read `timeElapsed` | Aligned property names across components |
+| Cards rendered as tiny squares | framer-motion not installed, no explicit sizing | Replaced with pure CSS flip animations |
+| Cards didn't flip on click | `initializeGame()` never called on mount | Added `useEffect` to call it on mount |
+| 6x6 showed 32 cards instead of 36 | Theme had 16 items, 6x6 needs 18 unique | Increased themes to 18+ items with cycling |
+| Missing PostCSS config | `postcss.config.js` incompatible with ESM | Renamed to `.cjs` extension |
+| Cross-file contract mismatches | Parallel workers generated independently | Switched to single-worker with full context |
+
+> **Repo**: [github.com/DanielDeshmukh/memory-card-flip](https://github.com/DanielDeshmukh/memory-card-flip)
+
 ---
 
 ## Configuration
