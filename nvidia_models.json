@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-07-01T10:02:42.895910",
-  "total": 121,
+  "fetched_at": "2026-07-02T09:25:30.510858",
+  "total": 120,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -103,7 +103,6 @@
       "writer/palmyra-creative-122b",
       "writer/palmyra-fin-70b-32k",
       "writer/palmyra-med-70b",
-      "z-ai/glm-5.1",
       "zyphra/zamba2-7b-instruct"
     ],
     "vision": [
@@ -313,9 +312,6 @@
       "writer/palmyra-fin-70b-32k",
       "writer/palmyra-med-70b",
       "writer/palmyra-med-70b-32k"
-    ],
-    "z-ai": [
-      "z-ai/glm-5.1"
     ],
     "zyphra": [
       "zyphra/zamba2-7b-instruct"
@@ -1034,12 +1030,6 @@
       "id": "writer/palmyra-med-70b-32k",
       "publisher": "writer",
       "category": "other",
-      "created": 735790403
-    },
-    "z-ai/glm-5.1": {
-      "id": "z-ai/glm-5.1",
-      "publisher": "z-ai",
-      "category": "text-generation",
       "created": 735790403
     },
     "zyphra/zamba2-7b-instruct": {

@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-07-01T10:02:42.895910 | Total: 121 models
+Fetched: 2026-07-02T09:25:30.510858 | Total: 120 models
 
 ---
 
@@ -78,7 +78,7 @@ Fetched: 2026-07-01T10:02:42.895910 | Total: 121 models
 - `nvidia/ising-calibration-1-35b-a3b` (nvidia)
 - `nvidia/riva-translate-4b-instruct` (nvidia)
 
-### Text Generation (53)
+### Text Generation (52)
 
 - `bytedance/seed-oss-36b-instruct` (bytedance)
 - `deepseek-ai/deepseek-v4-flash` (deepseek-ai)
@@ -131,7 +131,6 @@ Fetched: 2026-07-01T10:02:42.895910 | Total: 121 models
 - `writer/palmyra-creative-122b` (writer)
 - `writer/palmyra-fin-70b-32k` (writer)
 - `writer/palmyra-med-70b` (writer)
-- `z-ai/glm-5.1` (z-ai)
 - `zyphra/zamba2-7b-instruct` (zyphra)
 
 ### Video (2)
@@ -352,10 +351,6 @@ Fetched: 2026-07-01T10:02:42.895910 | Total: 121 models
 - `writer/palmyra-fin-70b-32k` [text-generation]
 - `writer/palmyra-med-70b` [text-generation]
 - `writer/palmyra-med-70b-32k` [other]
-
-### z-ai (1)
-
-- `z-ai/glm-5.1` [text-generation]
 
 ### zyphra (1)
 
