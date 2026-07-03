@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-07-02T09:25:30.510858 | Total: 120 models
+Fetched: 2026-07-03T09:29:41.772655 | Total: 121 models
 
 ---
 
@@ -23,7 +23,7 @@ Fetched: 2026-07-02T09:25:30.510858 | Total: 120 models
 - `nvidia/nemoretriever-parse` (nvidia)
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (36)
+### Other (37)
 
 - `01-ai/yi-large` (01-ai)
 - `abacusai/dracarys-llama-3.1-70b-instruct` (abacusai)
@@ -61,6 +61,7 @@ Fetched: 2026-07-02T09:25:30.510858 | Total: 120 models
 - `nvidia/nvclip` (nvidia)
 - `nvidia/riva-translate-4b-instruct-v1.1` (nvidia)
 - `writer/palmyra-med-70b-32k` (writer)
+- `z-ai/glm-5.2` (z-ai)
 
 ### Safety (7)
 
@@ -351,6 +352,10 @@ Fetched: 2026-07-02T09:25:30.510858 | Total: 120 models
 - `writer/palmyra-fin-70b-32k` [text-generation]
 - `writer/palmyra-med-70b` [text-generation]
 - `writer/palmyra-med-70b-32k` [other]
+
+### z-ai (1)
+
+- `z-ai/glm-5.2` [other]
 
 ### zyphra (1)
 
