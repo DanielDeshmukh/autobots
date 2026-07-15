@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-07-14T08:19:56.348016 | Total: 121 models
+Fetched: 2026-07-15T08:25:51.347950 | Total: 116 models
 
 ---
 
@@ -63,15 +63,13 @@ Fetched: 2026-07-14T08:19:56.348016 | Total: 121 models
 - `writer/palmyra-med-70b-32k` (writer)
 - `z-ai/glm-5.2` (z-ai)
 
-### Safety (7)
+### Safety (5)
 
 - `meta/llama-guard-4-12b` (meta)
 - `nvidia/llama-3.1-nemoguard-8b-content-safety` (nvidia)
 - `nvidia/llama-3.1-nemoguard-8b-topic-control` (nvidia)
 - `nvidia/llama-3.1-nemotron-safety-guard-8b-v3` (nvidia)
-- `nvidia/nemotron-3-content-safety` (nvidia)
 - `nvidia/nemotron-3.5-content-safety` (nvidia)
-- `nvidia/nemotron-content-safety-reasoning-4b` (nvidia)
 
 ### Specialized (3)
 
@@ -79,7 +77,7 @@ Fetched: 2026-07-14T08:19:56.348016 | Total: 121 models
 - `nvidia/ising-calibration-1-35b-a3b` (nvidia)
 - `nvidia/riva-translate-4b-instruct` (nvidia)
 
-### Text Generation (52)
+### Text Generation (50)
 
 - `bytedance/seed-oss-36b-instruct` (bytedance)
 - `deepseek-ai/deepseek-v4-flash` (deepseek-ai)
@@ -98,7 +96,6 @@ Fetched: 2026-07-14T08:19:56.348016 | Total: 121 models
 - `meta/llama-3.2-3b-instruct` (meta)
 - `meta/llama-3.3-70b-instruct` (meta)
 - `meta/llama-4-maverick-17b-128e-instruct` (meta)
-- `microsoft/phi-4-mini-instruct` (microsoft)
 - `minimaxai/minimax-m2.7` (minimaxai)
 - `minimaxai/minimax-m3` (minimaxai)
 - `mistralai/mistral-large-3-675b-instruct-2512` (mistralai)
@@ -127,7 +124,6 @@ Fetched: 2026-07-14T08:19:56.348016 | Total: 121 models
 - `sarvamai/sarvam-m` (sarvamai)
 - `stepfun-ai/step-3.5-flash` (stepfun-ai)
 - `stepfun-ai/step-3.7-flash` (stepfun-ai)
-- `stockmark/stockmark-2-100b-instruct` (stockmark)
 - `upstage/solar-10.7b-instruct` (upstage)
 - `writer/palmyra-creative-122b` (writer)
 - `writer/palmyra-fin-70b-32k` (writer)
@@ -139,13 +135,12 @@ Fetched: 2026-07-14T08:19:56.348016 | Total: 121 models
 - `nvidia/ai-synthetic-video-detector` (nvidia)
 - `nvidia/cosmos-reason2-8b` (nvidia)
 
-### Vision (9)
+### Vision (8)
 
 - `meta/llama-3.2-11b-vision-instruct` (meta)
 - `meta/llama-3.2-90b-vision-instruct` (meta)
 - `microsoft/kosmos-2` (microsoft)
 - `microsoft/phi-3-vision-128k-instruct` (microsoft)
-- `microsoft/phi-4-multimodal-instruct` (microsoft)
 - `nvidia/llama-3.1-nemotron-nano-vl-8b-v1` (nvidia)
 - `nvidia/nemotron-nano-12b-v2-vl` (nvidia)
 - `nvidia/neva-22b` (nvidia)
@@ -231,13 +226,11 @@ Fetched: 2026-07-14T08:19:56.348016 | Total: 121 models
 - `meta/llama-guard-4-12b` [safety]
 - `meta/llama2-70b` [other]
 
-### microsoft (5)
+### microsoft (3)
 
 - `microsoft/kosmos-2` [vision]
 - `microsoft/phi-3-vision-128k-instruct` [vision]
 - `microsoft/phi-3.5-moe-instruct` [other]
-- `microsoft/phi-4-mini-instruct` [text-generation]
-- `microsoft/phi-4-multimodal-instruct` [vision]
 
 ### minimaxai (2)
 
@@ -266,7 +259,7 @@ Fetched: 2026-07-14T08:19:56.348016 | Total: 121 models
 
 - `nv-mistralai/mistral-nemo-12b-instruct` [other]
 
-### nvidia (45)
+### nvidia (43)
 
 - `nvidia/ai-synthetic-video-detector` [video]
 - `nvidia/cosmos-reason2-8b` [video]
@@ -290,7 +283,6 @@ Fetched: 2026-07-14T08:19:56.348016 | Total: 121 models
 - `nvidia/llama3-chatqa-1.5-70b` [other]
 - `nvidia/mistral-nemo-minitron-8b-8k-instruct` [other]
 - `nvidia/nemoretriever-parse` [ocr]
-- `nvidia/nemotron-3-content-safety` [safety]
 - `nvidia/nemotron-3-nano-30b-a3b` [text-generation]
 - `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` [other]
 - `nvidia/nemotron-3-super-120b-a12b` [text-generation]
@@ -298,7 +290,6 @@ Fetched: 2026-07-14T08:19:56.348016 | Total: 121 models
 - `nvidia/nemotron-3.5-content-safety` [safety]
 - `nvidia/nemotron-4-340b-instruct` [text-generation]
 - `nvidia/nemotron-4-340b-reward` [other]
-- `nvidia/nemotron-content-safety-reasoning-4b` [safety]
 - `nvidia/nemotron-mini-4b-instruct` [text-generation]
 - `nvidia/nemotron-nano-12b-v2-vl` [vision]
 - `nvidia/nemotron-nano-3-30b-a3b` [other]
@@ -337,10 +328,6 @@ Fetched: 2026-07-14T08:19:56.348016 | Total: 121 models
 
 - `stepfun-ai/step-3.5-flash` [text-generation]
 - `stepfun-ai/step-3.7-flash` [text-generation]
-
-### stockmark (1)
-
-- `stockmark/stockmark-2-100b-instruct` [text-generation]
 
 ### upstage (1)
 
