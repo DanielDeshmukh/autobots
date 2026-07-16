@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-07-15T08:25:51.347950 | Total: 116 models
+Fetched: 2026-07-16T08:24:36.682471 | Total: 118 models
 
 ---
 
@@ -23,7 +23,7 @@ Fetched: 2026-07-15T08:25:51.347950 | Total: 116 models
 - `nvidia/nemoretriever-parse` (nvidia)
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (37)
+### Other (39)
 
 - `01-ai/yi-large` (01-ai)
 - `abacusai/dracarys-llama-3.1-70b-instruct` (abacusai)
@@ -60,6 +60,8 @@ Fetched: 2026-07-15T08:25:51.347950 | Total: 116 models
 - `nvidia/nv-embedqa-mistral-7b-v2` (nvidia)
 - `nvidia/nvclip` (nvidia)
 - `nvidia/riva-translate-4b-instruct-v1.1` (nvidia)
+- `poolside/laguna-xs-2.1` (poolside)
+- `thinkingmachines/inkling` (thinkingmachines)
 - `writer/palmyra-med-70b-32k` (writer)
 - `z-ai/glm-5.2` (z-ai)
 
@@ -310,6 +312,10 @@ Fetched: 2026-07-15T08:25:51.347950 | Total: 116 models
 - `openai/gpt-oss-120b` [text-generation]
 - `openai/gpt-oss-20b` [text-generation]
 
+### poolside (1)
+
+- `poolside/laguna-xs-2.1` [other]
+
 ### qwen (3)
 
 - `qwen/qwen3-next-80b-a3b-instruct` [text-generation]
@@ -328,6 +334,10 @@ Fetched: 2026-07-15T08:25:51.347950 | Total: 116 models
 
 - `stepfun-ai/step-3.5-flash` [text-generation]
 - `stepfun-ai/step-3.7-flash` [text-generation]
+
+### thinkingmachines (1)
+
+- `thinkingmachines/inkling` [other]
 
 ### upstage (1)
 
