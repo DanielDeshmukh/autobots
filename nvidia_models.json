@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-07-16T08:24:36.682471",
-  "total": 118,
+  "fetched_at": "2026-07-17T08:20:45.640422",
+  "total": 119,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -32,6 +32,7 @@
       "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
       "nvidia/llama3-chatqa-1.5-70b",
       "nvidia/mistral-nemo-minitron-8b-8k-instruct",
+      "nvidia/nemotron-3-embed-1b",
       "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
       "nvidia/nemotron-4-340b-reward",
       "nvidia/nemotron-nano-3-30b-a3b",
@@ -254,6 +255,7 @@
       "nvidia/llama3-chatqa-1.5-70b",
       "nvidia/mistral-nemo-minitron-8b-8k-instruct",
       "nvidia/nemoretriever-parse",
+      "nvidia/nemotron-3-embed-1b",
       "nvidia/nemotron-3-nano-30b-a3b",
       "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
       "nvidia/nemotron-3-super-120b-a12b",
@@ -790,6 +792,12 @@
       "id": "nvidia/nemoretriever-parse",
       "publisher": "nvidia",
       "category": "ocr",
+      "created": 735790403
+    },
+    "nvidia/nemotron-3-embed-1b": {
+      "id": "nvidia/nemotron-3-embed-1b",
+      "publisher": "nvidia",
+      "category": "other",
       "created": 735790403
     },
     "nvidia/nemotron-3-nano-30b-a3b": {
