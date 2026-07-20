@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-07-19T08:28:20.465551 | Total: 119 models
+Fetched: 2026-07-20T09:27:43.401923 | Total: 118 models
 
 ---
 
@@ -80,7 +80,7 @@ Fetched: 2026-07-19T08:28:20.465551 | Total: 119 models
 - `nvidia/ising-calibration-1-35b-a3b` (nvidia)
 - `nvidia/riva-translate-4b-instruct` (nvidia)
 
-### Text Generation (50)
+### Text Generation (49)
 
 - `bytedance/seed-oss-36b-instruct` (bytedance)
 - `deepseek-ai/deepseek-v4-flash` (deepseek-ai)
@@ -122,7 +122,6 @@ Fetched: 2026-07-19T08:28:20.465551 | Total: 119 models
 - `openai/gpt-oss-120b` (openai)
 - `openai/gpt-oss-20b` (openai)
 - `qwen/qwen3-next-80b-a3b-instruct` (qwen)
-- `qwen/qwen3.5-122b-a10b` (qwen)
 - `qwen/qwen3.5-397b-a17b` (qwen)
 - `sarvamai/sarvam-m` (sarvamai)
 - `stepfun-ai/step-3.5-flash` (stepfun-ai)
@@ -318,10 +317,9 @@ Fetched: 2026-07-19T08:28:20.465551 | Total: 119 models
 
 - `poolside/laguna-xs-2.1` [other]
 
-### qwen (3)
+### qwen (2)
 
 - `qwen/qwen3-next-80b-a3b-instruct` [text-generation]
-- `qwen/qwen3.5-122b-a10b` [text-generation]
 - `qwen/qwen3.5-397b-a17b` [text-generation]
 
 ### sarvamai (1)
