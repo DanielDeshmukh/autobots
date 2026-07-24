@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-07-23T08:40:08.470280 | Total: 118 models
+Fetched: 2026-07-24T08:36:00.376651 | Total: 118 models
 
 ---
 
@@ -23,7 +23,7 @@ Fetched: 2026-07-23T08:40:08.470280 | Total: 118 models
 - `nvidia/nemoretriever-parse` (nvidia)
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (40)
+### Other (41)
 
 - `01-ai/yi-large` (01-ai)
 - `abacusai/dracarys-llama-3.1-70b-instruct` (abacusai)
@@ -51,6 +51,7 @@ Fetched: 2026-07-23T08:40:08.470280 | Total: 118 models
 - `mistralai/mistral-large-2-instruct` (mistralai)
 - `mistralai/mixtral-8x22b-v0.1` (mistralai)
 - `nv-mistralai/mistral-nemo-12b-instruct` (nv-mistralai)
+- `nvidia/ising-calibration-1.5-31b` (nvidia)
 - `nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1` (nvidia)
 - `nvidia/llama3-chatqa-1.5-70b` (nvidia)
 - `nvidia/mistral-nemo-minitron-8b-8k-instruct` (nvidia)
@@ -80,7 +81,7 @@ Fetched: 2026-07-23T08:40:08.470280 | Total: 118 models
 - `nvidia/ising-calibration-1-35b-a3b` (nvidia)
 - `nvidia/riva-translate-4b-instruct` (nvidia)
 
-### Text Generation (49)
+### Text Generation (48)
 
 - `bytedance/seed-oss-36b-instruct` (bytedance)
 - `deepseek-ai/deepseek-v4-flash` (deepseek-ai)
@@ -101,7 +102,6 @@ Fetched: 2026-07-23T08:40:08.470280 | Total: 118 models
 - `meta/llama-4-maverick-17b-128e-instruct` (meta)
 - `minimaxai/minimax-m2.7` (minimaxai)
 - `minimaxai/minimax-m3` (minimaxai)
-- `mistralai/mistral-large-3-675b-instruct-2512` (mistralai)
 - `mistralai/mistral-medium-3.5-128b` (mistralai)
 - `mistralai/mistral-nemotron` (mistralai)
 - `mistralai/mistral-small-4-119b-2603` (mistralai)
@@ -239,14 +239,13 @@ Fetched: 2026-07-23T08:40:08.470280 | Total: 118 models
 - `minimaxai/minimax-m2.7` [text-generation]
 - `minimaxai/minimax-m3` [text-generation]
 
-### mistralai (11)
+### mistralai (10)
 
 - `mistralai/codestral-22b-instruct-v0.1` [other]
 - `mistralai/ministral-14b-instruct-2512` [other]
 - `mistralai/mistral-7b-instruct-v0.3` [other]
 - `mistralai/mistral-large` [other]
 - `mistralai/mistral-large-2-instruct` [other]
-- `mistralai/mistral-large-3-675b-instruct-2512` [text-generation]
 - `mistralai/mistral-medium-3.5-128b` [text-generation]
 - `mistralai/mistral-nemotron` [text-generation]
 - `mistralai/mistral-small-4-119b-2603` [text-generation]
@@ -261,13 +260,14 @@ Fetched: 2026-07-23T08:40:08.470280 | Total: 118 models
 
 - `nv-mistralai/mistral-nemo-12b-instruct` [other]
 
-### nvidia (44)
+### nvidia (45)
 
 - `nvidia/ai-synthetic-video-detector` [video]
 - `nvidia/cosmos-reason2-8b` [video]
 - `nvidia/embed-qa-4` [embedding]
 - `nvidia/gliner-pii` [specialized]
 - `nvidia/ising-calibration-1-35b-a3b` [specialized]
+- `nvidia/ising-calibration-1.5-31b` [other]
 - `nvidia/llama-3.1-nemoguard-8b-content-safety` [safety]
 - `nvidia/llama-3.1-nemoguard-8b-topic-control` [safety]
 - `nvidia/llama-3.1-nemotron-51b-instruct` [text-generation]

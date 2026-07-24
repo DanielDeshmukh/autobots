@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-07-23T08:40:08.470280",
+  "fetched_at": "2026-07-24T08:36:00.376651",
   "total": 118,
   "by_category": {
     "other": [
@@ -29,6 +29,7 @@
       "mistralai/mistral-large-2-instruct",
       "mistralai/mixtral-8x22b-v0.1",
       "nv-mistralai/mistral-nemo-12b-instruct",
+      "nvidia/ising-calibration-1.5-31b",
       "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
       "nvidia/llama3-chatqa-1.5-70b",
       "nvidia/mistral-nemo-minitron-8b-8k-instruct",
@@ -75,7 +76,6 @@
       "meta/llama-4-maverick-17b-128e-instruct",
       "minimaxai/minimax-m2.7",
       "minimaxai/minimax-m3",
-      "mistralai/mistral-large-3-675b-instruct-2512",
       "mistralai/mistral-medium-3.5-128b",
       "mistralai/mistral-nemotron",
       "mistralai/mistral-small-4-119b-2603",
@@ -218,7 +218,6 @@
       "mistralai/mistral-7b-instruct-v0.3",
       "mistralai/mistral-large",
       "mistralai/mistral-large-2-instruct",
-      "mistralai/mistral-large-3-675b-instruct-2512",
       "mistralai/mistral-medium-3.5-128b",
       "mistralai/mistral-nemotron",
       "mistralai/mistral-small-4-119b-2603",
@@ -237,6 +236,7 @@
       "nvidia/embed-qa-4",
       "nvidia/gliner-pii",
       "nvidia/ising-calibration-1-35b-a3b",
+      "nvidia/ising-calibration-1.5-31b",
       "nvidia/llama-3.1-nemoguard-8b-content-safety",
       "nvidia/llama-3.1-nemoguard-8b-topic-control",
       "nvidia/llama-3.1-nemotron-51b-instruct",
@@ -612,12 +612,6 @@
       "category": "other",
       "created": 735790403
     },
-    "mistralai/mistral-large-3-675b-instruct-2512": {
-      "id": "mistralai/mistral-large-3-675b-instruct-2512",
-      "publisher": "mistralai",
-      "category": "text-generation",
-      "created": 735790403
-    },
     "mistralai/mistral-medium-3.5-128b": {
       "id": "mistralai/mistral-medium-3.5-128b",
       "publisher": "mistralai",
@@ -688,6 +682,12 @@
       "id": "nvidia/ising-calibration-1-35b-a3b",
       "publisher": "nvidia",
       "category": "specialized",
+      "created": 735790403
+    },
+    "nvidia/ising-calibration-1.5-31b": {
+      "id": "nvidia/ising-calibration-1.5-31b",
+      "publisher": "nvidia",
+      "category": "other",
       "created": 735790403
     },
     "nvidia/llama-3.1-nemoguard-8b-content-safety": {
