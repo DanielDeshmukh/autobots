@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-07-25T08:16:43.167186 | Total: 118 models
+Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 
 ---
 
