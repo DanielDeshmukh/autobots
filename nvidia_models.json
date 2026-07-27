@@ -1,10 +1,9 @@
 {
-  "fetched_at": "2026-07-26T08:34:59.043795",
-  "total": 118,
+  "fetched_at": "2026-07-27T10:02:49.821706",
+  "total": 102,
   "by_category": {
     "other": [
       "01-ai/yi-large",
-      "abacusai/dracarys-llama-3.1-70b-instruct",
       "adept/fuyu-8b",
       "ai21labs/jamba-1.5-large-instruct",
       "aisingapore/sea-lion-7b-instruct",
@@ -23,7 +22,6 @@
       "meta/llama2-70b",
       "microsoft/phi-3.5-moe-instruct",
       "mistralai/codestral-22b-instruct-v0.1",
-      "mistralai/ministral-14b-instruct-2512",
       "mistralai/mistral-7b-instruct-v0.3",
       "mistralai/mistral-large",
       "mistralai/mistral-large-2-instruct",
@@ -57,14 +55,10 @@
       "snowflake/arctic-embed-l"
     ],
     "text-generation": [
-      "bytedance/seed-oss-36b-instruct",
       "deepseek-ai/deepseek-v4-flash",
       "deepseek-ai/deepseek-v4-pro",
-      "google/gemma-2-2b-it",
       "google/gemma-3-12b-it",
       "google/gemma-3-4b-it",
-      "google/gemma-3n-e2b-it",
-      "google/gemma-3n-e4b-it",
       "google/gemma-4-31b-it",
       "ibm/granite-3.0-8b-instruct",
       "ibm/granite-34b-code-instruct",
@@ -73,13 +67,9 @@
       "meta/llama-3.2-1b-instruct",
       "meta/llama-3.2-3b-instruct",
       "meta/llama-3.3-70b-instruct",
-      "meta/llama-4-maverick-17b-128e-instruct",
-      "minimaxai/minimax-m2.7",
       "minimaxai/minimax-m3",
       "mistralai/mistral-medium-3.5-128b",
       "mistralai/mistral-nemotron",
-      "mistralai/mistral-small-4-119b-2603",
-      "mistralai/mixtral-8x7b-instruct-v0.1",
       "moonshotai/kimi-k2.6",
       "nvidia/llama-3.1-nemotron-51b-instruct",
       "nvidia/llama-3.1-nemotron-70b-instruct",
@@ -95,12 +85,7 @@
       "nvidia/nvidia-nemotron-nano-9b-v2",
       "openai/gpt-oss-120b",
       "openai/gpt-oss-20b",
-      "qwen/qwen3-next-80b-a3b-instruct",
-      "qwen/qwen3.5-397b-a17b",
-      "sarvamai/sarvam-m",
-      "stepfun-ai/step-3.5-flash",
       "stepfun-ai/step-3.7-flash",
-      "upstage/solar-10.7b-instruct",
       "writer/palmyra-creative-122b",
       "writer/palmyra-fin-70b-32k",
       "writer/palmyra-med-70b",
@@ -128,7 +113,6 @@
       "nvidia/cosmos-reason2-8b"
     ],
     "specialized": [
-      "nvidia/gliner-pii",
       "nvidia/ising-calibration-1-35b-a3b",
       "nvidia/riva-translate-4b-instruct"
     ],
@@ -140,9 +124,6 @@
   "by_publisher": {
     "01-ai": [
       "01-ai/yi-large"
-    ],
-    "abacusai": [
-      "abacusai/dracarys-llama-3.1-70b-instruct"
     ],
     "adept": [
       "adept/fuyu-8b"
@@ -159,9 +140,6 @@
     "bigcode": [
       "bigcode/starcoder2-15b"
     ],
-    "bytedance": [
-      "bytedance/seed-oss-36b-instruct"
-    ],
     "databricks": [
       "databricks/dbrx-instruct"
     ],
@@ -175,12 +153,9 @@
       "google/codegemma-7b",
       "google/deplot",
       "google/diffusiongemma-26b-a4b-it",
-      "google/gemma-2-2b-it",
       "google/gemma-2b",
       "google/gemma-3-12b-it",
       "google/gemma-3-4b-it",
-      "google/gemma-3n-e2b-it",
-      "google/gemma-3n-e4b-it",
       "google/gemma-4-31b-it",
       "google/recurrentgemma-2b"
     ],
@@ -199,7 +174,6 @@
       "meta/llama-3.2-3b-instruct",
       "meta/llama-3.2-90b-vision-instruct",
       "meta/llama-3.3-70b-instruct",
-      "meta/llama-4-maverick-17b-128e-instruct",
       "meta/llama-guard-4-12b",
       "meta/llama2-70b"
     ],
@@ -209,20 +183,16 @@
       "microsoft/phi-3.5-moe-instruct"
     ],
     "minimaxai": [
-      "minimaxai/minimax-m2.7",
       "minimaxai/minimax-m3"
     ],
     "mistralai": [
       "mistralai/codestral-22b-instruct-v0.1",
-      "mistralai/ministral-14b-instruct-2512",
       "mistralai/mistral-7b-instruct-v0.3",
       "mistralai/mistral-large",
       "mistralai/mistral-large-2-instruct",
       "mistralai/mistral-medium-3.5-128b",
       "mistralai/mistral-nemotron",
-      "mistralai/mistral-small-4-119b-2603",
-      "mistralai/mixtral-8x22b-v0.1",
-      "mistralai/mixtral-8x7b-instruct-v0.1"
+      "mistralai/mixtral-8x22b-v0.1"
     ],
     "moonshotai": [
       "moonshotai/kimi-k2.6"
@@ -234,7 +204,6 @@
       "nvidia/ai-synthetic-video-detector",
       "nvidia/cosmos-reason2-8b",
       "nvidia/embed-qa-4",
-      "nvidia/gliner-pii",
       "nvidia/ising-calibration-1-35b-a3b",
       "nvidia/ising-calibration-1.5-31b",
       "nvidia/llama-3.1-nemoguard-8b-content-safety",
@@ -284,25 +253,14 @@
     "poolside": [
       "poolside/laguna-xs-2.1"
     ],
-    "qwen": [
-      "qwen/qwen3-next-80b-a3b-instruct",
-      "qwen/qwen3.5-397b-a17b"
-    ],
-    "sarvamai": [
-      "sarvamai/sarvam-m"
-    ],
     "snowflake": [
       "snowflake/arctic-embed-l"
     ],
     "stepfun-ai": [
-      "stepfun-ai/step-3.5-flash",
       "stepfun-ai/step-3.7-flash"
     ],
     "thinkingmachines": [
       "thinkingmachines/inkling"
-    ],
-    "upstage": [
-      "upstage/solar-10.7b-instruct"
     ],
     "writer": [
       "writer/palmyra-creative-122b",
@@ -321,12 +279,6 @@
     "01-ai/yi-large": {
       "id": "01-ai/yi-large",
       "publisher": "01-ai",
-      "category": "other",
-      "created": 735790403
-    },
-    "abacusai/dracarys-llama-3.1-70b-instruct": {
-      "id": "abacusai/dracarys-llama-3.1-70b-instruct",
-      "publisher": "abacusai",
       "category": "other",
       "created": 735790403
     },
@@ -358,12 +310,6 @@
       "id": "bigcode/starcoder2-15b",
       "publisher": "bigcode",
       "category": "other",
-      "created": 735790403
-    },
-    "bytedance/seed-oss-36b-instruct": {
-      "id": "bytedance/seed-oss-36b-instruct",
-      "publisher": "bytedance",
-      "category": "text-generation",
       "created": 735790403
     },
     "databricks/dbrx-instruct": {
@@ -414,12 +360,6 @@
       "category": "other",
       "created": 735790403
     },
-    "google/gemma-2-2b-it": {
-      "id": "google/gemma-2-2b-it",
-      "publisher": "google",
-      "category": "text-generation",
-      "created": 735790403
-    },
     "google/gemma-2b": {
       "id": "google/gemma-2b",
       "publisher": "google",
@@ -434,18 +374,6 @@
     },
     "google/gemma-3-4b-it": {
       "id": "google/gemma-3-4b-it",
-      "publisher": "google",
-      "category": "text-generation",
-      "created": 735790403
-    },
-    "google/gemma-3n-e2b-it": {
-      "id": "google/gemma-3n-e2b-it",
-      "publisher": "google",
-      "category": "text-generation",
-      "created": 735790403
-    },
-    "google/gemma-3n-e4b-it": {
-      "id": "google/gemma-3n-e4b-it",
       "publisher": "google",
       "category": "text-generation",
       "created": 735790403
@@ -534,12 +462,6 @@
       "category": "text-generation",
       "created": 735790403
     },
-    "meta/llama-4-maverick-17b-128e-instruct": {
-      "id": "meta/llama-4-maverick-17b-128e-instruct",
-      "publisher": "meta",
-      "category": "text-generation",
-      "created": 735790403
-    },
     "meta/llama-guard-4-12b": {
       "id": "meta/llama-guard-4-12b",
       "publisher": "meta",
@@ -570,12 +492,6 @@
       "category": "other",
       "created": 735790403
     },
-    "minimaxai/minimax-m2.7": {
-      "id": "minimaxai/minimax-m2.7",
-      "publisher": "minimaxai",
-      "category": "text-generation",
-      "created": 735790403
-    },
     "minimaxai/minimax-m3": {
       "id": "minimaxai/minimax-m3",
       "publisher": "minimaxai",
@@ -584,12 +500,6 @@
     },
     "mistralai/codestral-22b-instruct-v0.1": {
       "id": "mistralai/codestral-22b-instruct-v0.1",
-      "publisher": "mistralai",
-      "category": "other",
-      "created": 735790403
-    },
-    "mistralai/ministral-14b-instruct-2512": {
-      "id": "mistralai/ministral-14b-instruct-2512",
       "publisher": "mistralai",
       "category": "other",
       "created": 735790403
@@ -624,22 +534,10 @@
       "category": "text-generation",
       "created": 735790403
     },
-    "mistralai/mistral-small-4-119b-2603": {
-      "id": "mistralai/mistral-small-4-119b-2603",
-      "publisher": "mistralai",
-      "category": "text-generation",
-      "created": 735790403
-    },
     "mistralai/mixtral-8x22b-v0.1": {
       "id": "mistralai/mixtral-8x22b-v0.1",
       "publisher": "mistralai",
       "category": "other",
-      "created": 735790403
-    },
-    "mistralai/mixtral-8x7b-instruct-v0.1": {
-      "id": "mistralai/mixtral-8x7b-instruct-v0.1",
-      "publisher": "mistralai",
-      "category": "text-generation",
       "created": 735790403
     },
     "moonshotai/kimi-k2.6": {
@@ -670,12 +568,6 @@
       "id": "nvidia/embed-qa-4",
       "publisher": "nvidia",
       "category": "embedding",
-      "created": 735790403
-    },
-    "nvidia/gliner-pii": {
-      "id": "nvidia/gliner-pii",
-      "publisher": "nvidia",
-      "category": "specialized",
       "created": 735790403
     },
     "nvidia/ising-calibration-1-35b-a3b": {
@@ -942,34 +834,10 @@
       "category": "other",
       "created": 735790403
     },
-    "qwen/qwen3-next-80b-a3b-instruct": {
-      "id": "qwen/qwen3-next-80b-a3b-instruct",
-      "publisher": "qwen",
-      "category": "text-generation",
-      "created": 735790403
-    },
-    "qwen/qwen3.5-397b-a17b": {
-      "id": "qwen/qwen3.5-397b-a17b",
-      "publisher": "qwen",
-      "category": "text-generation",
-      "created": 735790403
-    },
-    "sarvamai/sarvam-m": {
-      "id": "sarvamai/sarvam-m",
-      "publisher": "sarvamai",
-      "category": "text-generation",
-      "created": 735790403
-    },
     "snowflake/arctic-embed-l": {
       "id": "snowflake/arctic-embed-l",
       "publisher": "snowflake",
       "category": "embedding",
-      "created": 735790403
-    },
-    "stepfun-ai/step-3.5-flash": {
-      "id": "stepfun-ai/step-3.5-flash",
-      "publisher": "stepfun-ai",
-      "category": "text-generation",
       "created": 735790403
     },
     "stepfun-ai/step-3.7-flash": {
@@ -982,12 +850,6 @@
       "id": "thinkingmachines/inkling",
       "publisher": "thinkingmachines",
       "category": "other",
-      "created": 735790403
-    },
-    "upstage/solar-10.7b-instruct": {
-      "id": "upstage/solar-10.7b-instruct",
-      "publisher": "upstage",
-      "category": "text-generation",
       "created": 735790403
     },
     "writer/palmyra-creative-122b": {

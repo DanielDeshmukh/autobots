@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
+Fetched: 2026-07-27T10:02:49.821706 | Total: 102 models
 
 ---
 
@@ -23,10 +23,9 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 - `nvidia/nemoretriever-parse` (nvidia)
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (41)
+### Other (39)
 
 - `01-ai/yi-large` (01-ai)
-- `abacusai/dracarys-llama-3.1-70b-instruct` (abacusai)
 - `adept/fuyu-8b` (adept)
 - `ai21labs/jamba-1.5-large-instruct` (ai21labs)
 - `aisingapore/sea-lion-7b-instruct` (aisingapore)
@@ -45,7 +44,6 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 - `meta/llama2-70b` (meta)
 - `microsoft/phi-3.5-moe-instruct` (microsoft)
 - `mistralai/codestral-22b-instruct-v0.1` (mistralai)
-- `mistralai/ministral-14b-instruct-2512` (mistralai)
 - `mistralai/mistral-7b-instruct-v0.3` (mistralai)
 - `mistralai/mistral-large` (mistralai)
 - `mistralai/mistral-large-2-instruct` (mistralai)
@@ -75,22 +73,17 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 - `nvidia/llama-3.1-nemotron-safety-guard-8b-v3` (nvidia)
 - `nvidia/nemotron-3.5-content-safety` (nvidia)
 
-### Specialized (3)
+### Specialized (2)
 
-- `nvidia/gliner-pii` (nvidia)
 - `nvidia/ising-calibration-1-35b-a3b` (nvidia)
 - `nvidia/riva-translate-4b-instruct` (nvidia)
 
-### Text Generation (48)
+### Text Generation (35)
 
-- `bytedance/seed-oss-36b-instruct` (bytedance)
 - `deepseek-ai/deepseek-v4-flash` (deepseek-ai)
 - `deepseek-ai/deepseek-v4-pro` (deepseek-ai)
-- `google/gemma-2-2b-it` (google)
 - `google/gemma-3-12b-it` (google)
 - `google/gemma-3-4b-it` (google)
-- `google/gemma-3n-e2b-it` (google)
-- `google/gemma-3n-e4b-it` (google)
 - `google/gemma-4-31b-it` (google)
 - `ibm/granite-3.0-8b-instruct` (ibm)
 - `ibm/granite-34b-code-instruct` (ibm)
@@ -99,13 +92,9 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 - `meta/llama-3.2-1b-instruct` (meta)
 - `meta/llama-3.2-3b-instruct` (meta)
 - `meta/llama-3.3-70b-instruct` (meta)
-- `meta/llama-4-maverick-17b-128e-instruct` (meta)
-- `minimaxai/minimax-m2.7` (minimaxai)
 - `minimaxai/minimax-m3` (minimaxai)
 - `mistralai/mistral-medium-3.5-128b` (mistralai)
 - `mistralai/mistral-nemotron` (mistralai)
-- `mistralai/mistral-small-4-119b-2603` (mistralai)
-- `mistralai/mixtral-8x7b-instruct-v0.1` (mistralai)
 - `moonshotai/kimi-k2.6` (moonshotai)
 - `nvidia/llama-3.1-nemotron-51b-instruct` (nvidia)
 - `nvidia/llama-3.1-nemotron-70b-instruct` (nvidia)
@@ -121,12 +110,7 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 - `nvidia/nvidia-nemotron-nano-9b-v2` (nvidia)
 - `openai/gpt-oss-120b` (openai)
 - `openai/gpt-oss-20b` (openai)
-- `qwen/qwen3-next-80b-a3b-instruct` (qwen)
-- `qwen/qwen3.5-397b-a17b` (qwen)
-- `sarvamai/sarvam-m` (sarvamai)
-- `stepfun-ai/step-3.5-flash` (stepfun-ai)
 - `stepfun-ai/step-3.7-flash` (stepfun-ai)
-- `upstage/solar-10.7b-instruct` (upstage)
 - `writer/palmyra-creative-122b` (writer)
 - `writer/palmyra-fin-70b-32k` (writer)
 - `writer/palmyra-med-70b` (writer)
@@ -154,10 +138,6 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 
 - `01-ai/yi-large` [other]
 
-### abacusai (1)
-
-- `abacusai/dracarys-llama-3.1-70b-instruct` [other]
-
 ### adept (1)
 
 - `adept/fuyu-8b` [other]
@@ -178,10 +158,6 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 
 - `bigcode/starcoder2-15b` [other]
 
-### bytedance (1)
-
-- `bytedance/seed-oss-36b-instruct` [text-generation]
-
 ### databricks (1)
 
 - `databricks/dbrx-instruct` [other]
@@ -192,18 +168,15 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 - `deepseek-ai/deepseek-v4-flash` [text-generation]
 - `deepseek-ai/deepseek-v4-pro` [text-generation]
 
-### google (12)
+### google (9)
 
 - `google/codegemma-1.1-7b` [other]
 - `google/codegemma-7b` [other]
 - `google/deplot` [other]
 - `google/diffusiongemma-26b-a4b-it` [other]
-- `google/gemma-2-2b-it` [text-generation]
 - `google/gemma-2b` [other]
 - `google/gemma-3-12b-it` [text-generation]
 - `google/gemma-3-4b-it` [text-generation]
-- `google/gemma-3n-e2b-it` [text-generation]
-- `google/gemma-3n-e4b-it` [text-generation]
 - `google/gemma-4-31b-it` [text-generation]
 - `google/recurrentgemma-2b` [other]
 
@@ -214,7 +187,7 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 - `ibm/granite-34b-code-instruct` [text-generation]
 - `ibm/granite-8b-code-instruct` [other]
 
-### meta (11)
+### meta (10)
 
 - `meta/codellama-70b` [other]
 - `meta/llama-3.1-70b-instruct` [text-generation]
@@ -224,7 +197,6 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 - `meta/llama-3.2-3b-instruct` [text-generation]
 - `meta/llama-3.2-90b-vision-instruct` [vision]
 - `meta/llama-3.3-70b-instruct` [text-generation]
-- `meta/llama-4-maverick-17b-128e-instruct` [text-generation]
 - `meta/llama-guard-4-12b` [safety]
 - `meta/llama2-70b` [other]
 
@@ -234,23 +206,19 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 - `microsoft/phi-3-vision-128k-instruct` [vision]
 - `microsoft/phi-3.5-moe-instruct` [other]
 
-### minimaxai (2)
+### minimaxai (1)
 
-- `minimaxai/minimax-m2.7` [text-generation]
 - `minimaxai/minimax-m3` [text-generation]
 
-### mistralai (10)
+### mistralai (7)
 
 - `mistralai/codestral-22b-instruct-v0.1` [other]
-- `mistralai/ministral-14b-instruct-2512` [other]
 - `mistralai/mistral-7b-instruct-v0.3` [other]
 - `mistralai/mistral-large` [other]
 - `mistralai/mistral-large-2-instruct` [other]
 - `mistralai/mistral-medium-3.5-128b` [text-generation]
 - `mistralai/mistral-nemotron` [text-generation]
-- `mistralai/mistral-small-4-119b-2603` [text-generation]
 - `mistralai/mixtral-8x22b-v0.1` [other]
-- `mistralai/mixtral-8x7b-instruct-v0.1` [text-generation]
 
 ### moonshotai (1)
 
@@ -260,12 +228,11 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 
 - `nv-mistralai/mistral-nemo-12b-instruct` [other]
 
-### nvidia (45)
+### nvidia (44)
 
 - `nvidia/ai-synthetic-video-detector` [video]
 - `nvidia/cosmos-reason2-8b` [video]
 - `nvidia/embed-qa-4` [embedding]
-- `nvidia/gliner-pii` [specialized]
 - `nvidia/ising-calibration-1-35b-a3b` [specialized]
 - `nvidia/ising-calibration-1.5-31b` [other]
 - `nvidia/llama-3.1-nemoguard-8b-content-safety` [safety]
@@ -317,31 +284,17 @@ Fetched: 2026-07-26T08:34:59.043795 | Total: 118 models
 
 - `poolside/laguna-xs-2.1` [other]
 
-### qwen (2)
-
-- `qwen/qwen3-next-80b-a3b-instruct` [text-generation]
-- `qwen/qwen3.5-397b-a17b` [text-generation]
-
-### sarvamai (1)
-
-- `sarvamai/sarvam-m` [text-generation]
-
 ### snowflake (1)
 
 - `snowflake/arctic-embed-l` [embedding]
 
-### stepfun-ai (2)
+### stepfun-ai (1)
 
-- `stepfun-ai/step-3.5-flash` [text-generation]
 - `stepfun-ai/step-3.7-flash` [text-generation]
 
 ### thinkingmachines (1)
 
 - `thinkingmachines/inkling` [other]
-
-### upstage (1)
-
-- `upstage/solar-10.7b-instruct` [text-generation]
 
 ### writer (4)
 
