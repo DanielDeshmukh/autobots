@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-07-27T10:02:49.821706",
+  "fetched_at": "2026-07-28T08:45:31.558679",
   "total": 102,
   "by_category": {
     "other": [
@@ -38,6 +38,7 @@
       "nvidia/nv-embedqa-mistral-7b-v2",
       "nvidia/nvclip",
       "nvidia/riva-translate-4b-instruct-v1.1",
+      "nvidia/riva-translate-4b-instruct-v2",
       "poolside/laguna-xs-2.1",
       "thinkingmachines/inkling",
       "writer/palmyra-med-70b-32k",
@@ -112,13 +113,12 @@
       "nvidia/ai-synthetic-video-detector",
       "nvidia/cosmos-reason2-8b"
     ],
-    "specialized": [
-      "nvidia/ising-calibration-1-35b-a3b",
-      "nvidia/riva-translate-4b-instruct"
-    ],
     "ocr": [
       "nvidia/nemoretriever-parse",
       "nvidia/nemotron-parse"
+    ],
+    "specialized": [
+      "nvidia/riva-translate-4b-instruct"
     ]
   },
   "by_publisher": {
@@ -204,7 +204,6 @@
       "nvidia/ai-synthetic-video-detector",
       "nvidia/cosmos-reason2-8b",
       "nvidia/embed-qa-4",
-      "nvidia/ising-calibration-1-35b-a3b",
       "nvidia/ising-calibration-1.5-31b",
       "nvidia/llama-3.1-nemoguard-8b-content-safety",
       "nvidia/llama-3.1-nemoguard-8b-topic-control",
@@ -244,6 +243,7 @@
       "nvidia/nvidia-nemotron-nano-9b-v2",
       "nvidia/riva-translate-4b-instruct",
       "nvidia/riva-translate-4b-instruct-v1.1",
+      "nvidia/riva-translate-4b-instruct-v2",
       "nvidia/vila"
     ],
     "openai": [
@@ -570,12 +570,6 @@
       "category": "embedding",
       "created": 735790403
     },
-    "nvidia/ising-calibration-1-35b-a3b": {
-      "id": "nvidia/ising-calibration-1-35b-a3b",
-      "publisher": "nvidia",
-      "category": "specialized",
-      "created": 735790403
-    },
     "nvidia/ising-calibration-1.5-31b": {
       "id": "nvidia/ising-calibration-1.5-31b",
       "publisher": "nvidia",
@@ -806,6 +800,12 @@
     },
     "nvidia/riva-translate-4b-instruct-v1.1": {
       "id": "nvidia/riva-translate-4b-instruct-v1.1",
+      "publisher": "nvidia",
+      "category": "other",
+      "created": 735790403
+    },
+    "nvidia/riva-translate-4b-instruct-v2": {
+      "id": "nvidia/riva-translate-4b-instruct-v2",
       "publisher": "nvidia",
       "category": "other",
       "created": 735790403

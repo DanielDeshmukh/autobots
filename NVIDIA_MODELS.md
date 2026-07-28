@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-07-27T10:02:49.821706 | Total: 102 models
+Fetched: 2026-07-28T08:45:31.558679 | Total: 102 models
 
 ---
 
@@ -23,7 +23,7 @@ Fetched: 2026-07-27T10:02:49.821706 | Total: 102 models
 - `nvidia/nemoretriever-parse` (nvidia)
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (39)
+### Other (40)
 
 - `01-ai/yi-large` (01-ai)
 - `adept/fuyu-8b` (adept)
@@ -60,6 +60,7 @@ Fetched: 2026-07-27T10:02:49.821706 | Total: 102 models
 - `nvidia/nv-embedqa-mistral-7b-v2` (nvidia)
 - `nvidia/nvclip` (nvidia)
 - `nvidia/riva-translate-4b-instruct-v1.1` (nvidia)
+- `nvidia/riva-translate-4b-instruct-v2` (nvidia)
 - `poolside/laguna-xs-2.1` (poolside)
 - `thinkingmachines/inkling` (thinkingmachines)
 - `writer/palmyra-med-70b-32k` (writer)
@@ -73,9 +74,8 @@ Fetched: 2026-07-27T10:02:49.821706 | Total: 102 models
 - `nvidia/llama-3.1-nemotron-safety-guard-8b-v3` (nvidia)
 - `nvidia/nemotron-3.5-content-safety` (nvidia)
 
-### Specialized (2)
+### Specialized (1)
 
-- `nvidia/ising-calibration-1-35b-a3b` (nvidia)
 - `nvidia/riva-translate-4b-instruct` (nvidia)
 
 ### Text Generation (35)
@@ -233,7 +233,6 @@ Fetched: 2026-07-27T10:02:49.821706 | Total: 102 models
 - `nvidia/ai-synthetic-video-detector` [video]
 - `nvidia/cosmos-reason2-8b` [video]
 - `nvidia/embed-qa-4` [embedding]
-- `nvidia/ising-calibration-1-35b-a3b` [specialized]
 - `nvidia/ising-calibration-1.5-31b` [other]
 - `nvidia/llama-3.1-nemoguard-8b-content-safety` [safety]
 - `nvidia/llama-3.1-nemoguard-8b-topic-control` [safety]
@@ -273,6 +272,7 @@ Fetched: 2026-07-27T10:02:49.821706 | Total: 102 models
 - `nvidia/nvidia-nemotron-nano-9b-v2` [text-generation]
 - `nvidia/riva-translate-4b-instruct` [specialized]
 - `nvidia/riva-translate-4b-instruct-v1.1` [other]
+- `nvidia/riva-translate-4b-instruct-v2` [other]
 - `nvidia/vila` [vision]
 
 ### openai (2)
