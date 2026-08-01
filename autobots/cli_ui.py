@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import time
 from pathlib import Path
@@ -220,6 +221,121 @@ def render_completion_panel(
     content.append(f"built in ", style=f"dim {Colors.GRAY}")
     content.append(f"{elapsed:.0f}s\n", style=f"bold {Colors.AMBER}")
 
+
+def render_cluster_dashboard(phase: str = "idle") -> Panel:
+    """Render the live cluster dashboard showing swarm status.
+    
+    Args:
+        phase: Current pipeline phase (idle/planning/building/reviewing/done/error)
+    """
+    table = Table(
+        box=box.SIMPLE,
+        show_header=False,
+        padding=(0, 1),
+    )
+    table.add_column("Cluster", style="bold")
+    table.add_column("Status")
+    table.add_column("Progress", min_width=20)
+    
+    # Determine cluster statuses based on phase
+    cluster_statuses = {
+        "idle":     {c: "idle" for c in CLUSTERS},
+        "starting": {"Optimus": "thinking", **{c: "idle" for c in CLUSTERS if c != "Optimus"}},
+        "planning": {"Optimus": "working", **{c: "idle" for c in CLUSTERS if c != "Optimus"}},
+        "building": {
+            "Optimus": "done",
+            "Jazz": "working",
+            "Ratchet": "working",
+            "UltraMagnus": "working",
+            "Perceptor": "thinking",
+            **{c: "idle" for c in CLUSTERS if c not in ["Optimus", "Jazz", "Ratchet", "UltraMagnus", "Perceptor"]},
+        },
+        "reviewing": {
+            "Optimus": "done",
+            "Jazz": "done",
+            "Ratchet": "done",
+            "UltraMagnus": "done",
+            "RedAlert": "working",
+            "Perceptor": "thinking",
+            **{c: "idle" for c in CLUSTERS if c not in ["Optimus", "Jazz", "Ratchet", "UltraMagnus", "RedAlert", "Perceptor"]},
+        },
+        "done": {c: "done" for c in CLUSTERS},
+        "error": {
+            **{c: "done" for c in CLUSTERS if c not in ["RedAlert", "Ratchet"]},
+            "RedAlert": "error",
+            "Ratchet": "working",
+        },
+    }
+    
+    statuses = cluster_statuses.get(phase, cluster_statuses["idle"])
+    
+    for name, info in CLUSTERS.items():
+        status = statuses.get(name, "idle")
+        
+        status_icon = {
+            "idle":     "[dim]○[/]",
+            "thinking": f"[{Colors.AMBER}]◎[/]",
+            "working":  f"[{Colors.BLUE}]●[/]",
+            "done":     f"[{Colors.EMERALD}]✓[/]",
+            "error":    f"[{Colors.RED}]✗[/]",
+        }.get(status, "[dim]○[/]")
+        
+        status_text = {
+            "idle":     "[dim]Waiting[/]",
+            "thinking": f"[bold {Colors.AMBER}]Thinking...[/]",
+            "working":  f"[bold {Colors.BLUE}]Working...[/]",
+            "done":     f"[bold {Colors.EMERALD}]Done[/]",
+            "error":    f"[bold {Colors.RED}]Error[/]",
+        }.get(status, "[dim]Waiting[/]")
+        
+        progress = _get_progress_bar(status)
+        
+        table.add_row(
+            f"[{info['color']}]{info['icon']} {name}[/]",
+            f"{status_icon} {status_text}",
+            progress,
+        )
+    
+    # Pipeline stages
+    stage_map = {
+        "idle": 0,
+        "starting": 0,
+        "planning": 0,
+        "building": 1,
+        "reviewing": 2,
+        "done": 3,
+        "error": 2,
+    }
+    current_stage = stage_map.get(phase, 0)
+    
+    stages_text = Text()
+    for i, stage in enumerate(PIPELINE_STAGES):
+        if i < current_stage:
+            stages_text.append(" ■■■■■ ", style=Colors.EMERALD)
+            stages_text.append(f"{stage} → ", style=f"bold {Colors.EMERALD}")
+        elif i == current_stage:
+            stages_text.append(" ■■■■■ ", style=Colors.AMBER)
+            stages_text.append(f"{stage} → ", style=f"bold {Colors.AMBER}")
+        else:
+            stages_text.append(" □□□□□ ", style=Colors.GRAY)
+            stages_text.append(f"{stage} → ", style=f"dim {Colors.GRAY}")
+    
+    if stages_text.plain.endswith(" → "):
+        stages_text.plain = stages_text.plain[:-3]
+    
+    # Build the panel
+    content = Text()
+    content.append_text(table)
+    content.append("\n")
+    content.append_text(stages_text)
+    
+    return Panel(
+        content,
+        title="[bold]Swarm Pipeline[/]",
+        border_style=Colors.AMBER if phase not in ("done", "error") else Colors.EMERALD if phase == "done" else Colors.RED,
+        box=box.ROUNDED,
+    )
+
     stats = Text()
     stats.append(f"    {file_count} files written", style=f"{Colors.EMERALD}")
     if errors > 0:
@@ -416,3 +532,179 @@ def _save_api_key(api_key: str) -> None:
     
     content = "\n".join(lines).strip() + "\n"
     env_path.write_text(content, encoding="utf-8")
+
+
+# ─── Build Command ───────────────────────────────────────────────────────────
+
+def run_build(args: list[str], console: Console) -> int:
+    """Run the 'autobots build' command.
+    
+    Usage: autobots build <project-name> [--dir <output-dir>]
+    """
+    # Check first run
+    if is_first_run():
+        if not run_first_run_wizard(console):
+            return 1
+    
+    # Parse arguments
+    project_name = None
+    output_dir = None
+    
+    i = 0
+    while i < len(args):
+        if args[i] == "--dir" and i + 1 < len(args):
+            output_dir = Path(args[i + 1]).expanduser().resolve()
+            i += 2
+        elif not args[i].startswith("-"):
+            project_name = args[i]
+            i += 1
+        else:
+            console.print(f"[bold {Colors.RED}]Unknown flag: {args[i]}[/]")
+            return 1
+    
+    if not project_name:
+        console.print()
+        console.print(
+            Panel(
+                "[bold]Usage:[/]\n\n"
+                "  [bold #3B82F6]autobots build[/] [bold]<project-name>[/]\n\n"
+                "[dim]Examples:[/]\n"
+                "  autobots build calculator\n"
+                "  autobots build todo-app\n"
+                "  autobots build \"weather dashboard\"",
+                title="Build Command",
+                border_style=Colors.BLUE,
+            )
+        )
+        return 1
+    
+    # Resolve output directory
+    if not output_dir:
+        projects_dir = get_projects_dir()
+        output_dir = projects_dir / project_name
+    
+    # Check if directory exists
+    if output_dir.exists() and any(output_dir.iterdir()):
+        console.print(
+            f"[bold {Colors.AMBER}]⚠ Directory already exists:[/] {output_dir}\n"
+            f"[dim]Use a different name or remove the directory.[/]"
+        )
+        return 1
+    
+    # Check for NVIDIA API key
+    api_key = os.getenv("NVIDIA_API_KEY", "").strip()
+    if not api_key:
+        try:
+            from dotenv import dotenv_values
+            try:
+                from .cli import ENGINE_ENV_PATH
+                env_path = ENGINE_ENV_PATH
+            except ImportError:
+                env_path = Path(__file__).resolve().parent.parent / ".env"
+            
+            if env_path.exists():
+                env_values = dotenv_values(env_path)
+                api_key = (env_values.get("NVIDIA_API_KEY") or "").strip()
+        except Exception:
+            pass
+    
+    if not api_key:
+        console.print(
+            f"[bold {Colors.RED}]✗ No NVIDIA API key found.[/]\n\n"
+            f"[dim]Set it with:[/]\n"
+            f"  export NVIDIA_API_KEY=your-key-here\n\n"
+            f"[dim]Or run 'autobots config' to set it.[/]"
+        )
+        return 1
+    
+    # Show build header
+    console.print()
+    console.print(Align.center(LOGO))
+    console.print()
+    
+    console.print(
+        Panel(
+            f"[bold #3B82F6]Building:[/] [bold]{project_name}[/]\n"
+            f"[dim #64748B]Output:[/] {output_dir}\n"
+            f"[dim #64748B]Models:[/] 9 clusters, 100+ NIM models",
+            border_style=Colors.AMBER,
+            box=box.ROUNDED,
+        )
+    )
+    console.print()
+    
+    # Run the swarm pipeline
+    return _execute_swarm(project_name, output_dir, console)
+
+
+def _execute_swarm(project_name: str, output_dir: Path, console: Console) -> int:
+    """Execute the swarm pipeline with live dashboard."""
+    from .swarm_pipeline import run_pipeline
+    
+    start_time = time.time()
+    
+    try:
+        # Run pipeline
+        with Live(
+            render_cluster_dashboard("starting"),
+            console=console,
+            refresh_per_second=4,
+        ) as live:
+            # Update dashboard while pipeline runs
+            # We'll run the pipeline in a thread and update the dashboard
+            result = _run_pipeline_with_updates(
+                goal=f"Build a {project_name} application",
+                output_dir=str(output_dir),
+                live=live,
+                console=console,
+            )
+        
+        elapsed = time.time() - start_time
+        
+        # Show completion
+        if result is not None:
+            file_count = len(list(output_dir.rglob("*"))) if output_dir.exists() else 0
+            console.print()
+            console.print(
+                render_completion_panel(
+                    project_name=project_name,
+                    project_path=output_dir,
+                    file_count=file_count,
+                    elapsed=elapsed,
+                )
+            )
+            return 0
+        else:
+            console.print(
+                f"\n[bold {Colors.RED}]✗ Build failed. Check logs for details.[/]"
+            )
+            return 1
+            
+    except KeyboardInterrupt:
+        console.print(f"\n[bold {Colors.AMBER}]Build cancelled.[/]")
+        return 1
+    except Exception as e:
+        console.print(f"\n[bold {Colors.RED}]Error: {e}[/]")
+        return 1
+
+
+def _run_pipeline_with_updates(
+    goal: str,
+    output_dir: str,
+    live: Live,
+    console: Console,
+):
+    """Run the pipeline and update the live dashboard."""
+    from .swarm_pipeline import run_pipeline
+    
+    # Simple approach: run pipeline and show progress
+    # In a real implementation, we'd hook into pipeline events
+    live.update(render_cluster_dashboard("planning"))
+    
+    try:
+        result = run_pipeline(goal, output_dir, max_healing_rounds=3)
+        live.update(render_cluster_dashboard("done"))
+        return result
+    except Exception as e:
+        live.update(render_cluster_dashboard("error"))
+        raise
