@@ -609,7 +609,7 @@ def run_first_run_wizard(console: Console) -> bool:
     
     from rich.prompt import Prompt
     projects_input = Prompt.ask(
-        "  [bold #3B82F6]→[/] Projects directory",
+        "  [bold #3B82F6]>[/] Projects directory",
         default=default_dir,
         console=console,
     )
