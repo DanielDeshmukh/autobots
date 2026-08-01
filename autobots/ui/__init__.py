@@ -48,6 +48,14 @@ from .status import render_status
 from .rewind import render_rewind_picker, render_undo_confirmation
 from .layout import get_layout_mode, LayoutMode
 from .renderers import PlainRenderer, JsonRenderer
+from .events import EventBus, EventType, Event, get_event_bus
+from .app import App, AppState
+from .terminal import (
+    set_title, reset_title, hide_cursor, show_cursor,
+    osc_link, clear_screen, clear_line, bell,
+    is_no_color, is_dumb_terminal,
+    get_terminal_width, get_terminal_height,
+)
 
 __all__ = [
     # Theme & Symbols
@@ -113,4 +121,16 @@ __all__ = [
     
     # Renderers
     "PlainRenderer", "JsonRenderer",
+    
+    # Events
+    "EventBus", "EventType", "Event", "get_event_bus",
+    
+    # App
+    "App", "AppState",
+    
+    # Terminal
+    "set_title", "reset_title", "hide_cursor", "show_cursor",
+    "osc_link", "clear_screen", "clear_line", "bell",
+    "is_no_color", "is_dumb_terminal",
+    "get_terminal_width", "get_terminal_height",
 ]
