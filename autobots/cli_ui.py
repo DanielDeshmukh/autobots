@@ -796,81 +796,41 @@ def run_build(args: list[str], console: Console) -> int:
 
 
 def _execute_swarm(project_name: str, output_dir: Path, console: Console) -> int:
-    """Execute the swarm pipeline with live dashboard."""
+    """Execute the swarm pipeline with the new UI App controller."""
     from .swarm_pipeline import run_pipeline
+    from .ui.app import App
+    from .ui.theme import load_theme
     
-    start_time = time.time()
-    monitor = SwarmMonitor(console)
+    theme = load_theme()
+    app = App(console, theme=theme)
     
     try:
-        # Start monitoring
-        monitor.start(f"Building {project_name}...")
-        monitor.update_phase("planning")
-        monitor.cluster_status("Optimus", "thinking")
-        monitor.log("Planning project structure...")
+        # Start the app
+        app.start(project_name, str(output_dir))
         
-        # Run pipeline
-        result = _run_pipeline_with_updates(
-            goal=f"Build a {project_name} application",
-            output_dir=str(output_dir),
-            monitor=monitor,
+        # Run pipeline (events are emitted automatically)
+        result = run_pipeline(
+            f"Build a {project_name} application",
+            str(output_dir),
+            max_healing_rounds=3,
         )
-        
-        elapsed = time.time() - start_time
         
         # Show completion
         if result is not None:
-            file_count = len(list(output_dir.rglob("*"))) if output_dir.exists() else 0
-            monitor.finish(success=True)
-            console.print()
-            console.print(
-                render_completion_panel(
-                    project_name=project_name,
-                    project_path=output_dir,
-                    file_count=file_count,
-                    elapsed=elapsed,
-                )
-            )
+            app.finish(success=True)
             return 0
         else:
-            monitor.finish(success=False)
-            console.print(
-                f"\n[bold {Colors.RED}]✗ Build failed. Check logs for details.[/]"
-            )
+            app.finish(success=False)
             return 1
             
     except KeyboardInterrupt:
-        monitor.finish(success=False)
-        console.print(f"\n[bold {Colors.AMBER}]Build cancelled.[/]")
+        app.finish(success=False)
+        console.print(f"\n[bold {theme.warning}]Build cancelled.[/]")
         return 1
     except Exception as e:
-        monitor.finish(success=False)
-        console.print(f"\n[bold {Colors.RED}]Error: {e}[/]")
+        app.finish(success=False)
+        console.print(f"\n[bold {theme.error}]Error: {e}[/]")
         return 1
-
-
-def _run_pipeline_with_updates(
-    goal: str,
-    output_dir: str,
-    monitor: SwarmMonitor,
-):
-    """Run the pipeline and update the monitor."""
-    from .swarm_pipeline import run_pipeline
-    
-    try:
-        # Update status as pipeline progresses
-        monitor.cluster_status("Optimus", "working")
-        monitor.log("Optimus: Analyzing requirements...")
-        
-        result = run_pipeline(goal, output_dir, max_healing_rounds=3)
-        
-        monitor.cluster_status("Optimus", "done")
-        monitor.update_phase("done")
-        monitor.log("Build complete!")
-        return result
-    except Exception as e:
-        monitor.log(f"Error: {e}")
-        raise
     except Exception as e:
         live.update(render_cluster_dashboard("error"))
         raise
