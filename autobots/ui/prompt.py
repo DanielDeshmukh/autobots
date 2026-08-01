@@ -5,7 +5,7 @@ from __future__ import annotations
 from rich.console import Console
 from rich.text import Text
 
-from ..theme import Theme, load_theme
+from .theme import Theme, load_theme
 
 
 def render_status_line(
@@ -67,7 +67,8 @@ def render_prompt_symbol(
     if theme is None:
         theme = load_theme()
     
-    console.print(f"[bold {theme.brand}]>{[/bold {theme.brand}] ", end="")
+    brand = theme.brand
+    console.print(f"[bold {brand}]>[/bold {brand}] ", end="")
 
 
 def render_multiline_hint(console: Console, theme: Theme | None = None) -> None:

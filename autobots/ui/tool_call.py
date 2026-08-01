@@ -6,8 +6,8 @@ from rich.console import Console
 from rich.syntax import Syntax
 from rich.text import Text
 
-from ..theme import Theme, load_theme
-from ..symbols import get_symbols
+from .theme import Theme, load_theme
+from .symbols import get_symbols
 
 
 # ─── Compact Tool Calls ──────────────────────────────────────────────────────

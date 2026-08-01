@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from rich.console import Console
 
-from ..theme import Theme, load_theme
+from .theme import Theme, load_theme
 
 
 # ─── Plain Output ────────────────────────────────────────────────────────────

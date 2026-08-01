@@ -10,8 +10,8 @@ from rich.console import Console, Group
 from rich.panel import Panel
 from rich.text import Text
 
-from ..theme import Theme, load_theme
-from ..symbols import get_symbols
+from .theme import Theme, load_theme
+from .symbols import get_symbols
 
 
 # ─── ASCII Mark ──────────────────────────────────────────────────────────────

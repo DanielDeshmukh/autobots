@@ -9,7 +9,7 @@ from typing import Optional
 from rich.console import Console
 from rich.text import Text
 
-from ..theme import Theme, load_theme
+from .theme import Theme, load_theme
 
 
 def render_file_mention_picker(

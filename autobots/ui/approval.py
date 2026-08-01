@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
-from ..theme import Theme, load_theme
+from .theme import Theme, load_theme
 
 
 def render_file_edit_prompt(
@@ -66,7 +66,7 @@ def render_file_edit_prompt(
     console.print()
     console.print("Do you want Autobots to make this edit?")
     console.print()
-    console.print(f"[bold {theme.brand}]>{[/bold {theme.brand}] 1. Yes")
+    console.print(f"[bold theme.brand]>[/bold theme.brand]] 1. Yes")
     console.print(f"  2. Yes, allow file edits for this session")
     console.print(f"  3. No, and tell Autobots what to do differently")
     console.print()
@@ -121,7 +121,7 @@ def render_shell_command_prompt(
         )
     )
     console.print()
-    console.print(f"[bold {theme.brand}]>{[/bold {theme.brand}] 1. Run this command")
+    console.print(f"[bold theme.brand]>[/bold theme.brand]] 1. Run this command")
     console.print(f"  2. Always allow this exact command during this session")
     console.print(f"  3. Deny and provide instructions")
     console.print()
@@ -170,4 +170,4 @@ def render_feedback_prompt(console: Console, theme: Theme | None = None) -> None
     if theme is None:
         theme = load_theme()
     console.print(f"[dim {theme.secondary}]Tell Autobots what to do instead[/]")
-    console.print(f"[bold {theme.brand}]>{[/bold {theme.brand}] ", end="")
+    console.print(f"[bold theme.brand]>[/bold theme.brand]] ", end="")

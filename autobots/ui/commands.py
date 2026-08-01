@@ -5,7 +5,7 @@ from __future__ import annotations
 from rich.console import Console
 from rich.text import Text
 
-from ..theme import Theme, load_theme
+from .theme import Theme, load_theme
 
 
 # ─── Command Definitions ─────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ def render_command_palette(
         theme = load_theme()
     
     console.print()
-    console.print(f"[bold {theme.brand}]>{[/bold {theme.brand}] /[filter_text]")
+    console.print(f"[bold theme.brand]>[/bold theme.brand]] /[filter_text]")
     console.print()
     
     for category, commands in COMMANDS.items():

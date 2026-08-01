@@ -56,6 +56,12 @@ from .terminal import (
     is_no_color, is_dumb_terminal,
     get_terminal_width, get_terminal_height,
 )
+from .legacy import (
+    ConsoleInstance, _select, _text, _password, _read_menu_key,
+    render_plan, render_registry_summary, render_stage_event,
+    render_phase_panel, render_session_status, render_execution_result,
+    render_model_validation_report, render_engage_screen, engage_prompt,
+)
 
 __all__ = [
     # Theme & Symbols

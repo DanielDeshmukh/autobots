@@ -5,8 +5,8 @@ from __future__ import annotations
 from rich.console import Console
 from rich.text import Text
 
-from ..theme import Theme, load_theme
-from ..symbols import get_symbols
+from .theme import Theme, load_theme
+from .symbols import get_symbols
 
 
 def render_completion(

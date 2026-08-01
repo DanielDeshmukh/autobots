@@ -8,8 +8,8 @@ from rich.panel import Panel
 from rich.text import Text
 from rich.syntax import Syntax
 
-from ..theme import Theme, load_theme
-from ..symbols import get_symbols, Symbols
+from .theme import Theme, load_theme
+from .symbols import get_symbols, Symbols
 
 
 def render_user_message(console: Console, text: str, theme: Theme | None = None) -> None:
@@ -20,7 +20,7 @@ def render_user_message(console: Console, text: str, theme: Theme | None = None)
     """
     if theme is None:
         theme = load_theme()
-    console.print(f"[bold {theme.brand}]>{[/bold {theme.brand}] {text}")
+    console.print(f"[bold theme.brand]>[/bold theme.brand]] {text}")
 
 
 def render_assistant_message(console: Console, text: str, theme: Theme | None = None) -> None:

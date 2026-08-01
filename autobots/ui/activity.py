@@ -5,8 +5,8 @@ from __future__ import annotations
 from rich.console import Console, Group
 from rich.text import Text
 
-from ..theme import Theme, load_theme
-from ..symbols import get_symbols, Symbols
+from .theme import Theme, load_theme
+from .symbols import get_symbols, Symbols
 
 
 # ─── Cluster Definitions ─────────────────────────────────────────────────────
@@ -95,18 +95,15 @@ def render_swarm_compact(
             
             # Cluster name with role color
             color = CLUSTERS.get(name, {}).get("color", theme.primary)
-            line.append(f"{name}", style=f"bold {color}")
+            line.append(f"{name:<14}", style=f"bold {color}")
             
             # Task description
             if task:
-                padding = max(1, 30 - len(name))
-                line.append(" " * padding, style=f"dim {theme.secondary}")
-                line.append(task, style=f"{theme.secondary}")
+                line.append(task[:25], style=f"{theme.secondary}")
             
-            # Status
-            padding2 = max(1, 55 - len(name) - len(task) - 2)
-            line.append(" " * padding2, style=f"dim {theme.secondary}")
-            line.append(f"{status_icon} {status}", style=status_style)
+            # Status (right-aligned)
+            status_text = f"{status_icon} {status}"
+            line.append(f"  {status_text}", style=status_style)
             
             console.print(line)
     

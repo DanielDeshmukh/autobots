@@ -5,7 +5,7 @@ from __future__ import annotations
 from rich.console import Console
 from rich.text import Text
 
-from ..theme import Theme, load_theme
+from .theme import Theme, load_theme
 
 
 # ─── Cluster Definitions ─────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ def render_model_picker(
     for profile, desc in MODEL_PROFILES.items():
         is_current = profile == current_profile
         if is_current:
-            console.print(f"[bold {theme.brand}]>{[/bold {theme.brand}] [bold]{profile}[/]  {desc}")
+            console.print(f"[bold theme.brand]>[/bold theme.brand]] [bold]{profile}[/]  {desc}")
         else:
             console.print(f"  [dim]{profile}[/]  [dim {theme.secondary}]{desc}[/]")
     

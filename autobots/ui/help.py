@@ -5,7 +5,7 @@ from __future__ import annotations
 from rich.console import Console
 from rich.text import Text
 
-from ..theme import Theme, load_theme
+from .theme import Theme, load_theme
 
 
 # ─── Keyboard Shortcuts ──────────────────────────────────────────────────────
@@ -100,6 +100,6 @@ def render_mode_switch(
     console.print(f"  [dim {theme.secondary}]Autobots will continue through phase gates without confirmation.[/]")
     console.print(f"  [dim {theme.secondary}]Tool permissions, denied commands, workspace boundaries, and safety policies remain active.[/]")
     console.print()
-    console.print(f"[bold {theme.brand}]>{[/bold {theme.brand}] 1. Switch for this session")
+    console.print(f"[bold theme.brand]>[/bold theme.brand]] 1. Switch for this session")
     console.print(f"  2. Cancel")
     console.print()
