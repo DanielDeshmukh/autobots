@@ -1417,6 +1417,7 @@ def run_list() -> None:
     console = Console()
 
     commands = [
+        ("build", "Build a complete project from a single sentence: autobots build <name>"),
         ("init", "Check required context files for a target project"),
         ("plan", "Read roadmap.md, select next phase, create task IDs in task-registry.json"),
         ("run", "Run task by ID: autobots run <taskId> [--supervised|--autonomous|--milestone]"),
@@ -2914,7 +2915,13 @@ def main(argv: list[str] | None = None) -> int:
     setup_logging()
     args = argv or sys.argv[1:]
     if not args:
-        run_list()
+        from .cli_ui import render_logo, get_console, is_first_run, run_first_run_wizard
+        console = get_console()
+        if is_first_run():
+            run_first_run_wizard(console)
+        else:
+            render_logo(console)
+            run_list()
         return 0
 
     global VERBOSE, QUIET
@@ -2961,7 +2968,10 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
     try:
-        if command == "init":
+        if command == "build":
+            from .cli_ui import run_build
+            return run_build(args[1:], console)
+        elif command == "init":
             run_init(args)
         elif command == "plan":
             run_plan(args)
