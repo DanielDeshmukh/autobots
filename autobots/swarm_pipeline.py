@@ -16,6 +16,17 @@ from enum import Enum
 
 from openai import OpenAI
 
+# -- Event Bus ---------------------------------------------------------------
+
+from .ui.events import get_event_bus, EventType
+
+def _emit(event_type: EventType, data: dict = None):
+    """Emit an event to the UI event bus."""
+    try:
+        get_event_bus().emit(event_type, data or {})
+    except Exception:
+        pass  # Never let UI errors break the pipeline
+
 # -- Logging ----------------------------------------------------------------
 
 LOG_DIR = Path(__file__).parent.parent / "logs"
@@ -1250,11 +1261,19 @@ def run_pipeline(goal, output_dir, max_healing_rounds=3):
             logger.info(f"\n{'='*60}")
             logger.info(f"ROUND 1: INITIAL PLANNING")
             logger.info(f"{'='*60}")
+            _emit(EventType.PLAN_STARTED, {"task_count": 0})
             tasks, type_contracts, architecture = plan_tasks(goal, rate_limiter)
             if not tasks:
+                _emit(EventType.RUN_FAILED, {"error": "No tasks planned"})
                 logger.error("No tasks planned. Aborting.")
                 return []
+            _emit(EventType.PLAN_COMPLETED, {
+                "steps": [t.description for t in tasks],
+                "changes": [{"status": "A", "path": f} for t in tasks for f in t.files[:1]],
+            })
         else:
+            _emit(EventType.HEALING_STARTED, {"round": healing_round})
+            _emit(EventType.BUILD_FAILED, {"error": build_errors[:200]})
             logger.info(f"\n{'='*60}")
             logger.info(f"HEALING ROUND {healing_round}: REMEDIATION")
             logger.info(f"{'='*60}")
@@ -1325,6 +1344,7 @@ DESIGN RULES:
 
         # Execute tasks
         logger.info(f"\n[EXEC] Running {len(tasks)} tasks...")
+        _emit(EventType.BUILD_STARTED, {"task_count": len(tasks)})
         write_lock = threading.Lock()
         max_concurrent = 2
         semaphore = threading.Semaphore(max_concurrent)
@@ -1348,6 +1368,7 @@ DESIGN RULES:
                                         target = project_path / path
                                         target.parent.mkdir(parents=True, exist_ok=True)
                                         target.write_text(content, encoding="utf-8")
+                                        _emit(EventType.FILE_WRITTEN, {"path": path})
                                         logger.info(f"  -> {path}")
                                 # Create skill from successful task
                                 create_skill_from_task(t, validated_files, project_path)
@@ -1396,6 +1417,7 @@ DESIGN RULES:
 
         build_ok, build_errors = build_project(project_path)
         if build_ok:
+            _emit(EventType.BUILD_COMPLETED, {})
             logger.info(f"\n{'='*60}")
             logger.info(f"BUILD SUCCEEDED -- PROJECT COMPLETE")
             logger.info(f"{'='*60}")
@@ -1439,6 +1461,14 @@ DESIGN RULES:
     for t in all_tasks:
         status = "[OK]" if t.status == "done" else "[FAIL]" if t.status == "failed" else "[WAIT]"
         logger.info(f"  {status} {t.task_id} [{t.cluster}/{t.model_used}] {t.elapsed:.1f}s")
+
+    _emit(EventType.RUN_COMPLETED, {
+        "summary": f"Built {goal}",
+        "files_changed": len(all_files),
+        "tasks_done": len(done),
+        "tasks_failed": len(failed),
+        "build_ok": build_ok,
+    })
 
     summary = {
         "goal": goal,
