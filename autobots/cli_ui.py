@@ -249,3 +249,170 @@ def render_wizard_step(step: int, total: int, title: str) -> Panel:
         border_style=Colors.BLUE,
         box=box.ROUNDED,
     )
+
+
+# ─── First-Run Wizard ────────────────────────────────────────────────────────
+
+CONFIG_DIR = Path.home() / ".autobots"
+CONFIG_FILE = CONFIG_DIR / "config.toml"
+
+
+def _load_preferences() -> dict:
+    """Load saved preferences from config file."""
+    if not CONFIG_FILE.exists():
+        return {}
+    try:
+        import tomllib
+    except ImportError:
+        try:
+            import tomli as tomllib
+        except ImportError:
+            return {}
+    
+    with open(CONFIG_FILE, "rb") as f:
+        data = tomllib.load(f)
+    return data.get("autobots", {})
+
+
+def _save_preferences(prefs: dict) -> None:
+    """Save preferences to config file."""
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    
+    lines = ["[autobots]"]
+    for key, value in prefs.items():
+        if isinstance(value, str):
+            lines.append(f'{key} = "{value}"')
+        else:
+            lines.append(f"{key} = {value}")
+    
+    CONFIG_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def is_first_run() -> bool:
+    """Check if this is the first time running autobots."""
+    prefs = _load_preferences()
+    return "projects_dir" not in prefs
+
+
+def get_projects_dir() -> Path:
+    """Get the configured projects directory."""
+    prefs = _load_preferences()
+    if "projects_dir" in prefs:
+        return Path(prefs["projects_dir"]).expanduser().resolve()
+    return Path.home() / "projects"
+
+
+def run_first_run_wizard(console: Console) -> bool:
+    """Run the interactive first-run setup wizard.
+    
+    Returns True if setup completed, False if cancelled.
+    """
+    console.print()
+    console.print(Align.center(LOGO))
+    console.print()
+    
+    console.print(
+        Panel(
+            "[bold]Welcome to Autobots![/]\n\n"
+            "I'm a swarm of 9 specialized AI models that build complete\n"
+            "projects from a single sentence. No code writing needed.\n\n"
+            "[dim]Let's get you set up. This only takes a moment.[/]",
+            border_style=Colors.BLUE,
+            box=box.ROUNDED,
+        )
+    )
+    console.print()
+    
+    # Step 1: Projects directory
+    console.print(render_wizard_step(1, 2, "Projects Directory"))
+    console.print()
+    
+    default_dir = str(Path.home() / "projects")
+    console.print(
+        f"  [dim]Where do you want projects built?[/]\n"
+        f"  [dim]I'll create a subfolder for each project.[/]\n"
+    )
+    
+    from rich.prompt import Prompt
+    projects_input = Prompt.ask(
+        "  [bold #3B82F6]→[/] Projects directory",
+        default=default_dir,
+        console=console,
+    )
+    projects_dir = Path(projects_input).expanduser().resolve()
+    
+    # Create if doesn't exist
+    if not projects_dir.exists():
+        projects_dir.mkdir(parents=True, exist_ok=True)
+        console.print(f"  [dim #64748B]Created {projects_dir}[/]")
+    
+    console.print(f"  [bold #10B981]✓[/] Projects will go to: [bold]{projects_dir}[/]")
+    console.print()
+    
+    # Step 2: API key
+    console.print(render_wizard_step(2, 2, "NVIDIA API Key"))
+    console.print()
+    
+    console.print(
+        f"  [dim]Autobots uses NVIDIA NIM models to generate code.[/]\n"
+        f"  [dim]Get your free key at: [link]https://build.nvidia.com[/link][/]\n"
+    )
+    
+    from rich.prompt import Password
+    api_key = Password.ask(
+        "  [bold #3B82F6]→[/] NVIDIA API Key",
+        console=console,
+    )
+    
+    if api_key and api_key.strip():
+        _save_api_key(api_key.strip())
+        console.print(f"  [bold #10B981]✓[/] API key saved")
+    else:
+        console.print(f"  [dim #64748B]Skipped. Set NVIDIA_API_KEY env var later.[/]")
+    
+    console.print()
+    
+    # Save preferences
+    _save_preferences({
+        "projects_dir": str(projects_dir),
+        "setup_complete": True,
+    })
+    
+    console.print(
+        Panel(
+            "[bold #10B981]Setup complete![/]\n\n"
+            "Try: [bold #3B82F6]autobots build calculator[/]",
+            border_style=Colors.EMERALD,
+            box=box.ROUNDED,
+        )
+    )
+    console.print()
+    
+    return True
+
+
+def _save_api_key(api_key: str) -> None:
+    """Save API key to .env file in engine root."""
+    try:
+        from .cli import ENGINE_ENV_PATH
+        env_path = ENGINE_ENV_PATH
+    except ImportError:
+        env_path = Path(__file__).resolve().parent.parent / ".env"
+    
+    lines: list[str] = []
+    if env_path.exists():
+        lines = env_path.read_text(encoding="utf-8").splitlines()
+    
+    # Update or add API key
+    updated = False
+    for index, line in enumerate(lines):
+        if line.startswith("NVIDIA_API_KEY="):
+            lines[index] = f"NVIDIA_API_KEY={api_key}"
+            updated = True
+            break
+    
+    if not updated:
+        lines.append(f"NVIDIA_API_KEY={api_key}")
+    
+    content = "\n".join(lines).strip() + "\n"
+    env_path.write_text(content, encoding="utf-8")
