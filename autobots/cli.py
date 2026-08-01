@@ -1060,24 +1060,81 @@ def _parse_run_args(args: list[str]) -> tuple[str | None, str | None, str]:
     return target_path, task_id, mode
 
 
+def _run_swarm(args: list[str], console: Console) -> None:
+    """Run the multi-model swarm orchestrator."""
+    from .orchestrator import orchestrate
+
+    # Parse args: goal and output directory
+    if len(args) < 2:
+        console.print(
+            Panel.fit(
+                "Usage: autobots run --swarm 'Build a todo app' D:\\projects\\output\n\n"
+                "Arguments:\n"
+                "  goal    Description of what to build\n"
+                "  output  Output directory for generated files",
+                title="Swarm Usage",
+                border_style="cyan",
+            )
+        )
+        raise SystemExit(1)
+
+    goal = args[0]
+    output_dir = Path(args[1]).expanduser().resolve()
+
+    _ensure_api_key(console)
+
+    console.print(
+        Panel.fit(
+            f"Goal: {goal}\nOutput: {output_dir}\nPipeline: Mark II (Dual-Model Cluster)",
+            title="Autobots Swarm",
+            border_style="cyan",
+        )
+    )
+
+    try:
+        files = orchestrate(goal, str(output_dir), use_v2=True)
+        console.print(
+            Panel.fit(
+                f"Generated {len(files)} files in {output_dir}",
+                title="Swarm Complete",
+                border_style="green",
+            )
+        )
+    except Exception as e:
+        console.print(
+            Panel.fit(f"Swarm failed: {e}", title="Swarm Error", border_style="red")
+        )
+        raise SystemExit(1)
+
+
 def run_run(args: list[str]) -> None:
-    """Run a specific task by ID with the specified mode."""
+    """Run a specific task by ID with the specified mode, or use swarm orchestrator."""
     console = Console()
 
     if "--help" in args or "-h" in args:
         console.print(
-            "[bold]Usage:[/bold] autobots run [target] [taskId] [--supervised|--autonomous|--milestone]\n\n"
+            "[bold]Usage:[/bold] autobots run [target] [taskId] [--supervised|--autonomous|--milestone|--swarm]\n\n"
             "[bold]Arguments:[/bold]\n"
             "  target    Path to target project directory (default: current directory)\n"
             "  taskId    Task ID to execute (e.g. P1-T1)\n\n"
             "[bold]Modes:[/bold]\n"
             "  --supervised    Operator approval at each phase (default)\n"
             "  --autonomous    No approval required\n"
-            "  --milestone     Approval every N phases (configurable)\n\n"
+            "  --milestone     Approval every N phases (configurable)\n"
+            "  --swarm         Use multi-model swarm orchestrator (Mark II)\n\n"
             "[bold]Examples:[/bold]\n"
             "  autobots run ./my-project P1-T1\n"
-            "  autobots run ./my-project P1-T1 --autonomous"
+            "  autobots run ./my-project P1-T1 --autonomous\n"
+            "  autobots run --swarm 'Build a todo app' D:\\projects\\todo"
         )
+        return
+
+    # Check for swarm mode
+    use_swarm = "--swarm" in args
+    args = [a for a in args if a != "--swarm"]
+
+    if use_swarm:
+        _run_swarm(args, console)
         return
 
     target_path, task_id, mode = _parse_run_args(args)

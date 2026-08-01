@@ -98,42 +98,116 @@ TASK_MODEL_MAP = {
 # Two different models catch each other's blind spots.
 # KEY: Both models MUST return valid JSON. Llama-3.3-70b fails this requirement.
 
-MODEL_PAIRS = {
-    "ui": {
-        "generator": "qwen/qwen3-next-80b-a3b-instruct",
-        "reviewer": "qwen/qwen3.5-122b-a10b",
-        "desc": "UI: Qwen-80b generates design, Qwen-122b reviews (different size catches different issues)",
-    },
-    "logic": {
-        "generator": "qwen/qwen3.5-122b-a10b",
-        "reviewer": "qwen/qwen3-next-80b-a3b-instruct",
-        "desc": "Logic: Qwen-122b generates types, Qwen-80b reviews edge cases",
-    },
-    "tests": {
-        "generator": "qwen/qwen3-next-80b-a3b-instruct",
-        "reviewer": "meta/llama-3.3-70b-instruct",
-        "desc": "Tests: Qwen generates test structure, Llama reviews logic (OK for review-only)",
-    },
-    "fast": {
+# ── Cluster Pipeline ────────────────────────────────────────────────────────
+# Dedicated model pairs per cluster role, mapped from catalog.py
+
+CLUSTER_PIPELINE = {
+    "Jazz": {
+        "role": "ui-ux",
         "generator": "qwen/qwen3-next-80b-a3b-instruct",
         "reviewer": "stepfun-ai/step-3.5-flash",
-        "desc": "Config: Qwen generates, Step-Flash validates (fastest model)",
+        "desc": "Jazz (UI/UX): Qwen-80b generates design, Step-Flash reviews (fastest)",
+        "system_prompt": """You are a UI/UX specialist. Build these files: {files}
+
+Context: {context}
+
+DESIGN RULES (UI files must look professional):
+- Use modern CSS: flexbox/grid, gap, rounded corners, smooth transitions
+- Colors: use a cohesive palette (e.g. blues: #3b82f6, #60a5fa, #1e40af)
+- Add hover effects on buttons (transform, shadow changes)
+- Use box-shadow for depth: 0 4px 6px -1px rgba(0,0,0,0.1)
+- Typography: font-weight 600-700 for headings, proper line-height
+- Transitions: all 0.2s ease on interactive elements
+- Dark backgrounds: use #0f172a, #1e293b, #334155 (slate scale)
+- Light backgrounds: use #f8fafc, #f1f5f9, #e2e8f0
+- Gradient accents: linear-gradient(135deg, color1, color2)
+- Glass effect: background rgba(255,255,255,0.1) + backdrop-filter: blur(10px)
+- Spacing: generous padding (16px-24px), consistent margins
+- Responsive: use %, rem, or vh/vw units
+
+IMPORTANT: You MUST reply with valid JSON only. No explanations, no markdown, no code blocks.
+Reply with this exact format: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}""",
+    },
+    "Ratchet": {
+        "role": "logic",
+        "generator": "qwen/qwen3-next-80b-a3b-instruct",
+        "reviewer": "stepfun-ai/step-3.5-flash",
+        "desc": "Ratchet (Logic): Qwen-80b generates logic, Step-Flash reviews (fastest)",
+        "system_prompt": """You are a logic specialist. Build these files: {files}
+
+Context: {context}
+
+CODE RULES:
+- Clean, well-structured code
+- TypeScript types where applicable
+- React: use functional components with hooks
+- Export default for main components
+- Follow the TYPE CONTRACTS from context exactly
+
+IMPORTANT: You MUST reply with valid JSON only. No explanations, no markdown, no code blocks.
+Reply with this exact format: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}""",
+    },
+    "RedAlert": {
+        "role": "review",
+        "generator": "qwen/qwen3-next-80b-a3b-instruct",
+        "reviewer": "stepfun-ai/step-3.5-flash",
+        "desc": "RedAlert (Review): Qwen-80b generates, Step-Flash validates (fastest)",
+        "system_prompt": """You are a code reviewer. Build these files: {files}
+
+Context: {context}
+
+REVIEW RULES:
+- Check for TypeScript type errors or mismatches
+- Check for missing imports or wrong import paths
+- Check for incorrect component prop signatures
+- Check for broken references between files
+- Check for logic bugs or incorrect function signatures
+- Return ALL files with fixes applied
+
+IMPORTANT: You MUST reply with valid JSON only. No explanations, no markdown, no code blocks.
+Reply with this exact format: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}""",
+    },
+    "Perceptor": {
+        "role": "build",
+        "generator": "qwen/qwen3-next-80b-a3b-instruct",
+        "reviewer": "stepfun-ai/step-3.5-flash",
+        "desc": "Perceptor (Build): Qwen-80b generates config, Step-Flash validates",
+        "system_prompt": """You are a build/config specialist. Build these files: {files}
+
+Context: {context}
+
+BUILD RULES:
+- Generate proper package.json with correct dependencies
+- Generate correct TypeScript config
+- Generate proper Vite/build config
+- Ensure all imports resolve correctly
+- Follow project conventions from context
+
+IMPORTANT: You MUST reply with valid JSON only. No explanations, no markdown, no code blocks.
+Reply with this exact format: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}""",
+    },
+    "Optimus": {
+        "role": "planner",
+        "generator": "qwen/qwen3-next-80b-a3b-instruct",
+        "reviewer": None,  # Planner has no reviewer
+        "desc": "Optimus (Planner): Qwen-80b plans and decomposes tasks",
+        "system_prompt": None,  # Planner uses custom prompt
     },
 }
 
-TASK_PAIR_MAP = {
-    "ui-component": "ui",
-    "ui-style": "ui",
-    "ui-layout": "ui",
-    "api-endpoint": "logic",
-    "business-logic": "logic",
-    "data-model": "logic",
-    "database": "logic",
-    "unit-test": "tests",
-    "integration-test": "tests",
-    "boilerplate": "fast",
-    "config": "fast",
-    "documentation": "fast",
+CLUSTER_TASK_MAP = {
+    "ui-component": "Jazz",
+    "ui-style": "Jazz",
+    "ui-layout": "Jazz",
+    "api-endpoint": "Ratchet",
+    "business-logic": "Ratchet",
+    "data-model": "Ratchet",
+    "database": "Ratchet",
+    "unit-test": "RedAlert",
+    "integration-test": "RedAlert",
+    "boilerplate": "Perceptor",
+    "config": "Perceptor",
+    "documentation": "Perceptor",
 }
 
 
@@ -316,47 +390,34 @@ def ensure_critical_files(project_path, subtasks):
 
 # ── Shared Context ─────────────────────────────────────────────────────────
 
-def build_shared_context(goal, subtasks):
-    """Build compact shared context for workers."""
+def build_shared_context(goal, subtasks, type_contracts=""):
+    """Build compact shared context for workers.
+    
+    Args:
+        goal: Project description
+        subtasks: List of subtask dicts with files, cluster, etc.
+        type_contracts: Optional type contracts from planner (project-specific)
+    """
     files_plan = []
     for i, st in enumerate(subtasks):
         files = ", ".join(st.get("files", []))
-        files_plan.append(f"{i+1}. {files}")
+        cluster = st.get("cluster", "unknown")
+        files_plan.append(f"{i+1}. [{cluster}] {files}")
 
-    return f"""Project: {goal}
+    context = f"""Project: {goal}
 
 Files being built:
 {chr(10).join(files_plan)}
+"""
 
+    # Add type contracts if provided by planner
+    if type_contracts:
+        context += f"""
 TYPE CONTRACTS (ALL workers must use these exact types):
---- src/types/Todo.ts ---
-export interface Todo {{
-  id: string;
-  text: string;
-  completed: boolean;
-  createdAt: Date;
-}}
-export type FilterType = 'all' | 'active' | 'completed';
+{type_contracts}
+"""
 
---- src/hooks/useTodos.ts (MUST export these) ---
-export function useTodos() {{
-  return {{
-    todos: Todo[],           // filtered list based on current filter
-    filter: FilterType,
-    setFilter: (f: FilterType) => void,
-    addTodo: (text: string) => void,         // takes a STRING, not an object
-    toggleTodo: (id: string) => void,        // takes string ID
-    deleteTodo: (id: string) => void,        // takes string ID
-    remainingCount: number,
-  }};
-}}
-
---- Component Prop Contracts (use EXACTLY these signatures) ---
-TodoInput: {{ onAddTodo: (text: string) => void }}
-TodoItem: {{ todo: Todo; onToggle: (id: string) => void; onDelete: (id: string) => void }}
-TodoFilter: {{ filter: FilterType; setFilter: (f: FilterType) => void }}
-TodoCounter: {{ count: number }}
-
+    context += """
 DESIGN LANGUAGE (apply to all UI):
 - Colors: cohesive palette (blues #3b82f6/#60a5fa/#1e40af, or slates #0f172a/#1e293b/#334155)
 - Shadows: 0 4px 6px -1px rgba(0,0,0,0.1) for cards, 0 10px 15px -3px for modals
@@ -370,9 +431,10 @@ CODE RULES:
 - React functional components with hooks
 - Export default for main components
 - Import React in files that use JSX
-- Import Todo from '../types/Todo' (or '../types') where needed
 
 Return JSON: {{"files": [{{"path": "...", "content": "..."}}]}}"""
+
+    return context
 
 
 # ── JSON Parser ────────────────────────────────────────────────────────────
@@ -457,7 +519,11 @@ def parse_json_response(content, context=""):
 # ── Planner ────────────────────────────────────────────────────────────────
 
 def plan_subtasks(goal, rate_limiter):
-    """Use planner model to decompose goal into subtasks with model assignments."""
+    """Use planner model to decompose goal into subtasks with cluster assignments.
+    
+    Returns:
+        tuple: (subtasks, type_contracts) where type_contracts is a string of project-specific types
+    """
     logger.info(f"\n[PLANNER] Decomposing: {goal}")
 
     rate_limiter.wait_if_needed()
@@ -473,18 +539,26 @@ For each subtask, specify:
 - description: what to build
 - files: list of file paths to generate (1-2 files max per subtask)
 - task_type: one of ui-component, ui-style, api-endpoint, business-logic, unit-test, boilerplate, config
+- cluster: one of Jazz (UI/UX), Ratchet (logic), RedAlert (review), Perceptor (build)
 - depends_on: list of subtask indices this depends on (empty if independent)
 
-Return JSON: {"subtasks": [{"description": "...", "files": ["..."], "task_type": "...", "depends_on": []}]}
+ALSO provide type_contracts: TypeScript interface definitions that ALL workers must use exactly.
+Include interfaces for: state management, component props, API types, etc.
+
+Return JSON: {
+  "subtasks": [{"description": "...", "files": ["..."], "task_type": "...", "cluster": "...", "depends_on": []}],
+  "type_contracts": "--- src/types/Example.ts ---\nexport interface Example {\n  id: string;\n  name: string;\n}\n"
+}
 
 Rules:
 - Each subtask gets 1-2 files max
 - Independent subtasks should have empty depends_on
 - Group related files (App.tsx + App.css together)
 - Include at least one test subtask
-- Include config/boilerplate subtask"""
+- Include config/boilerplate subtask
+- type_contracts must be detailed enough for all workers to use consistently"""
 
-    user = f"Goal: {goal}\n\nDecompose into subtasks."
+    user = f"Goal: {goal}\n\nDecompose into subtasks with type contracts."
 
     try:
         logger.debug(f"[planner] Calling {MODELS['planner']['id']}")
@@ -513,14 +587,16 @@ Rules:
         data = parse_json_response(content, "planner")
         if data and "subtasks" in data:
             subtasks = data["subtasks"]
+            type_contracts = data.get("type_contracts", "")
             logger.info(f"[planner] Found {len(subtasks)} subtasks")
 
-            # Assign models based on task_type
+            # Assign clusters based on task_type
             for st in subtasks:
                 task_type = st.get("task_type", "boilerplate")
-                model_key = TASK_MODEL_MAP.get(task_type, "fast")
-                st["model"] = MODELS[model_key]["id"]
-                st["model_key"] = model_key
+                cluster = CLUSTER_TASK_MAP.get(task_type, "Perceptor")
+                st["cluster"] = cluster
+                st["generator"] = CLUSTER_PIPELINE[cluster]["generator"]
+                st["reviewer"] = CLUSTER_PIPELINE[cluster].get("reviewer")
 
             # Remove duplicate file assignments
             seen_files = set()
@@ -537,17 +613,18 @@ Rules:
 
             for i, st in enumerate(subtasks):
                 files = ", ".join(st.get("files", []))
-                model = st.get("model", "unknown").split("/")[-1]
-                logger.info(f"  {i+1}. [{model}] {files}")
+                cluster = st.get("cluster", "unknown")
+                gen = st.get("generator", "unknown").split("/")[-1]
+                logger.info(f"  {i+1}. [{cluster}/{gen}] {files}")
 
-            return subtasks
+            return subtasks, type_contracts
         else:
             logger.error(f"[planner] Failed to parse subtasks")
-            return []
+            return [], ""
 
     except Exception as e:
         logger.error(f"[planner] Error: {e}")
-        return []
+        return [], ""
 
 
 # ── Worker ─────────────────────────────────────────────────────────────────
@@ -660,7 +737,7 @@ Return JSON: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}""
 # ── Mark II: Dual-Model Worker ─────────────────────────────────────────────
 
 def execute_worker_v2(idx, generator_id, reviewer_id, task_desc, shared_context,
-                      files_to_build, rate_limiter):
+                      files_to_build, rate_limiter, cluster="Ratchet"):
     """Dual-model worker: Generator creates → Reviewer validates + fixes.
 
     Flow:
@@ -670,8 +747,8 @@ def execute_worker_v2(idx, generator_id, reviewer_id, task_desc, shared_context,
     4. Final output is written to disk
     """
     gen_name = generator_id.split("/")[-1]
-    rev_name = reviewer_id.split("/")[-1]
-    logger.info(f"[worker-v2-{idx}] Starting: {files_to_build}")
+    rev_name = reviewer_id.split("/")[-1] if reviewer_id else "none"
+    logger.info(f"[worker-v2-{idx}] Starting: {files_to_build} on cluster {cluster}")
     logger.info(f"[worker-v2-{idx}] Generator: {gen_name} | Reviewer: {rev_name}")
 
     client = OpenAI(
@@ -679,43 +756,12 @@ def execute_worker_v2(idx, generator_id, reviewer_id, task_desc, shared_context,
         api_key=os.environ.get("NVIDIA_API_KEY", ""),
     )
 
-    # ── Step 1: Generator creates files ──
-    is_ui = any("component" in f.lower() or "style" in f.lower() or f.endswith(".css") for f in files_to_build)
-
-    if is_ui:
-        gen_system = f"""Build these files: {', '.join(files_to_build)}
-
-Context: {shared_context}
-
-DESIGN RULES (UI files must look professional):
-- Use modern CSS: flexbox/grid, gap, rounded corners, smooth transitions
-- Colors: use a cohesive palette (e.g. blues: #3b82f6, #60a5fa, #1e40af)
-- Add hover effects on buttons (transform, shadow changes)
-- Use box-shadow for depth: 0 4px 6px -1px rgba(0,0,0,0.1)
-- Typography: font-weight 600-700 for headings, proper line-height
-- Transitions: all 0.2s ease on interactive elements
-- Dark backgrounds: use #0f172a, #1e293b, #334155 (slate scale)
-- Light backgrounds: use #f8fafc, #f1f5f9, #e2e8f0
-- Gradient accents: linear-gradient(135deg, color1, color2)
-- Glass effect: background rgba(255,255,255,0.1) + backdrop-filter: blur(10px)
-- Spacing: generous padding (16px-24px), consistent margins
-- Responsive: use %, rem, or vh/vw units
-
-IMPORTANT: You MUST reply with valid JSON only. No explanations, no markdown, no code blocks.
-Reply with this exact format: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}"""
-    else:
-        gen_system = f"""Build these files: {', '.join(files_to_build)}
-
-Context: {shared_context}
-
-CODE RULES:
-- Clean, well-structured code
-- TypeScript types where applicable
-- React: use functional components with hooks
-- Export default for main components
-
-IMPORTANT: You MUST reply with valid JSON only. No explanations, no markdown, no code blocks.
-Reply with this exact format: {{"files": [{{"path": "src/...", "content": "full code here"}}]}}"""
+    # Get cluster-specific system prompt
+    cluster_config = CLUSTER_PIPELINE.get(cluster, CLUSTER_PIPELINE["Ratchet"])
+    gen_system = cluster_config["system_prompt"].format(
+        files=", ".join(files_to_build),
+        context=shared_context
+    )
 
     try:
         rate_limiter.wait_if_needed()
@@ -1334,7 +1380,7 @@ def orchestrate(goal, project_dir, use_v2=True):
 
     # Step 1: Plan subtasks
     logger.info(f"\n[1/4] Planning subtasks...")
-    subtasks = plan_subtasks(goal, rate_limiter)
+    subtasks, type_contracts = plan_subtasks(goal, rate_limiter)
 
     if not subtasks:
         logger.error("No subtasks planned. Aborting.")
@@ -1343,26 +1389,19 @@ def orchestrate(goal, project_dir, use_v2=True):
     # Step 1.5: Ensure critical files are included
     subtasks = ensure_critical_files(project_path, subtasks)
 
-    # Step 1.6: Assign model pairs for Mark II
+    # Step 1.6: Log cluster assignments (already assigned by planner)
     if use_v2:
-        for st in subtasks:
-            task_type = st.get("task_type", "boilerplate")
-            pair_key = TASK_PAIR_MAP.get(task_type, "fast")
-            pair = MODEL_PAIRS[pair_key]
-            st["generator"] = pair["generator"]
-            st["reviewer"] = pair["reviewer"]
-            st["pair_key"] = pair_key
-
-        logger.info("[planner] Assigned model pairs:")
+        logger.info("[planner] Cluster assignments:")
         for i, st in enumerate(subtasks):
             files = ", ".join(st.get("files", []))
+            cluster = st.get("cluster", "unknown")
             gen = st.get("generator", "?").split("/")[-1]
-            rev = st.get("reviewer", "?").split("/")[-1]
-            logger.info(f"  {i+1}. [{gen}+{rev}] {files}")
+            rev = st.get("reviewer", "?").split("/")[-1] if st.get("reviewer") else "none"
+            logger.info(f"  {i+1}. [{cluster}] {gen}+{rev}: {files}")
 
     # Step 2: Build shared context
     logger.info(f"\n[2/4] Building shared context...")
-    shared_context = build_shared_context(goal, subtasks)
+    shared_context = build_shared_context(goal, subtasks, type_contracts)
     context_file = project_path / "SHARED_CONTEXT.md"
     context_file.write_text(shared_context, encoding="utf-8")
     logger.info(f"  Wrote {context_file}")
@@ -1401,16 +1440,17 @@ def orchestrate(goal, project_dir, use_v2=True):
             files = execute_worker_v2(
                 idx,
                 st["generator"],
-                st["reviewer"],
+                st.get("reviewer"),
                 st["description"],
                 shared_context,
                 st.get("files", []),
                 rate_limiter,
+                cluster=st.get("cluster", "Ratchet"),
             )
         else:
             files = execute_worker(
                 idx,
-                st["model"],
+                st.get("generator", MODELS["fast"]["id"]),
                 st["description"],
                 shared_context,
                 st.get("files", []),

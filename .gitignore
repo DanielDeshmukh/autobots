@@ -231,3 +231,5 @@ context/.autobots-locks/
 publish_artifacts/
 .tmp_cli_*/
 .autobots.toml
+autobots-interview-prep.md
+autobot-nim-skills/
