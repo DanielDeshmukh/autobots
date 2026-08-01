@@ -34,6 +34,164 @@ class Colors:
     CYAN = "#06B6D4"       # Info
 
 
+# ─── Swarm Monitor ───────────────────────────────────────────────────────────
+
+class SwarmMonitor:
+    """Real-time monitor for swarm pipeline progress.
+    
+    Usage:
+        monitor = SwarmMonitor(console)
+        monitor.start("Building calculator...")
+        monitor.cluster_status("Jazz", "working")
+        monitor.log("Jazz: Generating UI components")
+        monitor.cluster_status("Jazz", "done")
+        monitor.finish()
+    """
+    
+    def __init__(self, console: Console):
+        self.console = console
+        self.phase = "idle"
+        self.cluster_states: dict[str, str] = {c: "idle" for c in CLUSTERS}
+        self.logs: list[str] = []
+        self.start_time: float = 0
+        self._live: Optional[Live] = None
+    
+    def start(self, message: str = "Starting swarm...") -> None:
+        """Start the monitoring dashboard."""
+        self.start_time = time.time()
+        self.phase = "starting"
+        self.logs = [message]
+        self._live = Live(
+            self._render(),
+            console=self.console,
+            refresh_per_second=4,
+        )
+        self._live.start()
+    
+    def update_phase(self, phase: str) -> None:
+        """Update the pipeline phase."""
+        self.phase = phase
+        self._refresh()
+    
+    def cluster_status(self, cluster: str, status: str) -> None:
+        """Update a cluster's status."""
+        if cluster in self.cluster_states:
+            self.cluster_states[cluster] = status
+            self._refresh()
+    
+    def log(self, message: str) -> None:
+        """Add a log message."""
+        self.logs.append(message)
+        if len(self.logs) > 8:
+            self.logs = self.logs[-8:]
+        self._refresh()
+    
+    def finish(self, success: bool = True) -> None:
+        """Finish monitoring and show final state."""
+        if self._live:
+            self.phase = "done" if success else "error"
+            if not success:
+                for c in self.cluster_states:
+                    if self.cluster_states[c] == "working":
+                        self.cluster_states[c] = "error"
+            self._live.stop()
+        self._live = None
+    
+    def _refresh(self) -> None:
+        """Refresh the live display."""
+        if self._live:
+            self._live.update(self._render())
+    
+    def _render(self) -> Panel:
+        """Render the current dashboard state."""
+        elapsed = time.time() - self.start_time if self.start_time else 0
+        
+        # Cluster table
+        cluster_table = Table(
+            box=box.SIMPLE,
+            show_header=False,
+            padding=(0, 1),
+        )
+        cluster_table.add_column("Cluster", style="bold")
+        cluster_table.add_column("Status")
+        cluster_table.add_column("Progress", min_width=20)
+        
+        for name, info in CLUSTERS.items():
+            status = self.cluster_states.get(name, "idle")
+            
+            status_icon = {
+                "idle":     "[dim]○[/]",
+                "thinking": f"[{Colors.AMBER}]◎[/]",
+                "working":  f"[{Colors.BLUE}]●[/]",
+                "done":     f"[{Colors.EMERALD}]✓[/]",
+                "error":    f"[{Colors.RED}]✗[/]",
+            }.get(status, "[dim]○[/]")
+            
+            status_text = {
+                "idle":     "[dim]Waiting[/]",
+                "thinking": f"[bold {Colors.AMBER}]Thinking...[/]",
+                "working":  f"[bold {Colors.BLUE}]Working...[/]",
+                "done":     f"[bold {Colors.EMERALD}]Done[/]",
+                "error":    f"[bold {Colors.RED}]Error[/]",
+            }.get(status, "[dim]Waiting[/]")
+            
+            progress = _get_progress_bar(status)
+            
+            cluster_table.add_row(
+                f"[{info['color']}]{info['icon']} {name}[/]",
+                f"{status_icon} {status_text}",
+                progress,
+            )
+        
+        # Pipeline stages
+        stage_map = {
+            "idle": 0, "starting": 0, "planning": 0,
+            "building": 1, "reviewing": 2, "done": 3, "error": 2,
+        }
+        current_stage = stage_map.get(self.phase, 0)
+        
+        stages_text = Text()
+        for i, stage in enumerate(PIPELINE_STAGES):
+            if i < current_stage:
+                stages_text.append(" ■■■■■ ", style=Colors.EMERALD)
+                stages_text.append(f"{stage} → ", style=f"bold {Colors.EMERALD}")
+            elif i == current_stage:
+                stages_text.append(" ■■■■■ ", style=Colors.AMBER)
+                stages_text.append(f"{stage} → ", style=f"bold {Colors.AMBER}")
+            else:
+                stages_text.append(" □□□□□ ", style=Colors.GRAY)
+                stages_text.append(f"{stage} → ", style=f"dim {Colors.GRAY}")
+        
+        if stages_text.plain.endswith(" → "):
+            stages_text.plain = stages_text.plain[:-3]
+        
+        # Logs
+        logs_text = Text()
+        for log in self.logs[-5:]:
+            logs_text.append(f"  › {log}\n", style=f"dim {Colors.GRAY}")
+        
+        # Combine
+        content = Text()
+        content.append_text(cluster_table)
+        content.append("\n  ")
+        content.append_text(stages_text)
+        content.append("\n\n")
+        content.append_text(logs_text)
+        
+        border_color = Colors.AMBER
+        if self.phase == "done":
+            border_color = Colors.EMERALD
+        elif self.phase == "error":
+            border_color = Colors.RED
+        
+        return Panel(
+            content,
+            title=f"[bold]Swarm Pipeline[/] [dim]{elapsed:.0f}s[/]",
+            border_style=border_color,
+            box=box.ROUNDED,
+        )
+
+
 # ─── ASCII Art ───────────────────────────────────────────────────────────────
 
 LOGO = r"""[bold #3B82F6]
@@ -642,28 +800,28 @@ def _execute_swarm(project_name: str, output_dir: Path, console: Console) -> int
     from .swarm_pipeline import run_pipeline
     
     start_time = time.time()
+    monitor = SwarmMonitor(console)
     
     try:
+        # Start monitoring
+        monitor.start(f"Building {project_name}...")
+        monitor.update_phase("planning")
+        monitor.cluster_status("Optimus", "thinking")
+        monitor.log("Planning project structure...")
+        
         # Run pipeline
-        with Live(
-            render_cluster_dashboard("starting"),
-            console=console,
-            refresh_per_second=4,
-        ) as live:
-            # Update dashboard while pipeline runs
-            # We'll run the pipeline in a thread and update the dashboard
-            result = _run_pipeline_with_updates(
-                goal=f"Build a {project_name} application",
-                output_dir=str(output_dir),
-                live=live,
-                console=console,
-            )
+        result = _run_pipeline_with_updates(
+            goal=f"Build a {project_name} application",
+            output_dir=str(output_dir),
+            monitor=monitor,
+        )
         
         elapsed = time.time() - start_time
         
         # Show completion
         if result is not None:
             file_count = len(list(output_dir.rglob("*"))) if output_dir.exists() else 0
+            monitor.finish(success=True)
             console.print()
             console.print(
                 render_completion_panel(
@@ -675,15 +833,18 @@ def _execute_swarm(project_name: str, output_dir: Path, console: Console) -> int
             )
             return 0
         else:
+            monitor.finish(success=False)
             console.print(
                 f"\n[bold {Colors.RED}]✗ Build failed. Check logs for details.[/]"
             )
             return 1
             
     except KeyboardInterrupt:
+        monitor.finish(success=False)
         console.print(f"\n[bold {Colors.AMBER}]Build cancelled.[/]")
         return 1
     except Exception as e:
+        monitor.finish(success=False)
         console.print(f"\n[bold {Colors.RED}]Error: {e}[/]")
         return 1
 
@@ -691,20 +852,25 @@ def _execute_swarm(project_name: str, output_dir: Path, console: Console) -> int
 def _run_pipeline_with_updates(
     goal: str,
     output_dir: str,
-    live: Live,
-    console: Console,
+    monitor: SwarmMonitor,
 ):
-    """Run the pipeline and update the live dashboard."""
+    """Run the pipeline and update the monitor."""
     from .swarm_pipeline import run_pipeline
     
-    # Simple approach: run pipeline and show progress
-    # In a real implementation, we'd hook into pipeline events
-    live.update(render_cluster_dashboard("planning"))
-    
     try:
+        # Update status as pipeline progresses
+        monitor.cluster_status("Optimus", "working")
+        monitor.log("Optimus: Analyzing requirements...")
+        
         result = run_pipeline(goal, output_dir, max_healing_rounds=3)
-        live.update(render_cluster_dashboard("done"))
+        
+        monitor.cluster_status("Optimus", "done")
+        monitor.update_phase("done")
+        monitor.log("Build complete!")
         return result
+    except Exception as e:
+        monitor.log(f"Error: {e}")
+        raise
     except Exception as e:
         live.update(render_cluster_dashboard("error"))
         raise
