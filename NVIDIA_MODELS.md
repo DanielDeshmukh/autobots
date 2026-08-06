@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-08-05T08:45:49.504859 | Total: 103 models
+Fetched: 2026-08-06T08:47:23.506353 | Total: 102 models
 
 ---
 
@@ -23,7 +23,7 @@ Fetched: 2026-08-05T08:45:49.504859 | Total: 103 models
 - `nvidia/nemoretriever-parse` (nvidia)
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (41)
+### Other (40)
 
 - `01-ai/yi-large` (01-ai)
 - `adept/fuyu-8b` (adept)
@@ -57,7 +57,6 @@ Fetched: 2026-08-05T08:45:49.504859 | Total: 103 models
 - `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` (nvidia)
 - `nvidia/nemotron-4-340b-reward` (nvidia)
 - `nvidia/nemotron-nano-3-30b-a3b` (nvidia)
-- `nvidia/nemotron3-ultra-genrm` (nvidia)
 - `nvidia/nv-embedqa-mistral-7b-v2` (nvidia)
 - `nvidia/nvclip` (nvidia)
 - `nvidia/riva-translate-4b-instruct-v1.1` (nvidia)
@@ -229,7 +228,7 @@ Fetched: 2026-08-05T08:45:49.504859 | Total: 103 models
 
 - `nv-mistralai/mistral-nemo-12b-instruct` [other]
 
-### nvidia (45)
+### nvidia (44)
 
 - `nvidia/ai-synthetic-video-detector` [video]
 - `nvidia/cosmos-reason2-8b` [video]
@@ -264,7 +263,6 @@ Fetched: 2026-08-05T08:45:49.504859 | Total: 103 models
 - `nvidia/nemotron-nano-12b-v2-vl` [vision]
 - `nvidia/nemotron-nano-3-30b-a3b` [other]
 - `nvidia/nemotron-parse` [ocr]
-- `nvidia/nemotron3-ultra-genrm` [other]
 - `nvidia/neva-22b` [vision]
 - `nvidia/nv-embed-v1` [embedding]
 - `nvidia/nv-embedcode-7b-v1` [embedding]

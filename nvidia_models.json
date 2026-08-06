@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-08-05T08:45:49.504859",
-  "total": 103,
+  "fetched_at": "2026-08-06T08:47:23.506353",
+  "total": 102,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -35,7 +35,6 @@
       "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
       "nvidia/nemotron-4-340b-reward",
       "nvidia/nemotron-nano-3-30b-a3b",
-      "nvidia/nemotron3-ultra-genrm",
       "nvidia/nv-embedqa-mistral-7b-v2",
       "nvidia/nvclip",
       "nvidia/riva-translate-4b-instruct-v1.1",
@@ -235,7 +234,6 @@
       "nvidia/nemotron-nano-12b-v2-vl",
       "nvidia/nemotron-nano-3-30b-a3b",
       "nvidia/nemotron-parse",
-      "nvidia/nemotron3-ultra-genrm",
       "nvidia/neva-22b",
       "nvidia/nv-embed-v1",
       "nvidia/nv-embedcode-7b-v1",
@@ -750,12 +748,6 @@
       "id": "nvidia/nemotron-parse",
       "publisher": "nvidia",
       "category": "ocr",
-      "created": 735790403
-    },
-    "nvidia/nemotron3-ultra-genrm": {
-      "id": "nvidia/nemotron3-ultra-genrm",
-      "publisher": "nvidia",
-      "category": "other",
       "created": 735790403
     },
     "nvidia/neva-22b": {
