@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-08-07T07:26:20.324337 | Total: 102 models
+Fetched: 2026-08-08T07:03:14.296981 | Total: 100 models
 
 ---
 
@@ -23,7 +23,7 @@ Fetched: 2026-08-07T07:26:20.324337 | Total: 102 models
 - `nvidia/nemoretriever-parse` (nvidia)
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (40)
+### Other (41)
 
 - `01-ai/yi-large` (01-ai)
 - `adept/fuyu-8b` (adept)
@@ -32,6 +32,7 @@ Fetched: 2026-08-07T07:26:20.324337 | Total: 102 models
 - `bigcode/starcoder2-15b` (bigcode)
 - `databricks/dbrx-instruct` (databricks)
 - `deepseek-ai/deepseek-coder-6.7b-instruct` (deepseek-ai)
+- `deepseek-ai/deepseek-v4-flash-0731` (deepseek-ai)
 - `google/codegemma-1.1-7b` (google)
 - `google/codegemma-7b` (google)
 - `google/deplot` (google)
@@ -78,10 +79,8 @@ Fetched: 2026-08-07T07:26:20.324337 | Total: 102 models
 
 - `nvidia/riva-translate-4b-instruct` (nvidia)
 
-### Text Generation (35)
+### Text Generation (32)
 
-- `deepseek-ai/deepseek-v4-flash` (deepseek-ai)
-- `deepseek-ai/deepseek-v4-pro` (deepseek-ai)
 - `google/gemma-3-12b-it` (google)
 - `google/gemma-3-4b-it` (google)
 - `google/gemma-4-31b-it` (google)
@@ -93,7 +92,6 @@ Fetched: 2026-08-07T07:26:20.324337 | Total: 102 models
 - `meta/llama-3.2-3b-instruct` (meta)
 - `meta/llama-3.3-70b-instruct` (meta)
 - `minimaxai/minimax-m3` (minimaxai)
-- `mistralai/mistral-medium-3.5-128b` (mistralai)
 - `mistralai/mistral-nemotron` (mistralai)
 - `moonshotai/kimi-k2.6` (moonshotai)
 - `nvidia/llama-3.1-nemotron-51b-instruct` (nvidia)
@@ -162,11 +160,10 @@ Fetched: 2026-08-07T07:26:20.324337 | Total: 102 models
 
 - `databricks/dbrx-instruct` [other]
 
-### deepseek-ai (3)
+### deepseek-ai (2)
 
 - `deepseek-ai/deepseek-coder-6.7b-instruct` [other]
-- `deepseek-ai/deepseek-v4-flash` [text-generation]
-- `deepseek-ai/deepseek-v4-pro` [text-generation]
+- `deepseek-ai/deepseek-v4-flash-0731` [other]
 
 ### google (9)
 
@@ -210,13 +207,12 @@ Fetched: 2026-08-07T07:26:20.324337 | Total: 102 models
 
 - `minimaxai/minimax-m3` [text-generation]
 
-### mistralai (7)
+### mistralai (6)
 
 - `mistralai/codestral-22b-instruct-v0.1` [other]
 - `mistralai/mistral-7b-instruct-v0.3` [other]
 - `mistralai/mistral-large` [other]
 - `mistralai/mistral-large-2-instruct` [other]
-- `mistralai/mistral-medium-3.5-128b` [text-generation]
 - `mistralai/mistral-nemotron` [text-generation]
 - `mistralai/mixtral-8x22b-v0.1` [other]
 

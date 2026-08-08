@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-08-07T07:26:20.324337",
-  "total": 102,
+  "fetched_at": "2026-08-08T07:03:14.296981",
+  "total": 100,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -10,6 +10,7 @@
       "bigcode/starcoder2-15b",
       "databricks/dbrx-instruct",
       "deepseek-ai/deepseek-coder-6.7b-instruct",
+      "deepseek-ai/deepseek-v4-flash-0731",
       "google/codegemma-1.1-7b",
       "google/codegemma-7b",
       "google/deplot",
@@ -56,8 +57,6 @@
       "snowflake/arctic-embed-l"
     ],
     "text-generation": [
-      "deepseek-ai/deepseek-v4-flash",
-      "deepseek-ai/deepseek-v4-pro",
       "google/gemma-3-12b-it",
       "google/gemma-3-4b-it",
       "google/gemma-4-31b-it",
@@ -69,7 +68,6 @@
       "meta/llama-3.2-3b-instruct",
       "meta/llama-3.3-70b-instruct",
       "minimaxai/minimax-m3",
-      "mistralai/mistral-medium-3.5-128b",
       "mistralai/mistral-nemotron",
       "moonshotai/kimi-k2.6",
       "nvidia/llama-3.1-nemotron-51b-instruct",
@@ -145,8 +143,7 @@
     ],
     "deepseek-ai": [
       "deepseek-ai/deepseek-coder-6.7b-instruct",
-      "deepseek-ai/deepseek-v4-flash",
-      "deepseek-ai/deepseek-v4-pro"
+      "deepseek-ai/deepseek-v4-flash-0731"
     ],
     "google": [
       "google/codegemma-1.1-7b",
@@ -190,7 +187,6 @@
       "mistralai/mistral-7b-instruct-v0.3",
       "mistralai/mistral-large",
       "mistralai/mistral-large-2-instruct",
-      "mistralai/mistral-medium-3.5-128b",
       "mistralai/mistral-nemotron",
       "mistralai/mixtral-8x22b-v0.1"
     ],
@@ -324,16 +320,10 @@
       "category": "other",
       "created": 735790403
     },
-    "deepseek-ai/deepseek-v4-flash": {
-      "id": "deepseek-ai/deepseek-v4-flash",
+    "deepseek-ai/deepseek-v4-flash-0731": {
+      "id": "deepseek-ai/deepseek-v4-flash-0731",
       "publisher": "deepseek-ai",
-      "category": "text-generation",
-      "created": 735790403
-    },
-    "deepseek-ai/deepseek-v4-pro": {
-      "id": "deepseek-ai/deepseek-v4-pro",
-      "publisher": "deepseek-ai",
-      "category": "text-generation",
+      "category": "other",
       "created": 735790403
     },
     "google/codegemma-1.1-7b": {
@@ -520,12 +510,6 @@
       "id": "mistralai/mistral-large-2-instruct",
       "publisher": "mistralai",
       "category": "other",
-      "created": 735790403
-    },
-    "mistralai/mistral-medium-3.5-128b": {
-      "id": "mistralai/mistral-medium-3.5-128b",
-      "publisher": "mistralai",
-      "category": "text-generation",
       "created": 735790403
     },
     "mistralai/mistral-nemotron": {
