@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-08-10T07:53:06.534176 | Total: 100 models
+Fetched: 2026-08-11T07:17:55.770866 | Total: 101 models
 
 ---
 
@@ -23,7 +23,7 @@ Fetched: 2026-08-10T07:53:06.534176 | Total: 100 models
 - `nvidia/nemoretriever-parse` (nvidia)
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (41)
+### Other (42)
 
 - `01-ai/yi-large` (01-ai)
 - `adept/fuyu-8b` (adept)
@@ -43,6 +43,7 @@ Fetched: 2026-08-10T07:53:06.534176 | Total: 100 models
 - `ibm/granite-8b-code-instruct` (ibm)
 - `meta/codellama-70b` (meta)
 - `meta/llama2-70b` (meta)
+- `meta/muse-glimmer-30b` (meta)
 - `microsoft/phi-3.5-moe-instruct` (microsoft)
 - `mistralai/codestral-22b-instruct-v0.1` (mistralai)
 - `mistralai/mistral-7b-instruct-v0.3` (mistralai)
@@ -184,7 +185,7 @@ Fetched: 2026-08-10T07:53:06.534176 | Total: 100 models
 - `ibm/granite-34b-code-instruct` [text-generation]
 - `ibm/granite-8b-code-instruct` [other]
 
-### meta (10)
+### meta (11)
 
 - `meta/codellama-70b` [other]
 - `meta/llama-3.1-70b-instruct` [text-generation]
@@ -196,6 +197,7 @@ Fetched: 2026-08-10T07:53:06.534176 | Total: 100 models
 - `meta/llama-3.3-70b-instruct` [text-generation]
 - `meta/llama-guard-4-12b` [safety]
 - `meta/llama2-70b` [other]
+- `meta/muse-glimmer-30b` [other]
 
 ### microsoft (3)
 
