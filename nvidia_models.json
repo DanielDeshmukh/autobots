@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-08-20T06:55:47.433515",
-  "total": 102,
+  "fetched_at": "2026-08-21T06:57:01.222650",
+  "total": 103,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -28,6 +28,7 @@
       "mistralai/mistral-large",
       "mistralai/mistral-large-2-instruct",
       "mistralai/mixtral-8x22b-v0.1",
+      "moonshotai/kimi-k3",
       "nv-mistralai/mistral-nemo-12b-instruct",
       "nvidia/ising-calibration-1.5-31b",
       "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
@@ -194,7 +195,8 @@
       "mistralai/mixtral-8x22b-v0.1"
     ],
     "moonshotai": [
-      "moonshotai/kimi-k2.6"
+      "moonshotai/kimi-k2.6",
+      "moonshotai/kimi-k3"
     ],
     "nv-mistralai": [
       "nv-mistralai/mistral-nemo-12b-instruct"
@@ -538,6 +540,12 @@
       "id": "moonshotai/kimi-k2.6",
       "publisher": "moonshotai",
       "category": "text-generation",
+      "created": 735790403
+    },
+    "moonshotai/kimi-k3": {
+      "id": "moonshotai/kimi-k3",
+      "publisher": "moonshotai",
+      "category": "other",
       "created": 735790403
     },
     "nv-mistralai/mistral-nemo-12b-instruct": {

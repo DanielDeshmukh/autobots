@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-08-20T06:55:47.433515 | Total: 102 models
+Fetched: 2026-08-21T06:57:01.222650 | Total: 103 models
 
 ---
 
@@ -23,7 +23,7 @@ Fetched: 2026-08-20T06:55:47.433515 | Total: 102 models
 - `nvidia/nemoretriever-parse` (nvidia)
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (43)
+### Other (44)
 
 - `01-ai/yi-large` (01-ai)
 - `adept/fuyu-8b` (adept)
@@ -50,6 +50,7 @@ Fetched: 2026-08-20T06:55:47.433515 | Total: 102 models
 - `mistralai/mistral-large` (mistralai)
 - `mistralai/mistral-large-2-instruct` (mistralai)
 - `mistralai/mixtral-8x22b-v0.1` (mistralai)
+- `moonshotai/kimi-k3` (moonshotai)
 - `nv-mistralai/mistral-nemo-12b-instruct` (nv-mistralai)
 - `nvidia/ising-calibration-1.5-31b` (nvidia)
 - `nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1` (nvidia)
@@ -219,9 +220,10 @@ Fetched: 2026-08-20T06:55:47.433515 | Total: 102 models
 - `mistralai/mistral-nemotron` [text-generation]
 - `mistralai/mixtral-8x22b-v0.1` [other]
 
-### moonshotai (1)
+### moonshotai (2)
 
 - `moonshotai/kimi-k2.6` [text-generation]
+- `moonshotai/kimi-k3` [other]
 
 ### nv-mistralai (1)
 
