@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-08-21T06:57:01.222650",
-  "total": 103,
+  "fetched_at": "2026-08-22T06:50:34.917136",
+  "total": 102,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -45,8 +45,7 @@
       "nvidia/riva-translate-4b-instruct-v2",
       "poolside/laguna-xs-2.1",
       "thinkingmachines/inkling",
-      "writer/palmyra-med-70b-32k",
-      "z-ai/glm-5.2"
+      "writer/palmyra-med-70b-32k"
     ],
     "embedding": [
       "baai/bge-m3",
@@ -269,9 +268,6 @@
       "writer/palmyra-fin-70b-32k",
       "writer/palmyra-med-70b",
       "writer/palmyra-med-70b-32k"
-    ],
-    "z-ai": [
-      "z-ai/glm-5.2"
     ],
     "zyphra": [
       "zyphra/zamba2-7b-instruct"
@@ -881,12 +877,6 @@
     "writer/palmyra-med-70b-32k": {
       "id": "writer/palmyra-med-70b-32k",
       "publisher": "writer",
-      "category": "other",
-      "created": 735790403
-    },
-    "z-ai/glm-5.2": {
-      "id": "z-ai/glm-5.2",
-      "publisher": "z-ai",
       "category": "other",
       "created": 735790403
     },
