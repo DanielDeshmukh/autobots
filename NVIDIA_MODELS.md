@@ -1,29 +1,23 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-08-25T06:57:38.676928 | Total: 102 models
+Fetched: 2026-08-26T06:58:54.839678 | Total: 95 models
 
 ---
 
 ## By Category
 
-### Embedding (9)
+### Embedding (4)
 
-- `baai/bge-m3` (baai)
 - `nvidia/embed-qa-4` (nvidia)
 - `nvidia/llama-3.2-nv-embedqa-1b-v1` (nvidia)
-- `nvidia/llama-nemotron-embed-1b-v2` (nvidia)
 - `nvidia/llama-nemotron-embed-vl-1b-v2` (nvidia)
-- `nvidia/nv-embed-v1` (nvidia)
-- `nvidia/nv-embedcode-7b-v1` (nvidia)
-- `nvidia/nv-embedqa-e5-v5` (nvidia)
 - `snowflake/arctic-embed-l` (snowflake)
 
-### Ocr (2)
+### Ocr (1)
 
-- `nvidia/nemoretriever-parse` (nvidia)
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (43)
+### Other (42)
 
 - `01-ai/yi-large` (01-ai)
 - `adept/fuyu-8b` (adept)
@@ -66,7 +60,6 @@ Fetched: 2026-08-25T06:57:38.676928 | Total: 102 models
 - `nvidia/riva-translate-4b-instruct-v1.1` (nvidia)
 - `nvidia/riva-translate-4b-instruct-v2` (nvidia)
 - `poolside/laguna-xs-2.1` (poolside)
-- `thinkingmachines/inkling` (thinkingmachines)
 - `writer/palmyra-med-70b-32k` (writer)
 
 ### Safety (5)
@@ -150,10 +143,6 @@ Fetched: 2026-08-25T06:57:38.676928 | Total: 102 models
 
 - `aisingapore/sea-lion-7b-instruct` [other]
 
-### baai (1)
-
-- `baai/bge-m3` [embedding]
-
 ### bigcode (1)
 
 - `bigcode/starcoder2-15b` [other]
@@ -228,7 +217,7 @@ Fetched: 2026-08-25T06:57:38.676928 | Total: 102 models
 
 - `nv-mistralai/mistral-nemo-12b-instruct` [other]
 
-### nvidia (45)
+### nvidia (40)
 
 - `nvidia/ai-synthetic-video-detector` [video]
 - `nvidia/cosmos-reason2-8b` [video]
@@ -246,11 +235,9 @@ Fetched: 2026-08-25T06:57:38.676928 | Total: 102 models
 - `nvidia/llama-3.2-nv-embedqa-1b-v1` [embedding]
 - `nvidia/llama-3.3-nemotron-super-49b-v1` [text-generation]
 - `nvidia/llama-3.3-nemotron-super-49b-v1.5` [text-generation]
-- `nvidia/llama-nemotron-embed-1b-v2` [embedding]
 - `nvidia/llama-nemotron-embed-vl-1b-v2` [embedding]
 - `nvidia/llama3-chatqa-1.5-70b` [other]
 - `nvidia/mistral-nemo-minitron-8b-8k-instruct` [other]
-- `nvidia/nemoretriever-parse` [ocr]
 - `nvidia/nemotron-3-embed-1b` [other]
 - `nvidia/nemotron-3-nano-30b-a3b` [text-generation]
 - `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` [other]
@@ -265,9 +252,6 @@ Fetched: 2026-08-25T06:57:38.676928 | Total: 102 models
 - `nvidia/nemotron-nano-3-30b-a3b` [other]
 - `nvidia/nemotron-parse` [ocr]
 - `nvidia/neva-22b` [vision]
-- `nvidia/nv-embed-v1` [embedding]
-- `nvidia/nv-embedcode-7b-v1` [embedding]
-- `nvidia/nv-embedqa-e5-v5` [embedding]
 - `nvidia/nv-embedqa-mistral-7b-v2` [other]
 - `nvidia/nvclip` [other]
 - `nvidia/nvidia-nemotron-nano-9b-v2` [text-generation]
@@ -292,10 +276,6 @@ Fetched: 2026-08-25T06:57:38.676928 | Total: 102 models
 ### stepfun-ai (1)
 
 - `stepfun-ai/step-3.7-flash` [text-generation]
-
-### thinkingmachines (1)
-
-- `thinkingmachines/inkling` [other]
 
 ### writer (4)
 

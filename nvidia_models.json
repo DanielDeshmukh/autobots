@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-08-25T06:57:38.676928",
-  "total": 102,
+  "fetched_at": "2026-08-26T06:58:54.839678",
+  "total": 95,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -44,19 +44,7 @@
       "nvidia/riva-translate-4b-instruct-v1.1",
       "nvidia/riva-translate-4b-instruct-v2",
       "poolside/laguna-xs-2.1",
-      "thinkingmachines/inkling",
       "writer/palmyra-med-70b-32k"
-    ],
-    "embedding": [
-      "baai/bge-m3",
-      "nvidia/embed-qa-4",
-      "nvidia/llama-3.2-nv-embedqa-1b-v1",
-      "nvidia/llama-nemotron-embed-1b-v2",
-      "nvidia/llama-nemotron-embed-vl-1b-v2",
-      "nvidia/nv-embed-v1",
-      "nvidia/nv-embedcode-7b-v1",
-      "nvidia/nv-embedqa-e5-v5",
-      "snowflake/arctic-embed-l"
     ],
     "text-generation": [
       "google/gemma-3-12b-it",
@@ -113,8 +101,13 @@
       "nvidia/ai-synthetic-video-detector",
       "nvidia/cosmos-reason2-8b"
     ],
+    "embedding": [
+      "nvidia/embed-qa-4",
+      "nvidia/llama-3.2-nv-embedqa-1b-v1",
+      "nvidia/llama-nemotron-embed-vl-1b-v2",
+      "snowflake/arctic-embed-l"
+    ],
     "ocr": [
-      "nvidia/nemoretriever-parse",
       "nvidia/nemotron-parse"
     ],
     "specialized": [
@@ -133,9 +126,6 @@
     ],
     "aisingapore": [
       "aisingapore/sea-lion-7b-instruct"
-    ],
-    "baai": [
-      "baai/bge-m3"
     ],
     "bigcode": [
       "bigcode/starcoder2-15b"
@@ -217,11 +207,9 @@
       "nvidia/llama-3.2-nv-embedqa-1b-v1",
       "nvidia/llama-3.3-nemotron-super-49b-v1",
       "nvidia/llama-3.3-nemotron-super-49b-v1.5",
-      "nvidia/llama-nemotron-embed-1b-v2",
       "nvidia/llama-nemotron-embed-vl-1b-v2",
       "nvidia/llama3-chatqa-1.5-70b",
       "nvidia/mistral-nemo-minitron-8b-8k-instruct",
-      "nvidia/nemoretriever-parse",
       "nvidia/nemotron-3-embed-1b",
       "nvidia/nemotron-3-nano-30b-a3b",
       "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
@@ -236,9 +224,6 @@
       "nvidia/nemotron-nano-3-30b-a3b",
       "nvidia/nemotron-parse",
       "nvidia/neva-22b",
-      "nvidia/nv-embed-v1",
-      "nvidia/nv-embedcode-7b-v1",
-      "nvidia/nv-embedqa-e5-v5",
       "nvidia/nv-embedqa-mistral-7b-v2",
       "nvidia/nvclip",
       "nvidia/nvidia-nemotron-nano-9b-v2",
@@ -259,9 +244,6 @@
     ],
     "stepfun-ai": [
       "stepfun-ai/step-3.7-flash"
-    ],
-    "thinkingmachines": [
-      "thinkingmachines/inkling"
     ],
     "writer": [
       "writer/palmyra-creative-122b",
@@ -296,12 +278,6 @@
       "id": "aisingapore/sea-lion-7b-instruct",
       "publisher": "aisingapore",
       "category": "other",
-      "created": 735790403
-    },
-    "baai/bge-m3": {
-      "id": "baai/bge-m3",
-      "publisher": "baai",
-      "category": "embedding",
       "created": 735790403
     },
     "bigcode/starcoder2-15b": {
@@ -646,12 +622,6 @@
       "category": "text-generation",
       "created": 735790403
     },
-    "nvidia/llama-nemotron-embed-1b-v2": {
-      "id": "nvidia/llama-nemotron-embed-1b-v2",
-      "publisher": "nvidia",
-      "category": "embedding",
-      "created": 735790403
-    },
     "nvidia/llama-nemotron-embed-vl-1b-v2": {
       "id": "nvidia/llama-nemotron-embed-vl-1b-v2",
       "publisher": "nvidia",
@@ -668,12 +638,6 @@
       "id": "nvidia/mistral-nemo-minitron-8b-8k-instruct",
       "publisher": "nvidia",
       "category": "other",
-      "created": 735790403
-    },
-    "nvidia/nemoretriever-parse": {
-      "id": "nvidia/nemoretriever-parse",
-      "publisher": "nvidia",
-      "category": "ocr",
       "created": 735790403
     },
     "nvidia/nemotron-3-embed-1b": {
@@ -760,24 +724,6 @@
       "category": "vision",
       "created": 735790403
     },
-    "nvidia/nv-embed-v1": {
-      "id": "nvidia/nv-embed-v1",
-      "publisher": "nvidia",
-      "category": "embedding",
-      "created": 735790403
-    },
-    "nvidia/nv-embedcode-7b-v1": {
-      "id": "nvidia/nv-embedcode-7b-v1",
-      "publisher": "nvidia",
-      "category": "embedding",
-      "created": 735790403
-    },
-    "nvidia/nv-embedqa-e5-v5": {
-      "id": "nvidia/nv-embedqa-e5-v5",
-      "publisher": "nvidia",
-      "category": "embedding",
-      "created": 735790403
-    },
     "nvidia/nv-embedqa-mistral-7b-v2": {
       "id": "nvidia/nv-embedqa-mistral-7b-v2",
       "publisher": "nvidia",
@@ -848,12 +794,6 @@
       "id": "stepfun-ai/step-3.7-flash",
       "publisher": "stepfun-ai",
       "category": "text-generation",
-      "created": 735790403
-    },
-    "thinkingmachines/inkling": {
-      "id": "thinkingmachines/inkling",
-      "publisher": "thinkingmachines",
-      "category": "other",
       "created": 735790403
     },
     "writer/palmyra-creative-122b": {
