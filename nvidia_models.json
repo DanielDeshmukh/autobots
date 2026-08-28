@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-08-27T17:32:18.765926",
-  "total": 84,
+  "fetched_at": "2026-08-28T18:28:49.522973",
+  "total": 83,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -65,7 +65,6 @@
       "nvidia/nemotron-4-340b-instruct",
       "openai/gpt-oss-120b",
       "openai/gpt-oss-20b",
-      "stepfun-ai/step-3.7-flash",
       "writer/palmyra-creative-122b",
       "writer/palmyra-fin-70b-32k",
       "writer/palmyra-med-70b",
@@ -219,9 +218,6 @@
     ],
     "snowflake": [
       "snowflake/arctic-embed-l"
-    ],
-    "stepfun-ai": [
-      "stepfun-ai/step-3.7-flash"
     ],
     "writer": [
       "writer/palmyra-creative-122b",
@@ -700,12 +696,6 @@
       "id": "snowflake/arctic-embed-l",
       "publisher": "snowflake",
       "category": "embedding",
-      "created": 735790403
-    },
-    "stepfun-ai/step-3.7-flash": {
-      "id": "stepfun-ai/step-3.7-flash",
-      "publisher": "stepfun-ai",
-      "category": "text-generation",
       "created": 735790403
     },
     "writer/palmyra-creative-122b": {

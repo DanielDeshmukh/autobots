@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-08-27T17:32:18.765926 | Total: 84 models
+Fetched: 2026-08-28T18:28:49.522973 | Total: 83 models
 
 ---
 
@@ -75,7 +75,7 @@ Fetched: 2026-08-27T17:32:18.765926 | Total: 84 models
 
 - `nvidia/riva-translate-4b-instruct` (nvidia)
 
-### Text Generation (22)
+### Text Generation (21)
 
 - `google/gemma-3-12b-it` (google)
 - `google/gemma-3-4b-it` (google)
@@ -94,7 +94,6 @@ Fetched: 2026-08-27T17:32:18.765926 | Total: 84 models
 - `nvidia/nemotron-4-340b-instruct` (nvidia)
 - `openai/gpt-oss-120b` (openai)
 - `openai/gpt-oss-20b` (openai)
-- `stepfun-ai/step-3.7-flash` (stepfun-ai)
 - `writer/palmyra-creative-122b` (writer)
 - `writer/palmyra-fin-70b-32k` (writer)
 - `writer/palmyra-med-70b` (writer)
@@ -250,10 +249,6 @@ Fetched: 2026-08-27T17:32:18.765926 | Total: 84 models
 ### snowflake (1)
 
 - `snowflake/arctic-embed-l` [embedding]
-
-### stepfun-ai (1)
-
-- `stepfun-ai/step-3.7-flash` [text-generation]
 
 ### writer (4)
 
