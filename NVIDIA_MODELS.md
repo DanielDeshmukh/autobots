@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-08-31T13:21:21.275993 | Total: 83 models
+Fetched: 2026-09-01T11:28:39.039599 | Total: 82 models
 
 ---
 
@@ -75,7 +75,7 @@ Fetched: 2026-08-31T13:21:21.275993 | Total: 83 models
 
 - `nvidia/riva-translate-4b-instruct` (nvidia)
 
-### Text Generation (21)
+### Text Generation (20)
 
 - `google/gemma-3-12b-it` (google)
 - `google/gemma-3-4b-it` (google)
@@ -88,7 +88,6 @@ Fetched: 2026-08-31T13:21:21.275993 | Total: 83 models
 - `nvidia/llama-3.1-nemotron-51b-instruct` (nvidia)
 - `nvidia/llama-3.1-nemotron-70b-instruct` (nvidia)
 - `nvidia/llama-3.1-nemotron-ultra-253b-v1` (nvidia)
-- `nvidia/nemotron-3-nano-30b-a3b` (nvidia)
 - `nvidia/nemotron-3-super-120b-a12b` (nvidia)
 - `nvidia/nemotron-3-ultra-550b-a55b` (nvidia)
 - `nvidia/nemotron-4-340b-instruct` (nvidia)
@@ -201,7 +200,7 @@ Fetched: 2026-08-31T13:21:21.275993 | Total: 83 models
 
 - `nv-mistralai/mistral-nemo-12b-instruct` [other]
 
-### nvidia (33)
+### nvidia (32)
 
 - `nvidia/ai-synthetic-video-detector` [video]
 - `nvidia/cosmos-reason2-8b` [video]
@@ -219,7 +218,6 @@ Fetched: 2026-08-31T13:21:21.275993 | Total: 83 models
 - `nvidia/llama3-chatqa-1.5-70b` [other]
 - `nvidia/mistral-nemo-minitron-8b-8k-instruct` [other]
 - `nvidia/nemotron-3-embed-1b` [other]
-- `nvidia/nemotron-3-nano-30b-a3b` [text-generation]
 - `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` [other]
 - `nvidia/nemotron-3-super-120b-a12b` [text-generation]
 - `nvidia/nemotron-3-ultra-550b-a55b` [text-generation]
