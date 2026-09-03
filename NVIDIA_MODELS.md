@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-09-02T11:03:16.260317 | Total: 82 models
+Fetched: 2026-09-03T11:00:48.596786 | Total: 81 models
 
 ---
 
@@ -75,7 +75,7 @@ Fetched: 2026-09-02T11:03:16.260317 | Total: 82 models
 
 - `nvidia/riva-translate-4b-instruct` (nvidia)
 
-### Text Generation (20)
+### Text Generation (19)
 
 - `google/gemma-3-12b-it` (google)
 - `google/gemma-3-4b-it` (google)
@@ -91,7 +91,6 @@ Fetched: 2026-09-02T11:03:16.260317 | Total: 82 models
 - `nvidia/nemotron-3-super-120b-a12b` (nvidia)
 - `nvidia/nemotron-3-ultra-550b-a55b` (nvidia)
 - `nvidia/nemotron-4-340b-instruct` (nvidia)
-- `openai/gpt-oss-120b` (openai)
 - `openai/gpt-oss-20b` (openai)
 - `writer/palmyra-creative-122b` (writer)
 - `writer/palmyra-fin-70b-32k` (writer)
@@ -235,9 +234,8 @@ Fetched: 2026-09-02T11:03:16.260317 | Total: 82 models
 - `nvidia/riva-translate-4b-instruct-v2` [other]
 - `nvidia/vila` [vision]
 
-### openai (2)
+### openai (1)
 
-- `openai/gpt-oss-120b` [text-generation]
 - `openai/gpt-oss-20b` [text-generation]
 
 ### poolside (1)

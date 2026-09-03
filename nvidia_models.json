@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-09-02T11:03:16.260317",
-  "total": 82,
+  "fetched_at": "2026-09-03T11:00:48.596786",
+  "total": 81,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -62,7 +62,6 @@
       "nvidia/nemotron-3-super-120b-a12b",
       "nvidia/nemotron-3-ultra-550b-a55b",
       "nvidia/nemotron-4-340b-instruct",
-      "openai/gpt-oss-120b",
       "openai/gpt-oss-20b",
       "writer/palmyra-creative-122b",
       "writer/palmyra-fin-70b-32k",
@@ -208,7 +207,6 @@
       "nvidia/vila"
     ],
     "openai": [
-      "openai/gpt-oss-120b",
       "openai/gpt-oss-20b"
     ],
     "poolside": [
@@ -664,12 +662,6 @@
       "id": "nvidia/vila",
       "publisher": "nvidia",
       "category": "vision",
-      "created": 735790403
-    },
-    "openai/gpt-oss-120b": {
-      "id": "openai/gpt-oss-120b",
-      "publisher": "openai",
-      "category": "text-generation",
       "created": 735790403
     },
     "openai/gpt-oss-20b": {
