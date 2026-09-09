@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-09-08T11:01:14.010096 | Total: 81 models
+Fetched: 2026-09-09T11:06:22.093788 | Total: 80 models
 
 ---
 
@@ -75,14 +75,13 @@ Fetched: 2026-09-08T11:01:14.010096 | Total: 81 models
 
 - `nvidia/riva-translate-4b-instruct` (nvidia)
 
-### Text Generation (19)
+### Text Generation (18)
 
 - `google/gemma-3-12b-it` (google)
 - `google/gemma-3-4b-it` (google)
 - `google/gemma-4-31b-it` (google)
 - `ibm/granite-3.0-8b-instruct` (ibm)
 - `ibm/granite-34b-code-instruct` (ibm)
-- `minimaxai/minimax-m3` (minimaxai)
 - `mistralai/mistral-nemotron` (mistralai)
 - `moonshotai/kimi-k2.6` (moonshotai)
 - `nvidia/llama-3.1-nemotron-51b-instruct` (nvidia)
@@ -176,10 +175,6 @@ Fetched: 2026-09-08T11:01:14.010096 | Total: 81 models
 - `microsoft/kosmos-2` [vision]
 - `microsoft/phi-3-vision-128k-instruct` [vision]
 - `microsoft/phi-3.5-moe-instruct` [other]
-
-### minimaxai (1)
-
-- `minimaxai/minimax-m3` [text-generation]
 
 ### mistralai (6)
 
