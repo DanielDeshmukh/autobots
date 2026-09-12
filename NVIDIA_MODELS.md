@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-09-11T11:01:00.633803 | Total: 80 models
+Fetched: 2026-09-12T10:29:46.203752 | Total: 82 models
 
 ---
 
@@ -17,7 +17,7 @@ Fetched: 2026-09-11T11:01:00.633803 | Total: 80 models
 
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (43)
+### Other (45)
 
 - `01-ai/yi-large` (01-ai)
 - `adept/fuyu-8b` (adept)
@@ -56,12 +56,14 @@ Fetched: 2026-09-11T11:01:00.633803 | Total: 80 models
 - `nvidia/nemotron-3.5-lightning-30b-a3b` (nvidia)
 - `nvidia/nemotron-4-340b-reward` (nvidia)
 - `nvidia/nemotron-nano-3-30b-a3b` (nvidia)
+- `nvidia/nemotron-parse-2.0` (nvidia)
 - `nvidia/nv-embedqa-mistral-7b-v2` (nvidia)
 - `nvidia/nvclip` (nvidia)
 - `nvidia/riva-translate-4b-instruct-v1.1` (nvidia)
 - `nvidia/riva-translate-4b-instruct-v2` (nvidia)
 - `poolside/laguna-xs-2.1` (poolside)
 - `writer/palmyra-med-70b-32k` (writer)
+- `z-ai/glm-5.3-flash` (z-ai)
 
 ### Safety (5)
 
@@ -194,7 +196,7 @@ Fetched: 2026-09-11T11:01:00.633803 | Total: 80 models
 
 - `nv-mistralai/mistral-nemo-12b-instruct` [other]
 
-### nvidia (32)
+### nvidia (33)
 
 - `nvidia/ai-synthetic-video-detector` [video]
 - `nvidia/cosmos-reason2-8b` [video]
@@ -221,6 +223,7 @@ Fetched: 2026-09-11T11:01:00.633803 | Total: 80 models
 - `nvidia/nemotron-4-340b-reward` [other]
 - `nvidia/nemotron-nano-3-30b-a3b` [other]
 - `nvidia/nemotron-parse` [ocr]
+- `nvidia/nemotron-parse-2.0` [other]
 - `nvidia/neva-22b` [vision]
 - `nvidia/nv-embedqa-mistral-7b-v2` [other]
 - `nvidia/nvclip` [other]
@@ -247,6 +250,10 @@ Fetched: 2026-09-11T11:01:00.633803 | Total: 80 models
 - `writer/palmyra-fin-70b-32k` [text-generation]
 - `writer/palmyra-med-70b` [text-generation]
 - `writer/palmyra-med-70b-32k` [other]
+
+### z-ai (1)
+
+- `z-ai/glm-5.3-flash` [other]
 
 ### zyphra (1)
 

@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-09-11T11:01:00.633803",
-  "total": 80,
+  "fetched_at": "2026-09-12T10:29:46.203752",
+  "total": 82,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -40,12 +40,14 @@
       "nvidia/nemotron-3.5-lightning-30b-a3b",
       "nvidia/nemotron-4-340b-reward",
       "nvidia/nemotron-nano-3-30b-a3b",
+      "nvidia/nemotron-parse-2.0",
       "nvidia/nv-embedqa-mistral-7b-v2",
       "nvidia/nvclip",
       "nvidia/riva-translate-4b-instruct-v1.1",
       "nvidia/riva-translate-4b-instruct-v2",
       "poolside/laguna-xs-2.1",
-      "writer/palmyra-med-70b-32k"
+      "writer/palmyra-med-70b-32k",
+      "z-ai/glm-5.3-flash"
     ],
     "text-generation": [
       "google/gemma-3-12b-it",
@@ -194,6 +196,7 @@
       "nvidia/nemotron-4-340b-reward",
       "nvidia/nemotron-nano-3-30b-a3b",
       "nvidia/nemotron-parse",
+      "nvidia/nemotron-parse-2.0",
       "nvidia/neva-22b",
       "nvidia/nv-embedqa-mistral-7b-v2",
       "nvidia/nvclip",
@@ -216,6 +219,9 @@
       "writer/palmyra-fin-70b-32k",
       "writer/palmyra-med-70b",
       "writer/palmyra-med-70b-32k"
+    ],
+    "z-ai": [
+      "z-ai/glm-5.3-flash"
     ],
     "zyphra": [
       "zyphra/zamba2-7b-instruct"
@@ -612,6 +618,12 @@
       "category": "ocr",
       "created": 735790403
     },
+    "nvidia/nemotron-parse-2.0": {
+      "id": "nvidia/nemotron-parse-2.0",
+      "publisher": "nvidia",
+      "category": "other",
+      "created": 735790403
+    },
     "nvidia/neva-22b": {
       "id": "nvidia/neva-22b",
       "publisher": "nvidia",
@@ -693,6 +705,12 @@
     "writer/palmyra-med-70b-32k": {
       "id": "writer/palmyra-med-70b-32k",
       "publisher": "writer",
+      "category": "other",
+      "created": 735790403
+    },
+    "z-ai/glm-5.3-flash": {
+      "id": "z-ai/glm-5.3-flash",
+      "publisher": "z-ai",
       "category": "other",
       "created": 735790403
     },
