@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-09-13T11:32:48.071362 | Total: 82 models
+Fetched: 2026-09-14T12:26:37.177844 | Total: 81 models
 
 ---
 
@@ -17,7 +17,7 @@ Fetched: 2026-09-13T11:32:48.071362 | Total: 82 models
 
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (45)
+### Other (44)
 
 - `01-ai/yi-large` (01-ai)
 - `adept/fuyu-8b` (adept)
@@ -27,7 +27,6 @@ Fetched: 2026-09-13T11:32:48.071362 | Total: 82 models
 - `databricks/dbrx-instruct` (databricks)
 - `deepseek-ai/deepseek-coder-6.7b-instruct` (deepseek-ai)
 - `deepseek-ai/deepseek-v4-flash-0731` (deepseek-ai)
-- `deepseek-ai/deepseek-v4-pro-0813` (deepseek-ai)
 - `google/codegemma-1.1-7b` (google)
 - `google/codegemma-7b` (google)
 - `google/deplot` (google)
@@ -138,11 +137,10 @@ Fetched: 2026-09-13T11:32:48.071362 | Total: 82 models
 
 - `databricks/dbrx-instruct` [other]
 
-### deepseek-ai (3)
+### deepseek-ai (2)
 
 - `deepseek-ai/deepseek-coder-6.7b-instruct` [other]
 - `deepseek-ai/deepseek-v4-flash-0731` [other]
-- `deepseek-ai/deepseek-v4-pro-0813` [other]
 
 ### google (9)
 
