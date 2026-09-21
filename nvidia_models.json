@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-09-20T11:05:27.656258",
-  "total": 82,
+  "fetched_at": "2026-09-21T12:33:15.518674",
+  "total": 81,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -10,7 +10,6 @@
       "bigcode/starcoder2-15b",
       "databricks/dbrx-instruct",
       "deepseek-ai/deepseek-coder-6.7b-instruct",
-      "deepseek-ai/deepseek-v4-flash-0731",
       "google/codegemma-1.1-7b",
       "google/codegemma-7b",
       "google/deplot",
@@ -121,8 +120,7 @@
       "databricks/dbrx-instruct"
     ],
     "deepseek-ai": [
-      "deepseek-ai/deepseek-coder-6.7b-instruct",
-      "deepseek-ai/deepseek-v4-flash-0731"
+      "deepseek-ai/deepseek-coder-6.7b-instruct"
     ],
     "google": [
       "google/codegemma-1.1-7b",
@@ -266,12 +264,6 @@
     },
     "deepseek-ai/deepseek-coder-6.7b-instruct": {
       "id": "deepseek-ai/deepseek-coder-6.7b-instruct",
-      "publisher": "deepseek-ai",
-      "category": "other",
-      "created": 735790403
-    },
-    "deepseek-ai/deepseek-v4-flash-0731": {
-      "id": "deepseek-ai/deepseek-v4-flash-0731",
       "publisher": "deepseek-ai",
       "category": "other",
       "created": 735790403
