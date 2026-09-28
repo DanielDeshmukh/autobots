@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-09-27T11:49:33.931845",
-  "total": 82,
+  "fetched_at": "2026-09-28T13:32:43.475424",
+  "total": 81,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -55,7 +55,6 @@
       "google/gemma-4-31b-it",
       "ibm/granite-3.0-8b-instruct",
       "ibm/granite-34b-code-instruct",
-      "mistralai/mistral-nemotron",
       "moonshotai/kimi-k2.6",
       "nvidia/llama-3.1-nemotron-51b-instruct",
       "nvidia/llama-3.1-nemotron-70b-instruct",
@@ -159,7 +158,6 @@
       "mistralai/mistral-7b-instruct-v0.3",
       "mistralai/mistral-large",
       "mistralai/mistral-large-2-instruct",
-      "mistralai/mistral-nemotron",
       "mistralai/mixtral-8x22b-v0.1"
     ],
     "moonshotai": [
@@ -430,12 +428,6 @@
       "id": "mistralai/mistral-large-2-instruct",
       "publisher": "mistralai",
       "category": "other",
-      "created": 735790403
-    },
-    "mistralai/mistral-nemotron": {
-      "id": "mistralai/mistral-nemotron",
-      "publisher": "mistralai",
-      "category": "text-generation",
       "created": 735790403
     },
     "mistralai/mixtral-8x22b-v0.1": {

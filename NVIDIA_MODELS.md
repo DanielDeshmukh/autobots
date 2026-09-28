@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-09-27T11:49:33.931845 | Total: 82 models
+Fetched: 2026-09-28T13:32:43.475424 | Total: 81 models
 
 ---
 
@@ -77,14 +77,13 @@ Fetched: 2026-09-27T11:49:33.931845 | Total: 82 models
 
 - `nvidia/riva-translate-4b-instruct` (nvidia)
 
-### Text Generation (18)
+### Text Generation (17)
 
 - `google/gemma-3-12b-it` (google)
 - `google/gemma-3-4b-it` (google)
 - `google/gemma-4-31b-it` (google)
 - `ibm/granite-3.0-8b-instruct` (ibm)
 - `ibm/granite-34b-code-instruct` (ibm)
-- `mistralai/mistral-nemotron` (mistralai)
 - `moonshotai/kimi-k2.6` (moonshotai)
 - `nvidia/llama-3.1-nemotron-51b-instruct` (nvidia)
 - `nvidia/llama-3.1-nemotron-70b-instruct` (nvidia)
@@ -177,13 +176,12 @@ Fetched: 2026-09-27T11:49:33.931845 | Total: 82 models
 - `microsoft/phi-3-vision-128k-instruct` [vision]
 - `microsoft/phi-3.5-moe-instruct` [other]
 
-### mistralai (6)
+### mistralai (5)
 
 - `mistralai/codestral-22b-instruct-v0.1` [other]
 - `mistralai/mistral-7b-instruct-v0.3` [other]
 - `mistralai/mistral-large` [other]
 - `mistralai/mistral-large-2-instruct` [other]
-- `mistralai/mistral-nemotron` [text-generation]
 - `mistralai/mixtral-8x22b-v0.1` [other]
 
 ### moonshotai (2)
