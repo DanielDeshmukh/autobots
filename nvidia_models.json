@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-10-14T11:35:21.504305",
+  "fetched_at": "2026-10-15T11:13:51.112840",
   "total": 80,
   "by_category": {
     "other": [
@@ -28,7 +28,6 @@
       "mistralai/mistral-large",
       "mistralai/mistral-large-2-instruct",
       "mistralai/mixtral-8x22b-v0.1",
-      "moonshotai/kimi-k3",
       "nv-mistralai/mistral-nemo-12b-instruct",
       "nvidia/ising-calibration-1.5-31b",
       "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
@@ -44,6 +43,7 @@
       "nvidia/nvclip",
       "nvidia/riva-translate-4b-instruct-v2",
       "poolside/laguna-xs-2.1",
+      "stepfun-ai/step-5-preview",
       "writer/palmyra-med-70b-32k",
       "z-ai/glm-5.3",
       "z-ai/glm-5.3-flash"
@@ -160,8 +160,7 @@
       "mistralai/mixtral-8x22b-v0.1"
     ],
     "moonshotai": [
-      "moonshotai/kimi-k2.6",
-      "moonshotai/kimi-k3"
+      "moonshotai/kimi-k2.6"
     ],
     "nv-mistralai": [
       "nv-mistralai/mistral-nemo-12b-instruct"
@@ -208,6 +207,9 @@
     ],
     "snowflake": [
       "snowflake/arctic-embed-l"
+    ],
+    "stepfun-ai": [
+      "stepfun-ai/step-5-preview"
     ],
     "writer": [
       "writer/palmyra-creative-122b",
@@ -440,12 +442,6 @@
       "category": "text-generation",
       "created": 735790403
     },
-    "moonshotai/kimi-k3": {
-      "id": "moonshotai/kimi-k3",
-      "publisher": "moonshotai",
-      "category": "other",
-      "created": 735790403
-    },
     "nv-mistralai/mistral-nemo-12b-instruct": {
       "id": "nv-mistralai/mistral-nemo-12b-instruct",
       "publisher": "nv-mistralai",
@@ -660,6 +656,12 @@
       "id": "snowflake/arctic-embed-l",
       "publisher": "snowflake",
       "category": "embedding",
+      "created": 735790403
+    },
+    "stepfun-ai/step-5-preview": {
+      "id": "stepfun-ai/step-5-preview",
+      "publisher": "stepfun-ai",
+      "category": "other",
       "created": 735790403
     },
     "writer/palmyra-creative-122b": {

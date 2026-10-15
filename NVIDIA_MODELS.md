@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-10-14T11:35:21.504305 | Total: 80 models
+Fetched: 2026-10-15T11:13:51.112840 | Total: 80 models
 
 ---
 
@@ -44,7 +44,6 @@ Fetched: 2026-10-14T11:35:21.504305 | Total: 80 models
 - `mistralai/mistral-large` (mistralai)
 - `mistralai/mistral-large-2-instruct` (mistralai)
 - `mistralai/mixtral-8x22b-v0.1` (mistralai)
-- `moonshotai/kimi-k3` (moonshotai)
 - `nv-mistralai/mistral-nemo-12b-instruct` (nv-mistralai)
 - `nvidia/ising-calibration-1.5-31b` (nvidia)
 - `nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1` (nvidia)
@@ -60,6 +59,7 @@ Fetched: 2026-10-14T11:35:21.504305 | Total: 80 models
 - `nvidia/nvclip` (nvidia)
 - `nvidia/riva-translate-4b-instruct-v2` (nvidia)
 - `poolside/laguna-xs-2.1` (poolside)
+- `stepfun-ai/step-5-preview` (stepfun-ai)
 - `writer/palmyra-med-70b-32k` (writer)
 - `z-ai/glm-5.3` (z-ai)
 - `z-ai/glm-5.3-flash` (z-ai)
@@ -183,10 +183,9 @@ Fetched: 2026-10-14T11:35:21.504305 | Total: 80 models
 - `mistralai/mistral-large-2-instruct` [other]
 - `mistralai/mixtral-8x22b-v0.1` [other]
 
-### moonshotai (2)
+### moonshotai (1)
 
 - `moonshotai/kimi-k2.6` [text-generation]
-- `moonshotai/kimi-k3` [other]
 
 ### nv-mistralai (1)
 
@@ -238,6 +237,10 @@ Fetched: 2026-10-14T11:35:21.504305 | Total: 80 models
 ### snowflake (1)
 
 - `snowflake/arctic-embed-l` [embedding]
+
+### stepfun-ai (1)
+
+- `stepfun-ai/step-5-preview` [other]
 
 ### writer (4)
 
