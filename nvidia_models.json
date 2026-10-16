@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-10-15T11:13:51.112840",
-  "total": 80,
+  "fetched_at": "2026-10-16T11:08:19.923385",
+  "total": 81,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -36,6 +36,7 @@
       "nvidia/nemotron-3-embed-1b",
       "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
       "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "nvidia/nemotron-4-340b-reward",
       "nvidia/nemotron-nano-3-30b-a3b",
       "nvidia/nemotron-parse-2.0",
@@ -187,6 +188,7 @@
       "nvidia/nemotron-3-ultra-550b-a55b",
       "nvidia/nemotron-3.5-content-safety",
       "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "nvidia/nemotron-4-340b-instruct",
       "nvidia/nemotron-4-340b-reward",
       "nvidia/nemotron-nano-3-30b-a3b",
@@ -570,6 +572,12 @@
     },
     "nvidia/nemotron-3.5-lightning-30b-a3b": {
       "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "publisher": "nvidia",
+      "category": "other",
+      "created": 735790403
+    },
+    "nvidia/nemotron-3.5-super-vl-120b-a12b": {
+      "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "publisher": "nvidia",
       "category": "other",
       "created": 735790403
