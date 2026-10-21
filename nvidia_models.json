@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-10-20T11:18:04.987236",
-  "total": 81,
+  "fetched_at": "2026-10-21T11:33:41.797967",
+  "total": 83,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -35,6 +35,8 @@
       "nvidia/mistral-nemo-minitron-8b-8k-instruct",
       "nvidia/nemotron-3-embed-1b",
       "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+      "nvidia/nemotron-3.5-embed-1b",
+      "nvidia/nemotron-3.5-embed-8b",
       "nvidia/nemotron-3.5-lightning-30b-a3b",
       "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "nvidia/nemotron-4-340b-reward",
@@ -187,6 +189,8 @@
       "nvidia/nemotron-3-super-120b-a12b",
       "nvidia/nemotron-3-ultra-550b-a55b",
       "nvidia/nemotron-3.5-content-safety",
+      "nvidia/nemotron-3.5-embed-1b",
+      "nvidia/nemotron-3.5-embed-8b",
       "nvidia/nemotron-3.5-lightning-30b-a3b",
       "nvidia/nemotron-3.5-super-vl-120b-a12b",
       "nvidia/nemotron-4-340b-instruct",
@@ -568,6 +572,18 @@
       "id": "nvidia/nemotron-3.5-content-safety",
       "publisher": "nvidia",
       "category": "safety",
+      "created": 735790403
+    },
+    "nvidia/nemotron-3.5-embed-1b": {
+      "id": "nvidia/nemotron-3.5-embed-1b",
+      "publisher": "nvidia",
+      "category": "other",
+      "created": 735790403
+    },
+    "nvidia/nemotron-3.5-embed-8b": {
+      "id": "nvidia/nemotron-3.5-embed-8b",
+      "publisher": "nvidia",
+      "category": "other",
       "created": 735790403
     },
     "nvidia/nemotron-3.5-lightning-30b-a3b": {
