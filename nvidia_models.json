@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-10-22T11:33:37.800774",
-  "total": 83,
+  "fetched_at": "2026-10-23T11:22:46.497215",
+  "total": 84,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -23,6 +23,7 @@
       "meta/llama2-70b",
       "meta/muse-glimmer-30b",
       "microsoft/phi-3.5-moe-instruct",
+      "minimaxai/minimax-m3.1-flash",
       "mistralai/codestral-22b-instruct-v0.1",
       "mistralai/mistral-7b-instruct-v0.3",
       "mistralai/mistral-large",
@@ -154,6 +155,9 @@
       "microsoft/kosmos-2",
       "microsoft/phi-3-vision-128k-instruct",
       "microsoft/phi-3.5-moe-instruct"
+    ],
+    "minimaxai": [
+      "minimaxai/minimax-m3.1-flash"
     ],
     "mistralai": [
       "mistralai/codestral-22b-instruct-v0.1",
@@ -409,6 +413,12 @@
     "microsoft/phi-3.5-moe-instruct": {
       "id": "microsoft/phi-3.5-moe-instruct",
       "publisher": "microsoft",
+      "category": "other",
+      "created": 735790403
+    },
+    "minimaxai/minimax-m3.1-flash": {
+      "id": "minimaxai/minimax-m3.1-flash",
+      "publisher": "minimaxai",
       "category": "other",
       "created": 735790403
     },

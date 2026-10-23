@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-10-22T11:33:37.800774 | Total: 83 models
+Fetched: 2026-10-23T11:22:46.497215 | Total: 84 models
 
 ---
 
@@ -17,7 +17,7 @@ Fetched: 2026-10-22T11:33:37.800774 | Total: 83 models
 
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (47)
+### Other (48)
 
 - `01-ai/yi-large` (01-ai)
 - `adept/fuyu-8b` (adept)
@@ -39,6 +39,7 @@ Fetched: 2026-10-22T11:33:37.800774 | Total: 83 models
 - `meta/llama2-70b` (meta)
 - `meta/muse-glimmer-30b` (meta)
 - `microsoft/phi-3.5-moe-instruct` (microsoft)
+- `minimaxai/minimax-m3.1-flash` (minimaxai)
 - `mistralai/codestral-22b-instruct-v0.1` (mistralai)
 - `mistralai/mistral-7b-instruct-v0.3` (mistralai)
 - `mistralai/mistral-large` (mistralai)
@@ -177,6 +178,10 @@ Fetched: 2026-10-22T11:33:37.800774 | Total: 83 models
 - `microsoft/kosmos-2` [vision]
 - `microsoft/phi-3-vision-128k-instruct` [vision]
 - `microsoft/phi-3.5-moe-instruct` [other]
+
+### minimaxai (1)
+
+- `minimaxai/minimax-m3.1-flash` [other]
 
 ### mistralai (5)
 
