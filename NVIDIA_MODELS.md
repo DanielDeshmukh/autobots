@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-10-27T11:56:05.757041 | Total: 85 models
+Fetched: 2026-10-28T12:33:41.915559 | Total: 84 models
 
 ---
 
@@ -17,7 +17,7 @@ Fetched: 2026-10-27T11:56:05.757041 | Total: 85 models
 
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (49)
+### Other (48)
 
 - `01-ai/yi-large` (01-ai)
 - `adept/fuyu-8b` (adept)
@@ -66,7 +66,6 @@ Fetched: 2026-10-27T11:56:05.757041 | Total: 85 models
 - `poolside/laguna-xs-2.1` (poolside)
 - `stepfun-ai/step-5-preview` (stepfun-ai)
 - `writer/palmyra-med-70b-32k` (writer)
-- `z-ai/glm-5.3` (z-ai)
 - `z-ai/glm-5.3-flash` (z-ai)
 
 ### Safety (5)
@@ -262,9 +261,8 @@ Fetched: 2026-10-27T11:56:05.757041 | Total: 85 models
 - `writer/palmyra-med-70b` [text-generation]
 - `writer/palmyra-med-70b-32k` [other]
 
-### z-ai (2)
+### z-ai (1)
 
-- `z-ai/glm-5.3` [other]
 - `z-ai/glm-5.3-flash` [other]
 
 ### zyphra (1)

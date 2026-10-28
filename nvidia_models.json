@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-10-27T11:56:05.757041",
-  "total": 85,
+  "fetched_at": "2026-10-28T12:33:41.915559",
+  "total": 84,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -50,7 +50,6 @@
       "poolside/laguna-xs-2.1",
       "stepfun-ai/step-5-preview",
       "writer/palmyra-med-70b-32k",
-      "z-ai/glm-5.3",
       "z-ai/glm-5.3-flash"
     ],
     "text-generation": [
@@ -230,7 +229,6 @@
       "writer/palmyra-med-70b-32k"
     ],
     "z-ai": [
-      "z-ai/glm-5.3",
       "z-ai/glm-5.3-flash"
     ],
     "zyphra": [
@@ -727,12 +725,6 @@
     "writer/palmyra-med-70b-32k": {
       "id": "writer/palmyra-med-70b-32k",
       "publisher": "writer",
-      "category": "other",
-      "created": 735790403
-    },
-    "z-ai/glm-5.3": {
-      "id": "z-ai/glm-5.3",
-      "publisher": "z-ai",
       "category": "other",
       "created": 735790403
     },
