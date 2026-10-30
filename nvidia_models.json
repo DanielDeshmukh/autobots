@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-10-29T12:43:53.113501",
-  "total": 84,
+  "fetched_at": "2026-10-30T12:35:55.100311",
+  "total": 85,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -28,6 +28,7 @@
       "mistralai/mistral-7b-instruct-v0.3",
       "mistralai/mistral-large",
       "mistralai/mistral-large-2-instruct",
+      "mistralai/mistral-large-4-1t-a52b",
       "mistralai/mixtral-8x22b-v0.1",
       "nv-mistralai/mistral-nemo-12b-instruct",
       "nvidia/ising-calibration-1.5-31b",
@@ -164,6 +165,7 @@
       "mistralai/mistral-7b-instruct-v0.3",
       "mistralai/mistral-large",
       "mistralai/mistral-large-2-instruct",
+      "mistralai/mistral-large-4-1t-a52b",
       "mistralai/mixtral-8x22b-v0.1"
     ],
     "moonshotai": [
@@ -442,6 +444,12 @@
     },
     "mistralai/mistral-large-2-instruct": {
       "id": "mistralai/mistral-large-2-instruct",
+      "publisher": "mistralai",
+      "category": "other",
+      "created": 735790403
+    },
+    "mistralai/mistral-large-4-1t-a52b": {
+      "id": "mistralai/mistral-large-4-1t-a52b",
       "publisher": "mistralai",
       "category": "other",
       "created": 735790403

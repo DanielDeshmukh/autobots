@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-10-29T12:43:53.113501 | Total: 84 models
+Fetched: 2026-10-30T12:35:55.100311 | Total: 85 models
 
 ---
 
@@ -17,7 +17,7 @@ Fetched: 2026-10-29T12:43:53.113501 | Total: 84 models
 
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (48)
+### Other (49)
 
 - `01-ai/yi-large` (01-ai)
 - `adept/fuyu-8b` (adept)
@@ -44,6 +44,7 @@ Fetched: 2026-10-29T12:43:53.113501 | Total: 84 models
 - `mistralai/mistral-7b-instruct-v0.3` (mistralai)
 - `mistralai/mistral-large` (mistralai)
 - `mistralai/mistral-large-2-instruct` (mistralai)
+- `mistralai/mistral-large-4-1t-a52b` (mistralai)
 - `mistralai/mixtral-8x22b-v0.1` (mistralai)
 - `nv-mistralai/mistral-nemo-12b-instruct` (nv-mistralai)
 - `nvidia/ising-calibration-1.5-31b` (nvidia)
@@ -183,12 +184,13 @@ Fetched: 2026-10-29T12:43:53.113501 | Total: 84 models
 
 - `minimaxai/minimax-m3.1-flash` [other]
 
-### mistralai (5)
+### mistralai (6)
 
 - `mistralai/codestral-22b-instruct-v0.1` [other]
 - `mistralai/mistral-7b-instruct-v0.3` [other]
 - `mistralai/mistral-large` [other]
 - `mistralai/mistral-large-2-instruct` [other]
+- `mistralai/mistral-large-4-1t-a52b` [other]
 - `mistralai/mixtral-8x22b-v0.1` [other]
 
 ### moonshotai (1)
