@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-11-04T14:12:06.992303",
-  "total": 85,
+  "fetched_at": "2026-11-05T14:27:09.572684",
+  "total": 84,
   "by_category": {
     "other": [
       "01-ai/yi-large",
@@ -73,7 +73,6 @@
       "zyphra/zamba2-7b-instruct"
     ],
     "vision": [
-      "meta/llama-3.2-11b-vision-instruct",
       "meta/llama-3.2-90b-vision-instruct",
       "microsoft/kosmos-2",
       "microsoft/phi-3-vision-128k-instruct",
@@ -146,7 +145,6 @@
     ],
     "meta": [
       "meta/codellama-70b",
-      "meta/llama-3.2-11b-vision-instruct",
       "meta/llama-3.2-90b-vision-instruct",
       "meta/llama-guard-4-12b",
       "meta/llama2-70b",
@@ -368,12 +366,6 @@
       "id": "meta/codellama-70b",
       "publisher": "meta",
       "category": "other",
-      "created": 735790403
-    },
-    "meta/llama-3.2-11b-vision-instruct": {
-      "id": "meta/llama-3.2-11b-vision-instruct",
-      "publisher": "meta",
-      "category": "vision",
       "created": 735790403
     },
     "meta/llama-3.2-90b-vision-instruct": {

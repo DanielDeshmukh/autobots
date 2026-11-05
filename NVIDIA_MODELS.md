@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-11-04T14:12:06.992303 | Total: 85 models
+Fetched: 2026-11-05T14:27:09.572684 | Total: 84 models
 
 ---
 
@@ -106,9 +106,8 @@ Fetched: 2026-11-04T14:12:06.992303 | Total: 85 models
 - `nvidia/ai-synthetic-video-detector` (nvidia)
 - `nvidia/cosmos-reason2-8b` (nvidia)
 
-### Vision (6)
+### Vision (5)
 
-- `meta/llama-3.2-11b-vision-instruct` (meta)
 - `meta/llama-3.2-90b-vision-instruct` (meta)
 - `microsoft/kosmos-2` (microsoft)
 - `microsoft/phi-3-vision-128k-instruct` (microsoft)
@@ -165,10 +164,9 @@ Fetched: 2026-11-04T14:12:06.992303 | Total: 85 models
 - `ibm/granite-34b-code-instruct` [text-generation]
 - `ibm/granite-8b-code-instruct` [other]
 
-### meta (6)
+### meta (5)
 
 - `meta/codellama-70b` [other]
-- `meta/llama-3.2-11b-vision-instruct` [vision]
 - `meta/llama-3.2-90b-vision-instruct` [vision]
 - `meta/llama-guard-4-12b` [safety]
 - `meta/llama2-70b` [other]
