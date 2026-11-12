@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-11-11T13:56:36.563787 | Total: 84 models
+Fetched: 2026-11-12T14:57:46.402018 | Total: 83 models
 
 ---
 
@@ -17,7 +17,7 @@ Fetched: 2026-11-11T13:56:36.563787 | Total: 84 models
 
 - `nvidia/nemotron-parse` (nvidia)
 
-### Other (49)
+### Other (48)
 
 - `01-ai/yi-large` (01-ai)
 - `adept/fuyu-8b` (adept)
@@ -30,7 +30,6 @@ Fetched: 2026-11-11T13:56:36.563787 | Total: 84 models
 - `google/codegemma-1.1-7b` (google)
 - `google/codegemma-7b` (google)
 - `google/deplot` (google)
-- `google/diffusiongemma-26b-a4b-it` (google)
 - `google/gemma-2b` (google)
 - `google/recurrentgemma-2b` (google)
 - `ibm/granite-3.0-3b-a800m-instruct` (ibm)
@@ -145,12 +144,11 @@ Fetched: 2026-11-11T13:56:36.563787 | Total: 84 models
 - `deepseek-ai/deepseek-coder-6.7b-instruct` [other]
 - `deepseek-ai/deepseek-v4.1-flash` [other]
 
-### google (9)
+### google (8)
 
 - `google/codegemma-1.1-7b` [other]
 - `google/codegemma-7b` [other]
 - `google/deplot` [other]
-- `google/diffusiongemma-26b-a4b-it` [other]
 - `google/gemma-2b` [other]
 - `google/gemma-3-12b-it` [text-generation]
 - `google/gemma-3-4b-it` [text-generation]
