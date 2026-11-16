@@ -1,55 +1,26 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-11-15T13:47:09.527513 | Total: 83 models
+Fetched: 2026-11-16T15:27:46.907022 | Total: 33 models
 
 ---
 
 ## By Category
 
-### Embedding (4)
+### Embedding (3)
 
 - `nvidia/embed-qa-4` (nvidia)
 - `nvidia/llama-3.2-nv-embedqa-1b-v1` (nvidia)
-- `nvidia/llama-nemotron-embed-vl-1b-v2` (nvidia)
 - `snowflake/arctic-embed-l` (snowflake)
 
-### Ocr (1)
+### Other (20)
 
-- `nvidia/nemotron-parse` (nvidia)
-
-### Other (48)
-
-- `01-ai/yi-large` (01-ai)
-- `adept/fuyu-8b` (adept)
-- `ai21labs/jamba-1.5-large-instruct` (ai21labs)
-- `aisingapore/sea-lion-7b-instruct` (aisingapore)
 - `bigcode/starcoder2-15b` (bigcode)
-- `databricks/dbrx-instruct` (databricks)
-- `deepseek-ai/deepseek-coder-6.7b-instruct` (deepseek-ai)
 - `deepseek-ai/deepseek-v4.1-flash` (deepseek-ai)
-- `google/codegemma-1.1-7b` (google)
-- `google/codegemma-7b` (google)
-- `google/deplot` (google)
-- `google/gemma-2b` (google)
-- `google/recurrentgemma-2b` (google)
-- `ibm/granite-3.0-3b-a800m-instruct` (ibm)
-- `ibm/granite-8b-code-instruct` (ibm)
-- `meta/codellama-70b` (meta)
-- `meta/llama2-70b` (meta)
 - `meta/muse-glimmer-30b` (meta)
-- `microsoft/phi-3.5-moe-instruct` (microsoft)
 - `minimaxai/minimax-m3.1-flash` (minimaxai)
-- `mistralai/codestral-22b-instruct-v0.1` (mistralai)
-- `mistralai/mistral-7b-instruct-v0.3` (mistralai)
-- `mistralai/mistral-large` (mistralai)
-- `mistralai/mistral-large-2-instruct` (mistralai)
 - `mistralai/mistral-large-4-1t-a52b` (mistralai)
-- `mistralai/mixtral-8x22b-v0.1` (mistralai)
-- `nv-mistralai/mistral-nemo-12b-instruct` (nv-mistralai)
 - `nvidia/ising-calibration-1.5-31b` (nvidia)
 - `nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1` (nvidia)
-- `nvidia/llama3-chatqa-1.5-70b` (nvidia)
-- `nvidia/mistral-nemo-minitron-8b-8k-instruct` (nvidia)
 - `nvidia/nemotron-3-embed-1b` (nvidia)
 - `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` (nvidia)
 - `nvidia/nemotron-3.5-bolt-e4b` (nvidia)
@@ -57,166 +28,72 @@ Fetched: 2026-11-15T13:47:09.527513 | Total: 83 models
 - `nvidia/nemotron-3.5-embed-8b` (nvidia)
 - `nvidia/nemotron-3.5-lightning-30b-a3b` (nvidia)
 - `nvidia/nemotron-3.5-super-vl-120b-a12b` (nvidia)
-- `nvidia/nemotron-4-340b-reward` (nvidia)
-- `nvidia/nemotron-nano-3-30b-a3b` (nvidia)
-- `nvidia/nemotron-parse-2.0` (nvidia)
 - `nvidia/nv-embedqa-mistral-7b-v2` (nvidia)
 - `nvidia/nvclip` (nvidia)
 - `nvidia/riva-translate-4b-instruct-v2` (nvidia)
 - `poolside/laguna-xs-2.1` (poolside)
 - `stepfun-ai/step-5-preview` (stepfun-ai)
-- `writer/palmyra-med-70b-32k` (writer)
 - `z-ai/glm-5.3-flash` (z-ai)
 
-### Safety (5)
+### Safety (3)
 
-- `meta/llama-guard-4-12b` (meta)
-- `nvidia/llama-3.1-nemoguard-8b-content-safety` (nvidia)
 - `nvidia/llama-3.1-nemoguard-8b-topic-control` (nvidia)
 - `nvidia/llama-3.1-nemotron-safety-guard-8b-v3` (nvidia)
 - `nvidia/nemotron-3.5-content-safety` (nvidia)
 
-### Specialized (1)
-
-- `nvidia/riva-translate-4b-instruct` (nvidia)
-
-### Text Generation (17)
+### Text Generation (5)
 
 - `google/gemma-3-12b-it` (google)
 - `google/gemma-3-4b-it` (google)
 - `google/gemma-4-31b-it` (google)
-- `ibm/granite-3.0-8b-instruct` (ibm)
-- `ibm/granite-34b-code-instruct` (ibm)
-- `moonshotai/kimi-k2.6` (moonshotai)
-- `nvidia/llama-3.1-nemotron-51b-instruct` (nvidia)
-- `nvidia/llama-3.1-nemotron-70b-instruct` (nvidia)
-- `nvidia/llama-3.1-nemotron-ultra-253b-v1` (nvidia)
-- `nvidia/nemotron-3-super-120b-a12b` (nvidia)
 - `nvidia/nemotron-3-ultra-550b-a55b` (nvidia)
-- `nvidia/nemotron-4-340b-instruct` (nvidia)
 - `openai/gpt-oss-20b` (openai)
-- `writer/palmyra-creative-122b` (writer)
-- `writer/palmyra-fin-70b-32k` (writer)
-- `writer/palmyra-med-70b` (writer)
-- `zyphra/zamba2-7b-instruct` (zyphra)
 
 ### Video (2)
 
 - `nvidia/ai-synthetic-video-detector` (nvidia)
 - `nvidia/cosmos-reason2-8b` (nvidia)
 
-### Vision (5)
-
-- `meta/llama-3.2-90b-vision-instruct` (meta)
-- `microsoft/kosmos-2` (microsoft)
-- `microsoft/phi-3-vision-128k-instruct` (microsoft)
-- `nvidia/neva-22b` (nvidia)
-- `nvidia/vila` (nvidia)
-
 ## By Publisher
-
-### 01-ai (1)
-
-- `01-ai/yi-large` [other]
-
-### adept (1)
-
-- `adept/fuyu-8b` [other]
-
-### ai21labs (1)
-
-- `ai21labs/jamba-1.5-large-instruct` [other]
-
-### aisingapore (1)
-
-- `aisingapore/sea-lion-7b-instruct` [other]
 
 ### bigcode (1)
 
 - `bigcode/starcoder2-15b` [other]
 
-### databricks (1)
+### deepseek-ai (1)
 
-- `databricks/dbrx-instruct` [other]
-
-### deepseek-ai (2)
-
-- `deepseek-ai/deepseek-coder-6.7b-instruct` [other]
 - `deepseek-ai/deepseek-v4.1-flash` [other]
 
-### google (8)
+### google (3)
 
-- `google/codegemma-1.1-7b` [other]
-- `google/codegemma-7b` [other]
-- `google/deplot` [other]
-- `google/gemma-2b` [other]
 - `google/gemma-3-12b-it` [text-generation]
 - `google/gemma-3-4b-it` [text-generation]
 - `google/gemma-4-31b-it` [text-generation]
-- `google/recurrentgemma-2b` [other]
 
-### ibm (4)
+### meta (1)
 
-- `ibm/granite-3.0-3b-a800m-instruct` [other]
-- `ibm/granite-3.0-8b-instruct` [text-generation]
-- `ibm/granite-34b-code-instruct` [text-generation]
-- `ibm/granite-8b-code-instruct` [other]
-
-### meta (5)
-
-- `meta/codellama-70b` [other]
-- `meta/llama-3.2-90b-vision-instruct` [vision]
-- `meta/llama-guard-4-12b` [safety]
-- `meta/llama2-70b` [other]
 - `meta/muse-glimmer-30b` [other]
-
-### microsoft (3)
-
-- `microsoft/kosmos-2` [vision]
-- `microsoft/phi-3-vision-128k-instruct` [vision]
-- `microsoft/phi-3.5-moe-instruct` [other]
 
 ### minimaxai (1)
 
 - `minimaxai/minimax-m3.1-flash` [other]
 
-### mistralai (6)
+### mistralai (1)
 
-- `mistralai/codestral-22b-instruct-v0.1` [other]
-- `mistralai/mistral-7b-instruct-v0.3` [other]
-- `mistralai/mistral-large` [other]
-- `mistralai/mistral-large-2-instruct` [other]
 - `mistralai/mistral-large-4-1t-a52b` [other]
-- `mistralai/mixtral-8x22b-v0.1` [other]
 
-### moonshotai (1)
-
-- `moonshotai/kimi-k2.6` [text-generation]
-
-### nv-mistralai (1)
-
-- `nv-mistralai/mistral-nemo-12b-instruct` [other]
-
-### nvidia (36)
+### nvidia (20)
 
 - `nvidia/ai-synthetic-video-detector` [video]
 - `nvidia/cosmos-reason2-8b` [video]
 - `nvidia/embed-qa-4` [embedding]
 - `nvidia/ising-calibration-1.5-31b` [other]
-- `nvidia/llama-3.1-nemoguard-8b-content-safety` [safety]
 - `nvidia/llama-3.1-nemoguard-8b-topic-control` [safety]
-- `nvidia/llama-3.1-nemotron-51b-instruct` [text-generation]
-- `nvidia/llama-3.1-nemotron-70b-instruct` [text-generation]
 - `nvidia/llama-3.1-nemotron-safety-guard-8b-v3` [safety]
-- `nvidia/llama-3.1-nemotron-ultra-253b-v1` [text-generation]
 - `nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1` [other]
 - `nvidia/llama-3.2-nv-embedqa-1b-v1` [embedding]
-- `nvidia/llama-nemotron-embed-vl-1b-v2` [embedding]
-- `nvidia/llama3-chatqa-1.5-70b` [other]
-- `nvidia/mistral-nemo-minitron-8b-8k-instruct` [other]
 - `nvidia/nemotron-3-embed-1b` [other]
 - `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` [other]
-- `nvidia/nemotron-3-super-120b-a12b` [text-generation]
 - `nvidia/nemotron-3-ultra-550b-a55b` [text-generation]
 - `nvidia/nemotron-3.5-bolt-e4b` [other]
 - `nvidia/nemotron-3.5-content-safety` [safety]
@@ -224,17 +101,9 @@ Fetched: 2026-11-15T13:47:09.527513 | Total: 83 models
 - `nvidia/nemotron-3.5-embed-8b` [other]
 - `nvidia/nemotron-3.5-lightning-30b-a3b` [other]
 - `nvidia/nemotron-3.5-super-vl-120b-a12b` [other]
-- `nvidia/nemotron-4-340b-instruct` [text-generation]
-- `nvidia/nemotron-4-340b-reward` [other]
-- `nvidia/nemotron-nano-3-30b-a3b` [other]
-- `nvidia/nemotron-parse` [ocr]
-- `nvidia/nemotron-parse-2.0` [other]
-- `nvidia/neva-22b` [vision]
 - `nvidia/nv-embedqa-mistral-7b-v2` [other]
 - `nvidia/nvclip` [other]
-- `nvidia/riva-translate-4b-instruct` [specialized]
 - `nvidia/riva-translate-4b-instruct-v2` [other]
-- `nvidia/vila` [vision]
 
 ### openai (1)
 
@@ -252,17 +121,6 @@ Fetched: 2026-11-15T13:47:09.527513 | Total: 83 models
 
 - `stepfun-ai/step-5-preview` [other]
 
-### writer (4)
-
-- `writer/palmyra-creative-122b` [text-generation]
-- `writer/palmyra-fin-70b-32k` [text-generation]
-- `writer/palmyra-med-70b` [text-generation]
-- `writer/palmyra-med-70b-32k` [other]
-
 ### z-ai (1)
 
 - `z-ai/glm-5.3-flash` [other]
-
-### zyphra (1)
-
-- `zyphra/zamba2-7b-instruct` [text-generation]
