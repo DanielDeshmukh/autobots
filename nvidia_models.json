@@ -1,10 +1,9 @@
 {
-  "fetched_at": "2026-11-16T15:27:46.907022",
-  "total": 33,
+  "fetched_at": "2026-11-17T15:49:01.910534",
+  "total": 32,
   "by_category": {
     "other": [
       "bigcode/starcoder2-15b",
-      "deepseek-ai/deepseek-v4.1-flash",
       "meta/muse-glimmer-30b",
       "minimaxai/minimax-m3.1-flash",
       "mistralai/mistral-large-4-1t-a52b",
@@ -49,9 +48,6 @@
   "by_publisher": {
     "bigcode": [
       "bigcode/starcoder2-15b"
-    ],
-    "deepseek-ai": [
-      "deepseek-ai/deepseek-v4.1-flash"
     ],
     "google": [
       "google/gemma-3-12b-it",
@@ -109,12 +105,6 @@
     "bigcode/starcoder2-15b": {
       "id": "bigcode/starcoder2-15b",
       "publisher": "bigcode",
-      "category": "other",
-      "created": 735790403
-    },
-    "deepseek-ai/deepseek-v4.1-flash": {
-      "id": "deepseek-ai/deepseek-v4.1-flash",
-      "publisher": "deepseek-ai",
       "category": "other",
       "created": 735790403
     },
