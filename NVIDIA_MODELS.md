@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-11-17T15:49:01.910534 | Total: 32 models
+Fetched: 2026-11-18T15:28:01.532310 | Total: 32 models
 
 ---
 
@@ -12,12 +12,13 @@ Fetched: 2026-11-17T15:49:01.910534 | Total: 32 models
 - `nvidia/llama-3.2-nv-embedqa-1b-v1` (nvidia)
 - `snowflake/arctic-embed-l` (snowflake)
 
-### Other (19)
+### Other (20)
 
 - `bigcode/starcoder2-15b` (bigcode)
 - `meta/muse-glimmer-30b` (meta)
 - `minimaxai/minimax-m3.1-flash` (minimaxai)
 - `mistralai/mistral-large-4-1t-a52b` (mistralai)
+- `moonshotai/kimi-k3.1-pro` (moonshotai)
 - `nvidia/ising-calibration-1.5-31b` (nvidia)
 - `nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1` (nvidia)
 - `nvidia/nemotron-3-embed-1b` (nvidia)
@@ -40,13 +41,12 @@ Fetched: 2026-11-17T15:49:01.910534 | Total: 32 models
 - `nvidia/llama-3.1-nemotron-safety-guard-8b-v3` (nvidia)
 - `nvidia/nemotron-3.5-content-safety` (nvidia)
 
-### Text Generation (5)
+### Text Generation (4)
 
 - `google/gemma-3-12b-it` (google)
 - `google/gemma-3-4b-it` (google)
 - `google/gemma-4-31b-it` (google)
 - `nvidia/nemotron-3-ultra-550b-a55b` (nvidia)
-- `openai/gpt-oss-20b` (openai)
 
 ### Video (2)
 
@@ -77,6 +77,10 @@ Fetched: 2026-11-17T15:49:01.910534 | Total: 32 models
 
 - `mistralai/mistral-large-4-1t-a52b` [other]
 
+### moonshotai (1)
+
+- `moonshotai/kimi-k3.1-pro` [other]
+
 ### nvidia (20)
 
 - `nvidia/ai-synthetic-video-detector` [video]
@@ -99,10 +103,6 @@ Fetched: 2026-11-17T15:49:01.910534 | Total: 32 models
 - `nvidia/nv-embedqa-mistral-7b-v2` [other]
 - `nvidia/nvclip` [other]
 - `nvidia/riva-translate-4b-instruct-v2` [other]
-
-### openai (1)
-
-- `openai/gpt-oss-20b` [text-generation]
 
 ### poolside (1)
 

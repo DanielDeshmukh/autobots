@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-11-17T15:49:01.910534",
+  "fetched_at": "2026-11-18T15:28:01.532310",
   "total": 32,
   "by_category": {
     "other": [
@@ -7,6 +7,7 @@
       "meta/muse-glimmer-30b",
       "minimaxai/minimax-m3.1-flash",
       "mistralai/mistral-large-4-1t-a52b",
+      "moonshotai/kimi-k3.1-pro",
       "nvidia/ising-calibration-1.5-31b",
       "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
       "nvidia/nemotron-3-embed-1b",
@@ -27,8 +28,7 @@
       "google/gemma-3-12b-it",
       "google/gemma-3-4b-it",
       "google/gemma-4-31b-it",
-      "nvidia/nemotron-3-ultra-550b-a55b",
-      "openai/gpt-oss-20b"
+      "nvidia/nemotron-3-ultra-550b-a55b"
     ],
     "video": [
       "nvidia/ai-synthetic-video-detector",
@@ -63,6 +63,9 @@
     "mistralai": [
       "mistralai/mistral-large-4-1t-a52b"
     ],
+    "moonshotai": [
+      "moonshotai/kimi-k3.1-pro"
+    ],
     "nvidia": [
       "nvidia/ai-synthetic-video-detector",
       "nvidia/cosmos-reason2-8b",
@@ -84,9 +87,6 @@
       "nvidia/nv-embedqa-mistral-7b-v2",
       "nvidia/nvclip",
       "nvidia/riva-translate-4b-instruct-v2"
-    ],
-    "openai": [
-      "openai/gpt-oss-20b"
     ],
     "poolside": [
       "poolside/laguna-xs-2.1"
@@ -141,6 +141,12 @@
     "mistralai/mistral-large-4-1t-a52b": {
       "id": "mistralai/mistral-large-4-1t-a52b",
       "publisher": "mistralai",
+      "category": "other",
+      "created": 735790403
+    },
+    "moonshotai/kimi-k3.1-pro": {
+      "id": "moonshotai/kimi-k3.1-pro",
+      "publisher": "moonshotai",
       "category": "other",
       "created": 735790403
     },
@@ -262,12 +268,6 @@
       "id": "nvidia/riva-translate-4b-instruct-v2",
       "publisher": "nvidia",
       "category": "other",
-      "created": 735790403
-    },
-    "openai/gpt-oss-20b": {
-      "id": "openai/gpt-oss-20b",
-      "publisher": "openai",
-      "category": "text-generation",
       "created": 735790403
     },
     "poolside/laguna-xs-2.1": {
