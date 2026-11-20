@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-11-19T15:34:31.846161 | Total: 32 models
+Fetched: 2026-11-20T15:13:32.862512 | Total: 33 models
 
 ---
 
@@ -12,9 +12,10 @@ Fetched: 2026-11-19T15:34:31.846161 | Total: 32 models
 - `nvidia/llama-3.2-nv-embedqa-1b-v1` (nvidia)
 - `snowflake/arctic-embed-l` (snowflake)
 
-### Other (20)
+### Other (21)
 
 - `bigcode/starcoder2-15b` (bigcode)
+- `fastino/gliner2-pii` (fastino)
 - `meta/muse-glimmer-30b` (meta)
 - `minimaxai/minimax-m3.1-flash` (minimaxai)
 - `mistralai/mistral-large-4-1t-a52b` (mistralai)
@@ -58,6 +59,10 @@ Fetched: 2026-11-19T15:34:31.846161 | Total: 32 models
 ### bigcode (1)
 
 - `bigcode/starcoder2-15b` [other]
+
+### fastino (1)
+
+- `fastino/gliner2-pii` [other]
 
 ### google (3)
 
