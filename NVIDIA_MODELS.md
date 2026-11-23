@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-11-22T14:24:38.300438 | Total: 33 models
+Fetched: 2026-11-23T17:51:12.983555 | Total: 32 models
 
 ---
 
@@ -12,7 +12,7 @@ Fetched: 2026-11-22T14:24:38.300438 | Total: 33 models
 - `nvidia/llama-3.2-nv-embedqa-1b-v1` (nvidia)
 - `snowflake/arctic-embed-l` (snowflake)
 
-### Other (21)
+### Other (20)
 
 - `bigcode/starcoder2-15b` (bigcode)
 - `fastino/gliner2-pii` (fastino)
@@ -22,7 +22,6 @@ Fetched: 2026-11-22T14:24:38.300438 | Total: 33 models
 - `moonshotai/kimi-k3.1-pro` (moonshotai)
 - `nvidia/ising-calibration-1.5-31b` (nvidia)
 - `nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1` (nvidia)
-- `nvidia/nemotron-3-embed-1b` (nvidia)
 - `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` (nvidia)
 - `nvidia/nemotron-3.5-bolt-e4b` (nvidia)
 - `nvidia/nemotron-3.5-embed-1b` (nvidia)
@@ -86,7 +85,7 @@ Fetched: 2026-11-22T14:24:38.300438 | Total: 33 models
 
 - `moonshotai/kimi-k3.1-pro` [other]
 
-### nvidia (20)
+### nvidia (19)
 
 - `nvidia/ai-synthetic-video-detector` [video]
 - `nvidia/cosmos-reason2-8b` [video]
@@ -96,7 +95,6 @@ Fetched: 2026-11-22T14:24:38.300438 | Total: 33 models
 - `nvidia/llama-3.1-nemotron-safety-guard-8b-v3` [safety]
 - `nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1` [other]
 - `nvidia/llama-3.2-nv-embedqa-1b-v1` [embedding]
-- `nvidia/nemotron-3-embed-1b` [other]
 - `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` [other]
 - `nvidia/nemotron-3-ultra-550b-a55b` [text-generation]
 - `nvidia/nemotron-3.5-bolt-e4b` [other]

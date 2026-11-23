@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-11-22T14:24:38.300438",
-  "total": 33,
+  "fetched_at": "2026-11-23T17:51:12.983555",
+  "total": 32,
   "by_category": {
     "other": [
       "bigcode/starcoder2-15b",
@@ -11,7 +11,6 @@
       "moonshotai/kimi-k3.1-pro",
       "nvidia/ising-calibration-1.5-31b",
       "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
-      "nvidia/nemotron-3-embed-1b",
       "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
       "nvidia/nemotron-3.5-bolt-e4b",
       "nvidia/nemotron-3.5-embed-1b",
@@ -79,7 +78,6 @@
       "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
       "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
       "nvidia/llama-3.2-nv-embedqa-1b-v1",
-      "nvidia/nemotron-3-embed-1b",
       "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
       "nvidia/nemotron-3-ultra-550b-a55b",
       "nvidia/nemotron-3.5-bolt-e4b",
@@ -206,12 +204,6 @@
       "id": "nvidia/llama-3.2-nv-embedqa-1b-v1",
       "publisher": "nvidia",
       "category": "embedding",
-      "created": 735790403
-    },
-    "nvidia/nemotron-3-embed-1b": {
-      "id": "nvidia/nemotron-3-embed-1b",
-      "publisher": "nvidia",
-      "category": "other",
       "created": 735790403
     },
     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": {
