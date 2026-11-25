@@ -1,11 +1,10 @@
 {
-  "fetched_at": "2026-11-24T17:23:59.200966",
-  "total": 32,
+  "fetched_at": "2026-11-25T17:01:10.541111",
+  "total": 30,
   "by_category": {
     "other": [
       "bigcode/starcoder2-15b",
       "fastino/gliner2-pii",
-      "meta/muse-glimmer-30b",
       "minimaxai/minimax-m3.1-flash",
       "mistralai/mistral-large-4-1t-a52b",
       "moonshotai/kimi-k3.1-pro",
@@ -27,7 +26,6 @@
     "text-generation": [
       "google/gemma-3-12b-it",
       "google/gemma-3-4b-it",
-      "google/gemma-4-31b-it",
       "nvidia/nemotron-3-ultra-550b-a55b"
     ],
     "video": [
@@ -54,11 +52,7 @@
     ],
     "google": [
       "google/gemma-3-12b-it",
-      "google/gemma-3-4b-it",
-      "google/gemma-4-31b-it"
-    ],
-    "meta": [
-      "meta/muse-glimmer-30b"
+      "google/gemma-3-4b-it"
     ],
     "minimaxai": [
       "minimaxai/minimax-m3.1-flash"
@@ -126,18 +120,6 @@
       "id": "google/gemma-3-4b-it",
       "publisher": "google",
       "category": "text-generation",
-      "created": 735790403
-    },
-    "google/gemma-4-31b-it": {
-      "id": "google/gemma-4-31b-it",
-      "publisher": "google",
-      "category": "text-generation",
-      "created": 735790403
-    },
-    "meta/muse-glimmer-30b": {
-      "id": "meta/muse-glimmer-30b",
-      "publisher": "meta",
-      "category": "other",
       "created": 735790403
     },
     "minimaxai/minimax-m3.1-flash": {

@@ -1,6 +1,6 @@
 # NVIDIA NIM Models — Auto-Updated Catalog
 
-Fetched: 2026-11-24T17:23:59.200966 | Total: 32 models
+Fetched: 2026-11-25T17:01:10.541111 | Total: 30 models
 
 ---
 
@@ -12,11 +12,10 @@ Fetched: 2026-11-24T17:23:59.200966 | Total: 32 models
 - `nvidia/llama-3.2-nv-embedqa-1b-v1` (nvidia)
 - `snowflake/arctic-embed-l` (snowflake)
 
-### Other (20)
+### Other (19)
 
 - `bigcode/starcoder2-15b` (bigcode)
 - `fastino/gliner2-pii` (fastino)
-- `meta/muse-glimmer-30b` (meta)
 - `minimaxai/minimax-m3.1-flash` (minimaxai)
 - `mistralai/mistral-large-4-1t-a52b` (mistralai)
 - `moonshotai/kimi-k3.1-pro` (moonshotai)
@@ -41,11 +40,10 @@ Fetched: 2026-11-24T17:23:59.200966 | Total: 32 models
 - `nvidia/llama-3.1-nemotron-safety-guard-8b-v3` (nvidia)
 - `nvidia/nemotron-3.5-content-safety` (nvidia)
 
-### Text Generation (4)
+### Text Generation (3)
 
 - `google/gemma-3-12b-it` (google)
 - `google/gemma-3-4b-it` (google)
-- `google/gemma-4-31b-it` (google)
 - `nvidia/nemotron-3-ultra-550b-a55b` (nvidia)
 
 ### Video (2)
@@ -63,15 +61,10 @@ Fetched: 2026-11-24T17:23:59.200966 | Total: 32 models
 
 - `fastino/gliner2-pii` [other]
 
-### google (3)
+### google (2)
 
 - `google/gemma-3-12b-it` [text-generation]
 - `google/gemma-3-4b-it` [text-generation]
-- `google/gemma-4-31b-it` [text-generation]
-
-### meta (1)
-
-- `meta/muse-glimmer-30b` [other]
 
 ### minimaxai (1)
 
